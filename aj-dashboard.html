@@ -2753,6 +2753,7 @@ function _ccRenderClientsGrid(rows, filter) {
               <span class="cc-client-badge active">Active</span>
               ${c.liveDate ? `<span class="cc-client-badge live">Live ${c.liveDate}</span>` : ''}
               ${c.website ? `<span class="cc-client-badge link" onclick="window.open('${c.website.startsWith('http')?c.website:'https://'+c.website}','_blank')">📁 Drive</span>` : ''}
+              <span class="cc-client-badge link" onclick="window.open('https://drive.google.com/drive/search?q=${encodeURIComponent(c.name)}','_blank')" style="background:rgba(255,165,0,0.08);color:#f97316;border:1px solid rgba(249,115,22,0.3)" title="Open ${c.name} ad creative folder">📂 Ad Drive</span>
             </div>
           </div>
           <div class="cc-client-card-body">
