@@ -507,6 +507,109 @@ tr:hover td { background:var(--surface2); }
 .intel-modal-save:hover { opacity:0.85; }
 .intel-modal-cancel { background:transparent; color:var(--muted); border:1px solid var(--border); }
 .intel-modal-cancel:hover { color:var(--fg); }
+
+/* ══ AJ DASHBOARD TAB ══ */
+.aj-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.aj-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.25rem; }
+.aj-stat-label { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+.aj-stat-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.8rem; line-height: 1; }
+.aj-stat-sub { font-size: 0.65rem; color: var(--muted); margin-top: 0.3rem; font-family: 'DM Mono', monospace; }
+.aj-stat-green { color: var(--green); }
+.aj-stat-red   { color: var(--red); }
+.aj-stat-amber { color: var(--amber); }
+.aj-stat-blue  { color: var(--accent); }
+.aj-client-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 2rem; }
+.aj-client-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; transition: border-color 0.15s; }
+.aj-client-card:hover { border-color: var(--border2); }
+.aj-client-name { font-weight: 600; font-size: 0.82rem; margin-bottom: 0.4rem; }
+.aj-client-meta { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.5rem; }
+.aj-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.6rem; font-family: 'DM Mono', monospace; font-weight: 600; margin-right: 4px; }
+.aj-badge-active  { background: rgba(34,197,94,0.1);  color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+.aj-badge-paused  { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.monthly-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+.monthly-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.1rem; }
+.monthly-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; }
+.monthly-nav-btns { display: flex; gap: 0.4rem; }
+.monthly-nav-btn { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 4px 12px; font-size: 0.72rem; color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace; transition: all 0.12s; }
+.monthly-nav-btn:hover { color: var(--text); border-color: var(--accent); }
+.monthly-nav-btn.accent { color: var(--accent); border-color: rgba(181,135,13,0.35); }
+.monthly-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.monthly-counts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; margin-bottom: 1.1rem; }
+.monthly-count-card { border-radius: 11px; padding: 0.85rem 1rem; }
+.monthly-count-card.green { background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); }
+.monthly-count-card.red   { background: rgba(220,38,38,0.07);  border: 1px solid rgba(220,38,38,0.15); }
+.monthly-count-label { font-size: 0.6rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+.monthly-count-card.green .monthly-count-label { color: var(--green); }
+.monthly-count-card.red   .monthly-count-label { color: var(--red); }
+.monthly-count-val { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--text); }
+.monthly-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.monthly-list-title { font-size: 0.58rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+.monthly-list-title.green { color: var(--green); }
+.monthly-list-title.red   { color: var(--red); }
+.monthly-event-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); font-size: 0.76rem; }
+.monthly-event-row:last-child { border-bottom: none; }
+.monthly-event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.monthly-event-dot.green { background: var(--green); }
+.monthly-event-dot.red   { background: var(--red); }
+.monthly-event-agent { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-left: auto; }
+.monthly-empty { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); padding: 0.5rem 0; }
+
+/* ══ AI ASSISTANT TAB ══ */
+.aj-chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding-bottom: 1rem; }
+.aj-msg { max-width: 75%; }
+.aj-msg.aj-user { align-self: flex-end; }
+.aj-msg.aj-assistant { align-self: flex-start; }
+.aj-msg-bubble { padding: 0.85rem 1rem; border-radius: 14px; font-size: 0.82rem; line-height: 1.6; }
+.aj-msg.aj-user      .aj-msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.aj-msg.aj-assistant .aj-msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+.aj-msg-time { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+.aj-msg.aj-user .aj-msg-time { text-align: right; }
+.aj-chat-input-wrap { padding-top: 1rem; border-top: 1px solid var(--border); }
+.aj-chat-input-row { display: flex; gap: 0.75rem; }
+.aj-chat-file-preview-inner { display:flex;align-items:center;gap:0.75rem;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:0.5rem 0.75rem;margin-bottom:0.5rem; }
+.aj-chat-attach-btn { display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:12px;background:var(--surface2);border:1px solid var(--border2);cursor:pointer;font-size:1.1rem;transition:all 0.2s;flex-shrink:0;align-self:flex-end; }
+.aj-chat-attach-btn:hover { border-color:var(--accent); }
+.aj-chat-input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; padding: 0.75rem 1rem; color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.83rem; outline: none; resize: none; min-height: 46px; max-height: 120px; }
+.aj-chat-input:focus { border-color: var(--accent); }
+.aj-chat-send { padding: 0.75rem 1.25rem; background: var(--accent); color: #fff; border: none; border-radius: 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; flex-shrink: 0; font-family: 'DM Mono', monospace; }
+.aj-chat-send:hover { opacity: 0.88; }
+.aj-chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.aj-chat-hint { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 0.4rem; }
+
+/* ══ QMI BRAIN TAB ══ */
+.brain-wrap { display: flex; height: calc(100vh - 195px); }
+.brain-sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 0; overflow-y: auto; flex-shrink: 0; padding: 1.25rem; }
+.brain-sidebar-title { font-size: 0.85rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; margin-bottom: 0.75rem; }
+.brain-kb-stats { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); background: rgba(181,135,13,0.06); border: 1px solid rgba(181,135,13,0.2); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1.25rem; line-height: 1.7; }
+.brain-sidebar-section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+.brain-sidebar-label { font-size: 0.72rem; font-weight: 700; color: var(--text); }
+.brain-sidebar-sub { font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted); line-height: 1.5; }
+.brain-chat-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.brain-orb-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; }
+.brain-orb { width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(181,135,13,0.6), rgba(181,135,13,0.15)); border: 1px solid rgba(181,135,13,0.35); box-shadow: 0 0 40px rgba(181,135,13,0.15); }
+.brain-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 480px; }
+.brain-chip { padding: 0.4rem 0.85rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); cursor: pointer; background: var(--surface); transition: all 0.15s; }
+.brain-chip:hover { border-color: var(--accent); color: var(--accent); }
+.brain-input-wrap { display: flex; flex-direction: column; gap: 0; padding: 1rem; border-top: 1px solid var(--border); }
+.brain-attach-btn { display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;font-size:1.1rem;transition:all 0.2s;flex-shrink:0; }
+.brain-attach-btn:hover { border-color:var(--accent); }
+.brain-image-preview-inner { display:flex;align-items:center;gap:0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.75rem;margin-bottom:0.5rem; }
+.suggested-replies-wrap { display:flex;flex-direction:column;gap:0.6rem;padding-top:0.25rem; }
+.suggested-reply-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;display:flex;flex-direction:column;gap:0.5rem; }
+.suggested-reply-label { font-size:0.63rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.06em;text-transform:uppercase; }
+.suggested-reply-text { font-size:0.82rem;line-height:1.6;color:var(--text);white-space:pre-wrap; }
+.suggested-reply-copy { align-self:flex-end;background:none;border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.75rem;color:var(--muted);font-size:0.68rem;cursor:pointer;transition:all 0.15s;font-family:'DM Mono',monospace; }
+.suggested-reply-copy:hover { border-color:var(--accent);color:var(--accent); }
+.brain-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem; }
+.brain-msg-wrap { display: flex; flex-direction: column; gap: 0.3rem; max-width: 75%; }
+.brain-msg-wrap.brain-msg-user { align-self: flex-end; align-items: flex-end; }
+.brain-msg-label { font-size: 0.58rem; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.brain-msg-wrap .brain-msg-bubble { padding: 0.85rem 1rem; border-radius: 14px; font-size: 0.82rem; line-height: 1.6; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+.brain-msg-wrap.brain-msg-user .brain-msg-bubble { background: var(--accent); color: #fff; border: none; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
+.typing-dots { display:flex;gap:4px;align-items:center; }
+.typing-dots span { width:6px;height:6px;background:var(--accent);border-radius:50%;animation:brainBounce 1.1s ease-in-out infinite; }
+.typing-dots span:nth-child(2){animation-delay:.18s} .typing-dots span:nth-child(3){animation-delay:.36s}
+@keyframes brainBounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
 </style>
 </head>
 <body>
@@ -533,6 +636,9 @@ tr:hover td { background:var(--surface2); }
   <button class="nav-tab active" onclick="switchPage('clients')">👥 Our Clients</button>
   <button class="nav-tab" onclick="switchPage('sops')">📚 SOPs</button>
   <button class="nav-tab" onclick="switchPage('intelligence')">✦ Intelligence</button>
+  <button class="nav-tab" onclick="switchPage('aj-dashboard')">📊 Dashboard</button>
+  <button class="nav-tab" onclick="switchPage('chat')">💬 AI Assistant</button>
+  <button class="nav-tab" onclick="switchPage('brain')">🧠 QMI Brain</button>
 </nav>
 
 <main class="main">
@@ -569,6 +675,88 @@ tr:hover td { background:var(--surface2); }
 
   <div id="page-intelligence" class="page">
     <div id="app-intelligence"></div>
+  </div>
+
+  <!-- ══ AJ DASHBOARD ══ -->
+  <div id="page-aj-dashboard" class="page">
+    <div class="page-header" style="margin-bottom:2rem">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;margin-bottom:0.25rem">Welcome, AJ! 👑</div>
+      <div id="aj-dash-date" style="font-size:0.78rem;color:var(--muted);font-family:'DM Mono',monospace"></div>
+    </div>
+    <div class="aj-stats-row" id="aj-statsRow"></div>
+    <div id="aj-monthlyActivity"></div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;margin-bottom:0.85rem;display:flex;align-items:center;gap:0.5rem">Active Clients</div>
+    <div class="aj-client-grid" id="aj-clientGrid"></div>
+  </div>
+
+  <!-- ══ AI ASSISTANT ══ -->
+  <div id="page-chat" class="page">
+    <div class="page-header" style="margin-bottom:1.5rem">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;margin-bottom:0.25rem">💬 AI Assistant</div>
+      <div style="font-size:0.78rem;color:var(--muted);font-family:'DM Mono',monospace">Ask anything about clients, processes, or campaign strategy</div>
+    </div>
+    <div id="aj-chatWrap" style="display:flex;flex-direction:column;height:calc(100vh - 240px)">
+      <div class="aj-chat-messages" id="aj-chatMessages">
+        <div class="aj-msg aj-assistant">
+          <div class="aj-msg-bubble">Hey Alfie 👋 I'm your AI assistant. I have full context on all your active clients, onboarding statuses, and company SOPs. Ask me anything — client status, what to do next for a specific client, campaign ideas, or how to handle a situation.</div>
+          <div class="aj-msg-time">Now</div>
+        </div>
+      </div>
+      <div class="aj-chat-input-wrap">
+        <div id="aj-chat-file-preview"></div>
+        <div class="aj-chat-input-row">
+          <label class="aj-chat-attach-btn" title="Attach image, PDF, or text file">
+            📎
+            <input type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" onchange="attachAjChatFile(this)" style="display:none">
+          </label>
+          <textarea class="aj-chat-input" id="aj-chatInput" placeholder="Ask about a client, or attach a document…" rows="1" onkeydown="chatKeydown(event)"></textarea>
+          <button class="aj-chat-send" id="aj-chatSendBtn" onclick="sendChat()">Send →</button>
+        </div>
+      </div>
+      <div class="aj-chat-hint" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Powered by Claude · History saved in this browser</span>
+        <button onclick="clearAjChatHistory()" style="background:none;border:none;color:var(--muted);font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;opacity:0.6;padding:0;">clear history</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ QMI BRAIN ══ -->
+  <div id="page-brain" class="page">
+    <div class="brain-wrap">
+      <div class="brain-sidebar">
+        <div class="brain-sidebar-title">📚 Knowledge Base</div>
+        <div class="brain-kb-stats" id="brain-kb-stats">Loading…</div>
+        <div class="brain-sidebar-section">
+          <button class="brain-sop-save" onclick="clearBrainHistory()" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#f87171;width:100%;padding:0.45rem 0.9rem;border-radius:8px;font-size:0.7rem;font-weight:600;cursor:pointer;">New Chat ✕</button>
+        </div>
+        <div class="brain-sidebar-section" style="margin-top:auto">
+          <div class="brain-sidebar-sub" style="opacity:0.4;font-size:0.6rem;">All WhatsApp history + your SOP is sent as context with every message.</div>
+        </div>
+      </div>
+      <div class="brain-chat-wrap">
+        <div class="brain-orb-section" id="brain-orb-section">
+          <div class="brain-orb"></div>
+          <div class="brain-chips">
+            <div class="brain-chip" onclick="useBrainChip(this)">Draft a client update message</div>
+            <div class="brain-chip" onclick="useBrainChip(this)">How should I respond to this client?</div>
+            <div class="brain-chip" onclick="useBrainChip(this)">What's the history with this client?</div>
+            <div class="brain-chip" onclick="useBrainChip(this)">Write a results summary message</div>
+          </div>
+        </div>
+        <div class="brain-messages" id="brain-messages" style="display:none"></div>
+        <div class="brain-input-wrap">
+          <div id="brain-image-preview"></div>
+          <div style="display:flex;align-items:flex-end;gap:0.75rem;width:100%">
+            <label class="brain-attach-btn" title="Upload a screenshot of a client message">
+              📷
+              <input type="file" accept="image/*" onchange="attachBrainImage(this)" style="display:none">
+            </label>
+            <textarea class="aj-chat-input" id="brain-input" placeholder="Ask about a client, or upload a screenshot for 3 suggested replies…" rows="1" onkeydown="brainKeydown(event)" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea>
+            <button class="aj-chat-send" id="brain-send" onclick="sendBrainMessage()">send ↑</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -1751,6 +1939,9 @@ function switchPage(page) {
   if (page === 'leads')        renderLeadsPage();
   if (page === 'sops')         renderSOPsPage();
   if (page === 'intelligence') loadIntelligencePage();
+  if (page === 'aj-dashboard') renderAjDashboard();
+  if (page === 'chat')         renderAjChatHistory();
+  if (page === 'brain')        renderQMIBrainPage();
 }
 
 // ════════════════════════════════════════════════
@@ -2798,6 +2989,862 @@ function _intelSaveKey() {
 
 function _intelCloseSettings() {
   document.getElementById('intel-overlay')?.remove();
+}
+
+// ════════════════════════════════════════════════
+// AJ DASHBOARD — DATA & RENDER
+// ════════════════════════════════════════════════
+
+const AJ_CLIENTS_SHEET_ID = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
+const AJ_STORAGE_API_KEY  = 'aj_anthropic_key';
+
+const AJ_JULES_FALLBACK  = ["PrimeBuild Solutions","Quality Custom Homes","Quality Custom Homes PTY LTD","Spa Space","Streamline Building Projects","Imperial Renovations","Imperial Bathrooms","Favourite Home","Kogalo Renovations"];
+const AJ_AYESSA_FALLBACK = ["Buildavate","Allspec Homes","Silk Touch Joinery","Barco Build","Renovate Right Homes","Rapid Bathroom Specialist"];
+
+let ajSyncedData = null;
+let _ajMonthOffset = 0;
+
+async function ajPullSync() {
+  try {
+    const res  = await fetch(`${PROXY_URL}?id=${AJ_CLIENTS_SHEET_ID}&sheet=Clients`);
+    const rows = await res.json();
+    const jules = [], ayessa = [];
+    const allClients = [];
+    const NON_CC = ['urbanriseproperty', 'l2homes', 'generationalbathrooms'];
+    if (Array.isArray(rows) && rows.length > 1) {
+      for (let i = 1; i < rows.length; i++) {
+        const name         = String(rows[i][0]  || '').trim();
+        const agent        = String(rows[i][1]  || '').trim();
+        const statsUrl     = String(rows[i][3]  || '').trim();
+        const liveDate     = String(rows[i][4]  || '').trim();
+        const ovField      = String(rows[i][7]  || '').trim();
+        const status       = String(rows[i][8]  || '').trim();
+        const billingStart = String(rows[i][26] || '').trim();
+        const churnDate    = String(rows[i][29] || '').trim();
+        if (!name) continue;
+        const slug = name.toLowerCase().replace(/\s+/g, '');
+        if (NON_CC.includes(slug)) continue;
+        const signDate    = billingStart || liveDate;
+        const overviewUrl = ovField.includes('docs.google.com') ? ovField : (CLIENT_OVERVIEW_DOCS[name] || '');
+        allClients.push({ name, agent, status, signDate, churnDate, statsUrl, overviewUrl });
+        if (status === 'Churned') continue;
+        if (agent === 'Jules')  jules.push(name);
+        if (agent === 'Ayessa') ayessa.push(name);
+      }
+    }
+    ajSyncedData = {
+      jules_accounts:  jules.length  ? jules  : AJ_JULES_FALLBACK,
+      ayessa_accounts: ayessa.length ? ayessa : AJ_AYESSA_FALLBACK,
+      all_clients:     allClients,
+    };
+  } catch(e) {
+    ajSyncedData = { jules_accounts: AJ_JULES_FALLBACK, ayessa_accounts: AJ_AYESSA_FALLBACK, all_clients: [] };
+  }
+}
+
+function getAllAjClients() {
+  const allFromSheet = (ajSyncedData?.all_clients || []).filter(c => c.status !== 'Churned');
+  if (allFromSheet.length) return allFromSheet;
+  return [
+    ...(AJ_JULES_FALLBACK.map(n  => ({ name: n, agent: 'Jules',  statsUrl: '', overviewUrl: '' }))),
+    ...(AJ_AYESSA_FALLBACK.map(n => ({ name: n, agent: 'Ayessa', statsUrl: '', overviewUrl: '' }))),
+  ];
+}
+
+function ajIsPaused(name) {
+  try {
+    const list = JSON.parse(localStorage.getItem('qj_paused_clients') || '[]');
+    const n = name.toLowerCase().replace(/\s+/g,'');
+    return list.some(x => (x.name || x).toLowerCase().replace(/\s+/g,'') === n);
+  } catch(e) { return false; }
+}
+
+function ajParseDate(str) {
+  if (!str) return null;
+  const s = str.trim();
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmy) {
+    const y = dmy[3].length === 2 ? '20' + dmy[3] : dmy[3];
+    return new Date(+y, +dmy[2] - 1, +dmy[1]);
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function ajInMonth(dateStr, yr, mo) {
+  const d = ajParseDate(dateStr);
+  if (!d) return false;
+  return d.getFullYear() === yr && d.getMonth() === mo;
+}
+
+function renderAjMonthlyActivity(offset) {
+  _ajMonthOffset = offset;
+  const ref = new Date();
+  ref.setDate(1);
+  ref.setMonth(ref.getMonth() + offset);
+  const yr = ref.getFullYear();
+  const mo = ref.getMonth();
+  const isNow = offset === 0;
+  const monthLabel = ref.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+
+  const all = ajSyncedData?.all_clients || [];
+  const signed  = all.filter(c => ajInMonth(c.signDate,  yr, mo));
+  const churned = all.filter(c => ajInMonth(c.churnDate, yr, mo));
+
+  const signedRows  = signed.map(c  => `<div class="monthly-event-row"><div class="monthly-event-dot green"></div><span>${c.name}</span><span class="monthly-event-agent">${c.agent || ''}</span></div>`).join('');
+  const churnedRows = churned.map(c => `<div class="monthly-event-row"><div class="monthly-event-dot red"></div><span>${c.name}</span><span class="monthly-event-agent">${c.agent || ''}</span></div>`).join('');
+
+  document.getElementById('aj-monthlyActivity').innerHTML = `
+    <div class="monthly-panel">
+      <div class="monthly-nav">
+        <div class="monthly-title">${monthLabel} — Client Activity</div>
+        <div class="monthly-nav-btns">
+          <button class="monthly-nav-btn" onclick="renderAjMonthlyActivity(${offset - 1})">← Prev</button>
+          ${!isNow ? `<button class="monthly-nav-btn accent" onclick="renderAjMonthlyActivity(0)">This Month</button>` : ''}
+          <button class="monthly-nav-btn" onclick="renderAjMonthlyActivity(${offset + 1})" ${isNow ? 'disabled' : ''}>Next →</button>
+        </div>
+      </div>
+      <div class="monthly-counts">
+        <div class="monthly-count-card green">
+          <div class="monthly-count-label">Signed</div>
+          <div class="monthly-count-val">${signed.length}</div>
+        </div>
+        <div class="monthly-count-card red">
+          <div class="monthly-count-label">Churned</div>
+          <div class="monthly-count-val">${churned.length}</div>
+        </div>
+      </div>
+      ${signed.length || churned.length ? `
+      <div class="monthly-lists">
+        <div>
+          <div class="monthly-list-title green">▲ Signed this month</div>
+          ${signedRows || '<div class="monthly-empty">None</div>'}
+        </div>
+        <div>
+          <div class="monthly-list-title red">▼ Churned this month</div>
+          ${churnedRows || '<div class="monthly-empty">None</div>'}
+        </div>
+      </div>` : `<div class="monthly-empty">No sign or churn activity recorded for this month.</div>`}
+    </div>`;
+}
+
+async function renderAjDashboard() {
+  document.getElementById('aj-dash-date').textContent = new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  if (!ajSyncedData) await ajPullSync();
+
+  const clients = getAllAjClients();
+  const paused  = clients.filter(c => ajIsPaused(c.name));
+  const active  = clients.filter(c => !ajIsPaused(c.name));
+
+  const all = ajSyncedData?.all_clients || [];
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth();
+  const signedThisMonth  = all.filter(c => ajInMonth(c.signDate,  yr, mo)).length;
+  const churnedThisMonth = all.filter(c => ajInMonth(c.churnDate, yr, mo)).length;
+
+  document.getElementById('aj-statsRow').innerHTML = `
+    <div class="aj-stat-card">
+      <div class="aj-stat-label">Active Clients</div>
+      <div class="aj-stat-value aj-stat-green">${active.length}</div>
+      <div class="aj-stat-sub">running campaigns</div>
+    </div>
+    <div class="aj-stat-card">
+      <div class="aj-stat-label">Paused</div>
+      <div class="aj-stat-value aj-stat-amber">${paused.length}</div>
+      <div class="aj-stat-sub">temporarily on hold</div>
+    </div>
+    <div class="aj-stat-card">
+      <div class="aj-stat-label">Signed This Month</div>
+      <div class="aj-stat-value aj-stat-green">${signedThisMonth}</div>
+      <div class="aj-stat-sub">new clients</div>
+    </div>
+    <div class="aj-stat-card">
+      <div class="aj-stat-label">Churned This Month</div>
+      <div class="aj-stat-value aj-stat-red">${churnedThisMonth}</div>
+      <div class="aj-stat-sub">lost this month</div>
+    </div>`;
+
+  renderAjMonthlyActivity(_ajMonthOffset);
+
+  document.getElementById('aj-clientGrid').innerHTML = clients.map(c => {
+    const p = ajIsPaused(c.name);
+    const links = [
+      `<a href="https://drive.google.com/drive/folders/1DebQdls9aJsCReV8yVgprJ16B5UBIx7O?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:#f97316;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📂 Ad Drive</a>`,
+      `<a href="https://drive.google.com/drive/folders/1hKiXSFlLhYcS2p5OPjSsVq-55y-fPs_q?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📊 Stats</a>`,
+      c.overviewUrl ? `<a href="${c.overviewUrl}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📄 Overview</a>` : '',
+    ].filter(Boolean).join('<span style="color:var(--border2);margin:0 4px">·</span>');
+    return `<div class="aj-client-card">
+      <div class="aj-client-name">${c.name}</div>
+      <div class="aj-client-meta">Agent: ${c.agent}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem">
+        <span class="aj-badge ${p ? 'aj-badge-paused' : 'aj-badge-active'}">${p ? '⏸ Paused' : '● Active'}</span>
+        ${links ? `<div style="display:flex;align-items:center;gap:2px">${links}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:0.8rem;padding:1rem 0">No active clients found.</div>';
+}
+
+// ════════════════════════════════════════════════
+// AI ASSISTANT — CHAT
+// ════════════════════════════════════════════════
+
+let ajChatHistory = JSON.parse(localStorage.getItem('agent_hub_chat_history') || '[]');
+
+function saveAjChatHistory() {
+  try { localStorage.setItem('agent_hub_chat_history', JSON.stringify(ajChatHistory.slice(-100))); } catch(e) {}
+}
+
+function buildAjChatContext() {
+  const clients = getAllAjClients();
+  const paused  = clients.filter(c => ajIsPaused(c.name));
+  return `You are Alfie's personal AI assistant inside his Agent Hub dashboard. You are an expert in Facebook & Instagram advertising for renovation and construction businesses in Australia.
+
+ACTIVE CLIENTS (${clients.length} total):
+${clients.map(c => `- ${c.name} [${c.agent}]${ajIsPaused(c.name) ? ' — PAUSED' : ''}`).join('\n')}
+
+PAUSED CLIENTS: ${paused.map(c=>c.name).join(', ') || 'None'}
+
+Your job is to help Alfie:
+- Answer questions about client status, onboarding progress, and what to do next
+- Give specific campaign advice for renovation/construction businesses
+- Help draft client communications
+- Suggest optimisation strategies based on industry best practices
+
+Always be direct, practical, and specific.`;
+}
+
+let _ajChatAttachedFile = null;
+
+function attachAjChatFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const isImage = file.type.startsWith('image/');
+  const isPdf   = file.type === 'application/pdf';
+  const isText  = !isImage && !isPdf;
+  const reader  = new FileReader();
+  reader.onload = e => {
+    const result = e.target.result;
+    if (isImage || isPdf) {
+      const b64 = result.split(',')[1];
+      _ajChatAttachedFile = { kind: isImage ? 'image' : 'pdf', name: file.name, base64: b64, mimeType: file.type, dataUrl: isImage ? result : null };
+    } else {
+      _ajChatAttachedFile = { kind: 'text', name: file.name, text: result };
+    }
+    const icon = isImage ? '🖼️' : isPdf ? '📄' : '📝';
+    const preview = document.getElementById('aj-chat-file-preview');
+    if (preview) preview.innerHTML = `<div class="aj-chat-file-preview-inner"><span style="font-size:1.3rem">${icon}</span><span style="font-size:0.72rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span><button onclick="clearAjChatFile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;line-height:1">✕</button></div>`;
+  };
+  isText ? reader.readAsText(file) : reader.readAsDataURL(file);
+}
+
+function clearAjChatFile() {
+  _ajChatAttachedFile = null;
+  const p = document.getElementById('aj-chat-file-preview');
+  if (p) p.innerHTML = '';
+}
+
+async function sendChat() {
+  const input  = document.getElementById('aj-chatInput');
+  const msg    = input ? input.value.trim() : '';
+  const file   = _ajChatAttachedFile;
+  if (!msg && !file) return;
+
+  const apiKey = localStorage.getItem(AJ_STORAGE_API_KEY);
+  if (!apiKey) {
+    addAjChatMsg('assistant', '⚠️ Please add your Anthropic API key in Settings first.');
+    return;
+  }
+
+  if (input) input.value = '';
+  clearAjChatFile();
+  const btn = document.getElementById('aj-chatSendBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  let userContent, historyContent;
+  if (file) {
+    const parts = [];
+    if (file.kind === 'image') {
+      parts.push({ type: 'image', source: { type: 'base64', media_type: file.mimeType, data: file.base64 } });
+    } else if (file.kind === 'pdf') {
+      parts.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: file.base64 } });
+    } else {
+      parts.push({ type: 'text', text: `[File: ${file.name}]\n\n${file.text}` });
+    }
+    if (msg) parts.push({ type: 'text', text: msg });
+    userContent = parts;
+    historyContent = file.kind === 'text'
+      ? `[File: ${file.name}]\n\n${file.text}${msg ? '\n\n' + msg : ''}`
+      : `[${file.kind === 'image' ? '🖼️ Image' : '📄 PDF'}: ${file.name}]${msg ? '\n\n' + msg : ''}`;
+    const displayEl = addAjChatMsg('user', '');
+    const bubble = displayEl.querySelector('.aj-msg-bubble');
+    if (file.kind === 'image' && file.dataUrl) {
+      bubble.innerHTML = `<img src="${file.dataUrl}" style="max-width:200px;border-radius:8px;display:block;margin-bottom:0.3rem">${msg ? `<div>${msg}</div>` : ''}`;
+    } else {
+      const icon = file.kind === 'pdf' ? '📄' : '📝';
+      bubble.innerHTML = `<div style="font-size:0.78rem;margin-bottom:0.3rem">${icon} ${file.name}</div>${msg ? `<div>${msg}</div>` : ''}`;
+    }
+  } else {
+    userContent = msg;
+    historyContent = msg;
+    addAjChatMsg('user', msg);
+  }
+  ajChatHistory.push({ role: 'user', content: historyContent });
+  saveAjChatHistory();
+
+  const typingEl = addAjChatMsg('assistant', '…', true);
+  const apiMessages = ajChatHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+  apiMessages.push({ role: 'user', content: userContent });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-8',
+        max_tokens: 2048,
+        system: buildAjChatContext(),
+        messages: apiMessages.slice(-10)
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content[0].text;
+    ajChatHistory.push({ role: 'assistant', content: reply });
+    saveAjChatHistory();
+    typingEl.querySelector('.aj-msg-bubble').textContent = reply;
+    typingEl.querySelector('.aj-msg-time').textContent = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+  } catch(err) {
+    typingEl.querySelector('.aj-msg-bubble').textContent = '⚠️ ' + (err.message || 'Something went wrong');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Send →'; }
+  const wrap = document.getElementById('aj-chatMessages');
+  if (wrap) wrap.scrollTop = 999999;
+}
+
+function addAjChatMsg(role, text, isTyping = false) {
+  const wrap = document.getElementById('aj-chatMessages');
+  if (!wrap) return document.createElement('div');
+  const div = document.createElement('div');
+  div.className = 'aj-msg aj-' + role;
+  div.innerHTML = `<div class="aj-msg-bubble">${text}</div><div class="aj-msg-time">${isTyping ? '' : new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = 999999;
+  return div;
+}
+
+function renderAjChatHistory() {
+  const wrap = document.getElementById('aj-chatMessages');
+  if (!wrap || ajChatHistory.length === 0) return;
+  wrap.innerHTML = '';
+  ajChatHistory.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'aj-msg aj-' + m.role;
+    const safe = (m.content || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    div.innerHTML = `<div class="aj-msg-bubble">${safe}</div><div class="aj-msg-time"></div>`;
+    wrap.appendChild(div);
+  });
+  wrap.scrollTop = 999999;
+}
+
+function clearAjChatHistory() {
+  if (!confirm('Clear all AI Assistant chat history?')) return;
+  ajChatHistory = [];
+  saveAjChatHistory();
+  const wrap = document.getElementById('aj-chatMessages');
+  if (wrap) wrap.innerHTML = '<div class="aj-msg aj-assistant"><div class="aj-msg-bubble">Chat cleared. Ask me anything.</div><div class="aj-msg-time">Now</div></div>';
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+// ════════════════════════════════════════════════
+// QMI BRAIN — CONSTANTS & FUNCTIONS
+// ════════════════════════════════════════════════
+
+const WA_SHEET_ID_BRAIN = '1ibvhwNmD0IwcK0LR3LJ77BEdshpXa0-uSjb2adkl7uo';
+
+const QMI_COMMS_SOP = `QUALITY JOBS — CLIENT COMMUNICATION SOP
+(NOTE: The WhatsApp conversation history is the primary reference for tone and style. Use these templates as a starting point, always adapting to match Alfie's actual writing style from the message history.)
+
+COMMUNICATION PRINCIPLES:
+- Clients are busy building/renovation business owners who are on-site or with tradies most of the day
+- Keep WhatsApp messages short and direct
+- Prefer phone calls over video links — ask for a phone call and let them pick the time
+- Minimum 2 touchpoints per month per client (phone call or detailed Loom video)
+- At least 1 WhatsApp message per week (quick update or small win)
+
+TYPES OF COMMUNICATION:
+1. Basic questions — respond directly or route to the right person (AJ for ads, Jules/Ayessa for bookings)
+2. Complex questions — send a Loom video walkthrough
+3. Concerns (no leads, want to cancel, want refund) — call immediately; if unreachable, send Loom asking for callback time
+
+--- MESSAGE TEMPLATES ---
+
+CLIENT DOESN'T SHOW TO MEETING (5 mins later):
+Hey [NAME], you still good for now?
+[2 mins later] I've been on the line 5 mins — everything okay? You're usually pretty punctual for our calls.
+[If still nothing] Hey [NAME], I'll jump off for now — give me a shout when you get this and we'll find another time.
+
+WHEN ADS LAUNCH:
+Hey [NAME], our team's finished the build-out and your ads are going live shortly. A few things worth knowing:
+- If there's ever something you want us to change, just tell us straight in WhatsApp — we'd rather know early.
+- We'll check in with you by phone every couple of weeks to go through ad performance, lead quality, and quote conversion.
+- It's important the stats sheet gets updated regularly so our team can see how leads are progressing. Without that, we're working blind.
+- Straight talk: if you've got a concern or something's not sitting right — say so. The clients who do best with us are the ones who tell us the good and the bad as it happens, not just at the end of the month.
+
+REQUESTING A CALL:
+Hey [NAME], when you've got a few minutes free, can we jump on a quick phone call? Let me know what time suits and I'll call you.
+
+HASN'T HAD A CALL IN 2+ WEEKS:
+Hey [NAME], it's been a little while since we last spoke — I've got a few updates I want to run past you. Have you got 10 minutes for a call this week? Or if it's easier, I can send a short video update instead.
+
+PAYMENT DECLINED:
+Hey [NAME], our media team picked up that your card declined on the ad spend over the last few days, which is why lead flow has slowed down. Have you got a different card we should use? The sooner this is sorted, the sooner we can get the ads back live — every time ads get switched off we lose momentum and have to rebuild it.
+
+NOT FILLING STATS SHEET:
+Hey [NAME], we just went to review the numbers and noticed we're missing data — show rate, close rate, notes on who signed and who didn't. We need this to know how the ads and leads are actually performing. Can you get it updated by end of day?
+
+LOW SHOW RATE:
+Show rate's still sitting below our 80% target. A few things worth trying:
+1. Get someone to text homeowners from a personal mobile the night before to confirm they know how to find the site.
+2. Shorten the booking window to within 7 days.
+3. Send a short personal video to each new booking.
+
+PERFORMANCE BEHIND (existing client):
+Hey [NAME], we've noticed things have slowed down and wanted to flag we've already looked into it. [MAIN CONSTRAINT] looks like the main bottleneck, so here's what we're doing first:
+1. [SOLUTION]
+2. [SOLUTION]
+3. [SOLUTION]
+This kind of dip is normal — ads naturally slow down over time and need refreshing, which is exactly what we're doing. I'll keep you posted.
+
+LEADS NOT CLOSING:
+When leads aren't converting, it usually comes down to: sales process (about 80% of the time) or lead qualification on the front end (about 20% of the time). In our experience it's the sales side most of the time — usually the process not being followed consistently or needing to sharpen the approach.
+
+SAYS LEADS ARE LOW QUALITY:
+Hey [NAME], when leads aren't converting it usually comes down to one of two things: sales process (about 80% of the time) or lead qualification on the front end (about 20% of the time). Worth figuring out which one is actually driving it — if over the last 30 days we've had more than 5 people who expected a different scope than what's realistic for their budget, that points to front-end qualification. Otherwise it's usually the sales process itself.
+
+CLIENT WANTS TO CANCEL:
+I want to understand what's driving this before we turn anything off — on our end things are moving in the right direction, so I'd rather talk it through first. Can we get 15 minutes on the phone? What time suits you?
+
+CONFIRMED CANCEL:
+All the best, [NAME] — genuinely hope things go well from here. Last step on our end is a quick offboarding form. Be as honest as you like on it — it helps us improve. I'll send through next steps and any assets you need once that's done. Thanks.
+
+PAYMENT DISPUTE / CHARGEBACK:
+Hey [NAME], I got a notification that a chargeback was filed on your last payment. Wanted to reach out directly — that payment covers this month's marketing service, which we've delivered and are continuing to deliver. Happy to talk through any concerns or make adjustments if something's off. Just to flag — because of the chargeback, we've had to pause marketing and lead communication for now.
+
+BILLING ERROR (wrong date or double charge):
+Hey [NAME], that one's on us — we had a billing system issue and it affected your account by mistake. Two options: refund the charge and rebill on [DATE], or extend the current cycle by the difference to make up for it. Sorry for the mix-up — that one's fully on us.
+
+REACTIVATION CAMPAIGN:
+Hi [NAME], it's [Name] from [Company]. [Owner] asked me to reach out — we're running a short-term offer on [project type] projects. If you book a free measure and quote before it wraps up, we'll also include [bonus] at no cost. Reply and I'll organise a time to call you.
+
+REVIEW REQUEST:
+Hey [NAME], hope things are going well. Since we're on the right track at the moment, would you be up for leaving a quick Google review — just a couple of lines on how the communication and results have been? Totally your call, but it does make a difference for businesses like ours.
+
+REFERRAL REQUEST:
+Hey [NAME], just a reminder we've got a referral program — [FEE] for every building or renovation business you send our way that signs on. Anyone come to mind?
+
+FACEBOOK SAYS RESULTS COULD BE OPTIMISED:
+Hey [NAME], I wouldn't put too much weight on that — we've looked into Facebook's guidance and it's often just a nudge to get you spending more on ads, rather than genuinely useful advice.
+
+CLIENT MULTIPLE NO-SHOWS:
+Hey [NAME], the last few calls I've called at the time we agreed but haven't been able to reach you. I get that things come up, but I need to be able to count on the times we lock in, since it takes time to prep on our end. If it's easier, I'm happy to send video updates instead and we can chat over WhatsApp when something needs a decision.
+
+LOTS OF LAST-MINUTE CANCELLATIONS:
+Worth noting — when you mark a lead as cancelled, our team follows up to try and get them rebooked. We've got a process for bringing them back into the follow-up list. Also worth considering bringing a deposit back in — it may slightly reduce booking volume, but if cancellations are the main issue right now, it's likely worth the trade-off.`;
+
+const CLIENT_OVERVIEW_DOCS = {
+  'L2 Homes':                                      'https://docs.google.com/document/d/1YPaG-vYr_BRuFP0Duk0uXkegjH82jMt5NN6MeZVv560/edit',
+  'Streamline Building Projects':                  'https://docs.google.com/document/d/14t0X1_J6OzUtMEON6YxDN8BOeB_gMnwm8ttWCSDxlB4/edit',
+  'Silk Touch Joinery':                            'https://docs.google.com/document/d/1X0R7BEA8yUnFZOWgNZ65Js67GD2dhFBJoRCaBSDOOws/edit',
+  'Allspec Homes':                                 'https://docs.google.com/document/d/17tlLH7aYYLcYSOwCdtq_6-9FzgaE9oVxH1XwxsdDuwE/edit',
+  'Spa Space':                                     'https://docs.google.com/document/d/1E0K0oxy9l7TDuYk36qX4c-jxx4eYFEo5MJ219BfBAWU/edit',
+  'UrbanRise Property Group':                      'https://docs.google.com/document/d/1b8nismjg08ZLXUZ0GAIJfoDe3_T4XGrEVNsS6v8WBuE/edit',
+  'Generational Bathrooms':                        'https://docs.google.com/document/d/1FJCl19cM-IDIUWQ6itHJkzFRnPebTfKLIvxC1rGLrwk/edit',
+  'Favourite Home':                                'https://docs.google.com/document/d/1GuuiH18PaJ7mR7gu4vPmaJc1g0lz3sscpOxysdBJkVE/edit',
+  'Quality Custom Homes':                          'https://docs.google.com/document/d/1XuCc6cYp4ISA7-DWyUWahS_ECD-3SQDc-nmaTUeBgfI/edit',
+  'Barco Build':                                   'https://docs.google.com/document/d/1t6eBEJgBFvR_1It6-RqGVIfOC1VxgYLoQgfezNMyfNE/edit',
+  'Renovate Right Homes':                          'https://docs.google.com/document/d/13g47Z4CcsTLpJpC3p4wbYWtHhoU7jB1fcwmOK0S8TGc/edit',
+  'Imperial Renovations':                          'https://docs.google.com/document/d/1_xPlJJtO6Y0JXqdsk3X1FsTSmjS6tYkS1s8SL_Sli6c/edit',
+  'Elegance Tiles and Bath':                       'https://docs.google.com/document/d/1-xSkqFpNIQH99muINlWMJxAfPRH0XPGrOHo9YR38NiE/edit',
+  'Kogalo Trades - Renovations & Maintenance':     'https://docs.google.com/document/d/1oXIK2jMWDaL1EDGjCDWlVyYC2U5YA9rVfidiUyOSEXM/edit',
+  'Rapid Bathroom Specialists':                    '',
+  'The CK Team':                                   'https://docs.google.com/document/d/1VNq7e9ePK2D35NzdFpK9Iuboc72Oflta5y97A1ebN7U/edit',
+  'Woodstock Building Services (VIC)':             'https://docs.google.com/document/d/1QWNCUKeE-3kkixyL2-2gDI2z8ZazRuZguGhTChqRM-M/edit',
+  'Bisdaq Build':                                  'https://docs.google.com/document/d/1KKwuYvI4k0S-9jRrClHquFwgtfNzXsZGXLqMB6nCHmU/edit',
+  'KBG Renovations':                               'https://docs.google.com/document/d/1DE5ROOw2aLW-GgTYYC6u_UMeGVlec4i2L4Lw8gI81II/edit',
+  'PrimeBuild Solutions':                          'https://docs.google.com/document/d/10jMam2QHD8xc8x_BYHkwlN39ZxycfrKcQZ3kPxaDqow/edit',
+  'Buildavate':                                    'https://docs.google.com/document/d/1aST_7GZzUpFucmgUTDl9HlvcpOk1jyHR0V1cStn5JHY/edit',
+  'Rapid Plumbing Group':                          'https://docs.google.com/document/d/1RQqgJraAa-qGd03YYoz5NnzTB--XfG5N91TyMejwD00/edit',
+  'Cassars On The Move':                           'https://docs.google.com/document/d/184KJ04yv_jT5dlaXRX18QqaFOnQqhnMUjcC3vo-iu7g/edit',
+};
+
+async function fetchAllOverviewDocs() {
+  const CACHE_KEY = 'qmi_overview_docs_cache';
+  const CACHE_TS  = 'qmi_overview_docs_ts';
+  const cached    = localStorage.getItem(CACHE_KEY);
+  const ts        = parseInt(localStorage.getItem(CACHE_TS) || '0');
+  if (cached && (Date.now() - ts) < 24 * 60 * 60 * 1000) {
+    try { return JSON.parse(cached); } catch(e) {}
+  }
+  const entries = Object.entries(CLIENT_OVERVIEW_DOCS).filter(([,url]) => url);
+  const results = await Promise.all(entries.map(async ([name, url]) => {
+    const docId = (url.match(/\/d\/([^/]+)/) || [])[1];
+    if (!docId) return [name, ''];
+    try {
+      const res  = await fetch(`${PROXY_URL}?driveDoc=${docId}`);
+      const data = await res.json();
+      return [name, data.content || ''];
+    } catch(e) { return [name, '']; }
+  }));
+  const map = {};
+  for (const [name, content] of results) if (content) map[name] = content;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(map));
+  localStorage.setItem(CACHE_TS, String(Date.now()));
+  return map;
+}
+
+let _ajBrainHistory = [];
+let _brainAttachedImage = null;
+
+function attachBrainImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    _brainAttachedImage = { base64: dataUrl.split(',')[1], mimeType: file.type || 'image/jpeg', dataUrl };
+    const preview = document.getElementById('brain-image-preview');
+    if (preview) preview.innerHTML = `<div class="brain-image-preview-inner"><img src="${dataUrl}" style="height:44px;border-radius:6px;object-fit:cover"><span style="font-size:0.72rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span><button onclick="clearBrainImage()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;line-height:1" title="Remove">✕</button></div>`;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function clearBrainImage() {
+  _brainAttachedImage = null;
+  const preview = document.getElementById('brain-image-preview');
+  if (preview) preview.innerHTML = '';
+}
+
+function _renderSuggestedReplies(text, container) {
+  const options = [];
+  const re = /\*\*OPTION\s*(\d)\s*[—–\-]\s*([^*\n]+)\*\*\s*\n([\s\S]*?)(?=\n\*\*OPTION|\s*$)/gi;
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    options.push({ num: match[1], label: match[2].trim(), body: match[3].trim() });
+  }
+  if (!options.length) {
+    const parts = text.split(/\n(?=\*\*Option\s*\d|\bOption\s*\d)/i);
+    for (const part of parts) {
+      const h = part.match(/^\*?\*?Option\s*(\d)[^\n]*\*?\*?\n?/i);
+      if (h) options.push({ num: h[1], label: '', body: part.replace(h[0], '').trim() });
+    }
+  }
+  if (!options.length) {
+    const el = document.createElement('div');
+    el.className = 'brain-msg-wrap';
+    el.innerHTML = `<div class="brain-msg-label">qmi brain</div><div class="brain-msg-bubble">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`;
+    container.appendChild(el);
+    return;
+  }
+  const colours = ['#A78BFA','#34D399','#FBBF24'];
+  const wrap = document.createElement('div');
+  wrap.className = 'brain-msg-wrap';
+  wrap.style.maxWidth = '100%';
+  wrap.innerHTML = `<div class="brain-msg-label">qmi brain — 3 suggested replies</div><div class="suggested-replies-wrap">${options.map((o,i) => `<div class="suggested-reply-card"><div class="suggested-reply-label" style="color:${colours[i]||'var(--accent)'}">Option ${o.num}${o.label ? ' — ' + o.label : ''}</div><div class="suggested-reply-text">${o.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div><button class="suggested-reply-copy" onclick='copyBrainReply(this, ${JSON.stringify(o.body)})'>Copy</button></div>`).join('')}</div>`;
+  container.appendChild(wrap);
+}
+
+function copyBrainReply(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied ✓'; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+  });
+}
+
+async function fetchWADataForBrain() {
+  try {
+    const res  = await fetch(`${PROXY_URL}?id=${WA_SHEET_ID_BRAIN}&sheet=Log`);
+    if (!res.ok) return [];
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return [];
+    const msgs = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const ts     = String(row[0]||'').trim();
+      const client = String(row[1]||'').trim();
+      const sender = String(row[2]||'').trim();
+      const text   = String(row[3]||'').trim();
+      const type   = String(row[4]||'client').trim();
+      if (!text || !client) continue;
+      msgs.push({ ts, client, sender, text, type });
+    }
+    return msgs.reverse();
+  } catch(e) { return []; }
+}
+
+async function fetchClientKB() {
+  try {
+    const res = await fetch(`${PROXY_URL}?service=client_kb`);
+    if (!res.ok) return {};
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return {};
+    const kb = {};
+    for (const row of rows) { if (row.client) kb[row.client] = row; }
+    return kb;
+  } catch(e) { return {}; }
+}
+
+async function renderQMIBrainPage() {
+  try {
+    const saved = localStorage.getItem('qmi_aj_brain_history');
+    if (saved) {
+      _ajBrainHistory = JSON.parse(saved);
+      const msgsEl = document.getElementById('brain-messages');
+      const orbEl  = document.getElementById('brain-orb-section');
+      if (msgsEl && _ajBrainHistory.length) {
+        if (orbEl) orbEl.style.display = 'none';
+        msgsEl.style.display = 'flex';
+        msgsEl.innerHTML = '';
+        for (const m of _ajBrainHistory) _appendBrainMsg(m.role, m.content, msgsEl);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+    }
+  } catch(e) { _ajBrainHistory = []; }
+
+  const statsEl = document.getElementById('brain-kb-stats');
+  if (!window._ajWaData || !window._ajWaData.length) {
+    if (statsEl) statsEl.textContent = 'Loading…';
+    const [waData, kbData] = await Promise.all([fetchWADataForBrain(), fetchClientKB()]);
+    window._ajWaData   = waData || [];
+    window._ajClientKB = kbData || {};
+  } else if (!window._ajClientKB) {
+    window._ajClientKB = await fetchClientKB();
+  }
+
+  if (!window._ajOverviewContent) {
+    fetchAllOverviewDocs().then(m => { window._ajOverviewContent = m; });
+  }
+
+  _updateBrainStats();
+}
+
+function _updateBrainStats() {
+  const statsEl = document.getElementById('brain-kb-stats');
+  if (!statsEl) return;
+  const msgs = window._ajWaData || [];
+  if (!msgs.length) {
+    statsEl.innerHTML = 'No WhatsApp messages loaded yet.<br>Messages will appear after the proxy sync runs.';
+    return;
+  }
+  const clients = new Set(msgs.map(m => m.client).filter(Boolean));
+  const clMsgs  = msgs.filter(m => m.type !== 'aj');
+  const ajMsgs  = msgs.filter(m => m.type === 'aj');
+  const withTs  = msgs.filter(m => m.ts);
+  const earliest = withTs.length ? withTs.reduce((a, b) => (a.ts < b.ts ? a : b)) : null;
+  const dateStr  = earliest ? (earliest.ts.split(',')[0].trim() || earliest.ts.slice(0,10)) : '—';
+  const kbCount  = Object.keys(window._ajClientKB || {}).length;
+  statsEl.innerHTML = `
+    <strong>${msgs.length}</strong> messages loaded<br>
+    <strong>${clients.size}</strong> clients in history<br>
+    <strong>${clMsgs.length}</strong> client messages<br>
+    <strong>${ajMsgs.length}</strong> your messages<br>
+    History from <strong>${dateStr}</strong><br>
+    <strong>${kbCount}</strong> client KB${kbCount !== 1 ? 's' : ''} loaded
+  `;
+}
+
+function useBrainChip(el) {
+  const inp = document.getElementById('brain-input');
+  if (!inp) return;
+  inp.value = el.textContent;
+  inp.dispatchEvent(new Event('input'));
+  sendBrainMessage();
+}
+
+function brainKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBrainMessage(); }
+}
+
+function _buildBrainSystemPrompt() {
+  const sop  = QMI_COMMS_SOP;
+  const msgs = window._ajWaData || [];
+  const kb   = window._ajClientKB || {};
+
+  const byClient = {};
+  for (const m of msgs) {
+    if (!m.client || !m.text) continue;
+    if (!byClient[m.client]) byClient[m.client] = [];
+    byClient[m.client].push(m);
+  }
+
+  const overviewContent = window._ajOverviewContent || {};
+  const allClients = new Set([...Object.keys(byClient), ...Object.keys(kb), ...Object.keys(overviewContent)]);
+
+  let clientSections = '';
+  for (const client of allClients) {
+    clientSections += `\n\n=== ${client} ===`;
+    const kbEntry = kb[client];
+    if (kbEntry) {
+      if (kbEntry.notes) clientSections += `\n📋 SALES CALL NOTES:\n${kbEntry.notes}`;
+      if (kbEntry.transcript) {
+        const t = kbEntry.transcript;
+        clientSections += `\n\n📝 SALES CALL TRANSCRIPT:\n${t.slice(0, 4000)}${t.length > 4000 ? '\n[transcript truncated]' : ''}`;
+      }
+    }
+    const ov = overviewContent[client];
+    if (ov) clientSections += `\n\n📄 OVERVIEW DOC:\n${ov.slice(0, 1500)}${ov.length > 1500 ? '\n[truncated]' : ''}`;
+    const clientMsgs = byClient[client];
+    if (clientMsgs && clientMsgs.length) {
+      const sorted = [...clientMsgs].sort((a, b) => {
+        const ta = a.ts ? new Date(a.ts.split(',')[0].split('/').reverse().join('-')) : 0;
+        const tb = b.ts ? new Date(b.ts.split(',')[0].split('/').reverse().join('-')) : 0;
+        return ta - tb;
+      });
+      const recent = sorted.slice(-40);
+      const omitted = sorted.length - recent.length;
+      const lines = recent.map(m => {
+        const who  = m.type === 'aj' ? 'YOU' : (m.sender || 'CLIENT');
+        const when = m.ts ? m.ts.split(',')[0].trim() + ' ' + (m.ts.split(',')[1] || '').trim() : '';
+        return `[${when}] ${who}: ${m.text}`;
+      });
+      clientSections += `\n\n💬 WHATSAPP HISTORY (last 40 of ${sorted.length}):${omitted > 0 ? ` [${omitted} older msgs omitted]` : ''}\n${lines.join('\n')}`;
+    }
+  }
+
+  if (clientSections.length > 80000) {
+    clientSections = clientSections.slice(0, 80000) + '\n\n[Context truncated to fit API limits]';
+  }
+
+  const sopSection = sop ? `\n\n=== CLIENT COMMUNICATION SOP ===\n${sop}` : '';
+
+  return `You are the QMI Client Communication Brain for Quality Jobs — a lead generation and appointment booking agency.
+
+You have access to each client's full knowledge base: their sales call notes, sales call transcript (what was sold to them, their situation, what was promised), and their complete WhatsApp communication history. Use all of this to:
+- Mirror the owner's communication style exactly (tone, length, formality, emoji use)
+- Reference actual past conversations and what was sold to each client
+- Draft messages that align with what was promised on the sales call
+- Give advice grounded in real context — not generic AI responses
+
+Quality Jobs context:
+- Owner is Alfie, runs the agency
+- Two calling agents: Jules and Ayessa
+- Media buyer: AJ (manages ads, budgets, leads)
+- Clients are builders, renovators, trade businesses paying for lead generation
+- Most client comms happen via WhatsApp${sopSection}
+
+=== CLIENT KNOWLEDGE BASE + WHATSAPP HISTORY ===${clientSections || '\n(No data loaded yet.)'}`;
+}
+
+function _buildImageSystemPrompt() {
+  return `You are the QMI Client Communication Brain for Quality Jobs — a lead generation and appointment booking agency run by Alfie Butler.
+
+Quality Jobs books appointments for trade businesses (builders, renovators, landscapers) via paid ads and a call centre. Two calling agents: Jules and Ayessa. Media buyer: AJ.
+
+All client communication happens via WhatsApp. Your job is to read the screenshot of a client message and suggest 3 natural, ready-to-send WhatsApp replies that could be used.`;
+}
+
+async function sendBrainMessage() {
+  const key = localStorage.getItem('aj_anthropic_key') || '';
+  if (!key) { alert('Add your Anthropic API key in Settings first.'); return; }
+
+  const inp    = document.getElementById('brain-input');
+  const send   = document.getElementById('brain-send');
+  const msgsEl = document.getElementById('brain-messages');
+  const orbEl  = document.getElementById('brain-orb-section');
+  if (!inp || !msgsEl) return;
+
+  const text  = inp.value.trim();
+  const image = _brainAttachedImage;
+  if (!text && !image) return;
+
+  inp.value = '';
+  inp.style.height = '';
+  if (send) { send.disabled = true; send.textContent = '…'; }
+
+  if (orbEl) orbEl.style.display = 'none';
+  msgsEl.style.display = 'flex';
+
+  const isImageMode = !!image;
+  const replyPrompt = `\n\nBased on this screenshot and your knowledge of this client's history and communication style, generate exactly 3 different WhatsApp replies I could send. Format your response exactly like this:\n\n**OPTION 1 — Brief & Direct**\n[reply]\n\n**OPTION 2 — Friendly & Warm**\n[reply]\n\n**OPTION 3 — Detailed & Professional**\n[reply]\n\nKeep each reply natural and ready to copy-paste.`;
+
+  let userContent;
+  if (isImageMode) {
+    userContent = [
+      { type: 'image', source: { type: 'base64', media_type: image.mimeType, data: image.base64 } },
+      { type: 'text', text: (text || 'Here is a screenshot of a client message.') + replyPrompt }
+    ];
+    const userEl = document.createElement('div');
+    userEl.className = 'brain-msg-wrap brain-msg-user';
+    userEl.innerHTML = `<div class="brain-msg-label">you</div><div class="brain-msg-bubble"><img src="${image.dataUrl}" style="max-width:200px;border-radius:8px;display:block${text ? ';margin-bottom:0.4rem' : ''}">${text ? `<div>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>` : ''}</div>`;
+    msgsEl.appendChild(userEl);
+    clearBrainImage();
+  } else {
+    userContent = text;
+    _ajBrainHistory.push({ role: 'user', content: text });
+    _appendBrainMsg('user', text, msgsEl);
+  }
+
+  const typingId = 'brain-typing-' + Date.now();
+  msgsEl.innerHTML += `<div id="${typingId}" class="brain-msg-wrap"><div class="brain-msg-label">qmi brain</div><div class="brain-msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  try {
+    const messages = isImageMode
+      ? [{ role: 'user', content: userContent }]
+      : _ajBrainHistory.slice(-20);
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-opus-4-8', max_tokens: 2048, system: isImageMode ? _buildImageSystemPrompt() : _buildBrainSystemPrompt(), messages })
+    });
+    const data  = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const reply = data.content?.[0]?.text || '(no response)';
+    document.getElementById(typingId)?.remove();
+
+    if (isImageMode) {
+      _renderSuggestedReplies(reply, msgsEl);
+    } else {
+      _ajBrainHistory.push({ role: 'assistant', content: reply });
+      localStorage.setItem('qmi_aj_brain_history', JSON.stringify(_ajBrainHistory));
+      _appendBrainMsg('assistant', reply, msgsEl);
+    }
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    _appendBrainMsg('assistant', 'Error: ' + e.message, msgsEl);
+  }
+
+  if (send) { send.disabled = false; send.textContent = 'send ↑'; }
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function _appendBrainMsg(role, text, container) {
+  const isUser    = role === 'user';
+  const label     = isUser ? 'you' : 'qmi brain';
+  const formatted = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  const el = document.createElement('div');
+  el.className = `brain-msg-wrap${isUser ? ' brain-msg-user' : ''}`;
+  el.innerHTML = `<div class="brain-msg-label">${label}</div><div class="brain-msg-bubble">${formatted}</div>`;
+  container.appendChild(el);
+}
+
+function clearBrainHistory() {
+  _ajBrainHistory = [];
+  localStorage.removeItem('qmi_aj_brain_history');
+  const msgsEl = document.getElementById('brain-messages');
+  const orbEl  = document.getElementById('brain-orb-section');
+  if (msgsEl) { msgsEl.innerHTML = ''; msgsEl.style.display = 'none'; }
+  if (orbEl)  orbEl.style.display = 'flex';
 }
 </script>
 </body>
