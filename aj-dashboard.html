@@ -3147,6 +3147,15 @@ Quality Jobs context:
 === CLIENT KNOWLEDGE BASE + WHATSAPP HISTORY ===${clientSections || '\n(No data loaded yet.)'}`;
 }
 
+function _buildImageSystemPrompt() {
+  const sop = localStorage.getItem('aj_sop') || '';
+  return `You are the QMI Client Communication Brain for Quality Jobs — a lead generation and appointment booking agency run by Alfie Butler.
+
+Quality Jobs books appointments for trade businesses (builders, renovators, landscapers) via paid ads and a call centre. Two calling agents: Jules and Ayessa. Media buyer: AJ.
+
+All client communication happens via WhatsApp. Your job is to read the screenshot of a client message and suggest 3 natural, ready-to-send WhatsApp replies that could be used.${sop ? `\n\n=== COMMUNICATION SOP ===\n${sop}` : ''}`;
+}
+
 async function sendBrainMessage() {
   const key = localStorage.getItem('aj_anthropic_key') || '';
   if (!key) { alert('Add your Anthropic API key in Settings first.'); return; }
@@ -3200,9 +3209,10 @@ async function sendBrainMessage() {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 2048, system: _buildBrainSystemPrompt(), messages })
+      body: JSON.stringify({ model: 'claude-opus-4-8', max_tokens: 2048, system: isImageMode ? _buildImageSystemPrompt() : _buildBrainSystemPrompt(), messages })
     });
     const data  = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const reply = data.content?.[0]?.text || '(no response)';
     document.getElementById(typingId)?.remove();
 
