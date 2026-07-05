@@ -875,7 +875,12 @@
   .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
   .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes typingBounce { 0%,60%,100%{transform:translateY(0);opacity:0.35} 30%{transform:translateY(-7px);opacity:1} }
-  .chat-input-wrap { padding: 1.25rem 2.5rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem; align-items: flex-end; background: var(--bg); }
+  .chat-input-wrap { padding: 1.25rem 2.5rem 1.5rem; border-top: 1px solid var(--border); display: flex; flex-direction:column; gap: 0; background: var(--bg); }
+  .chat-input-row { display:flex; gap:0.75rem; align-items:flex-end; }
+  .chat-file-preview-inner { display:flex;align-items:center;gap:0.75rem;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:0.5rem 0.75rem;margin-bottom:0.5rem; }
+  .chat-file-icon { font-size:1.4rem; flex-shrink:0; }
+  .chat-attach-btn { display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border2);cursor:pointer;font-size:1.1rem;transition:all 0.2s;flex-shrink:0; }
+  .chat-attach-btn:hover { border-color:var(--accent);background:var(--surface-alt); }
   .chat-input { flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 0.85rem 1.2rem; color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.84rem; resize: none; outline: none; line-height: 1.5; transition: border-color 0.2s; }
   .chat-input:focus { border-color: rgba(181,135,13,0.4); }
   .chat-input::placeholder { color: var(--muted); opacity: 0.6; }
@@ -1468,9 +1473,16 @@
         </div>
         <div class="chat-messages" id="chat-messages" style="display:none"></div>
         <div class="chat-input-wrap">
-          <textarea class="chat-input" id="chat-input" placeholder="Ask about your clients..." rows="1"
-            onkeydown="chatKeydown(event)" oninput="chatResize(this)"></textarea>
-          <button class="chat-send" id="chat-send" onclick="sendMessage()">send ↑</button>
+          <div id="chat-file-preview"></div>
+          <div class="chat-input-row">
+            <label class="chat-attach-btn" title="Attach image, PDF, or text file">
+              📎
+              <input type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.docx" onchange="attachChatFile(this)" style="display:none">
+            </label>
+            <textarea class="chat-input" id="chat-input" placeholder="Ask about your clients, or attach a document..." rows="1"
+              onkeydown="chatKeydown(event)" oninput="chatResize(this)"></textarea>
+            <button class="chat-send" id="chat-send" onclick="sendMessage()">send ↑</button>
+          </div>
         </div>
       </div>
     </div>
@@ -4598,24 +4610,83 @@ function buildContext() {
   return ctx;
 }
 
+let _chatAttachedFile = null;
+
+function attachChatFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const isImage = file.type.startsWith('image/');
+  const isPdf   = file.type === 'application/pdf';
+  const isText  = !isImage && !isPdf;
+  const reader  = new FileReader();
+  reader.onload = e => {
+    const result = e.target.result;
+    if (isImage || isPdf) {
+      const b64 = result.split(',')[1];
+      _chatAttachedFile = { kind: isImage ? 'image' : 'pdf', name: file.name, base64: b64, mimeType: file.type, dataUrl: isImage ? result : null };
+    } else {
+      _chatAttachedFile = { kind: 'text', name: file.name, text: result };
+    }
+    const icon = isImage ? '🖼️' : isPdf ? '📄' : '📝';
+    const preview = document.getElementById('chat-file-preview');
+    if (preview) preview.innerHTML = `<div class="chat-file-preview-inner"><span class="chat-file-icon">${icon}</span><span style="font-size:0.72rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span><button onclick="clearChatFile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;line-height:1" title="Remove">✕</button></div>`;
+  };
+  isText ? reader.readAsText(file) : reader.readAsDataURL(file);
+}
+
+function clearChatFile() {
+  _chatAttachedFile = null;
+  const p = document.getElementById('chat-file-preview');
+  if (p) p.innerHTML = '';
+}
+
 async function sendMessage() {
   if(chatBusy) return;
   if(!chatApiKey) { showApiKeyPrompt(); return; }
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
-  if(!text) return;
+  const file = _chatAttachedFile;
+  if(!text && !file) return;
   chatBusy = true;
   document.getElementById('chat-send').disabled = true;
   input.value = ''; chatResize(input);
+  clearChatFile();
   document.getElementById('chat-orb-section').style.display = 'none';
   const msgs = document.getElementById('chat-messages');
   msgs.style.display = 'flex';
-  chatHistory.push({role:'user', content:text});
+
+  // Build API content — array when file attached, string otherwise
+  let userContent;
+  if (file) {
+    const parts = [];
+    if (file.kind === 'image') {
+      parts.push({ type: 'image', source: { type: 'base64', media_type: file.mimeType, data: file.base64 } });
+    } else if (file.kind === 'pdf') {
+      parts.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: file.base64 } });
+    } else {
+      parts.push({ type: 'text', text: `[File: ${file.name}]\n\n${file.text}` });
+    }
+    if (text) parts.push({ type: 'text', text });
+    userContent = parts;
+    // Store simplified version in history so future turns have context
+    const historyLabel = file.kind === 'text' ? `[File: ${file.name}]\n\n${file.text}${text ? '\n\n' + text : ''}` : `[${file.kind === 'image' ? '🖼️ Image' : '📄 PDF'}: ${file.name}]${text ? '\n\n' + text : ''}`;
+    chatHistory.push({ role: 'user', content: historyLabel, _fileDisplay: { kind: file.kind, name: file.name, dataUrl: file.dataUrl } });
+  } else {
+    userContent = text;
+    chatHistory.push({role:'user', content:text});
+  }
+
   renderMessages(); showTyping();
+
+  // Build messages for API — use actual content for the last message
+  const apiMessages = chatHistory.slice(0, -1).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : m.content }));
+  apiMessages.push({ role: 'user', content: userContent });
+
   const doFetch = () => fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':chatApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,system:buildContext(),messages:chatHistory})
+    body:JSON.stringify({model:'claude-opus-4-8',max_tokens:2048,system:buildContext(),messages:apiMessages})
   });
   try {
     let res = await doFetch();
@@ -4655,11 +4726,26 @@ async function sendMessage() {
 function renderMessages() {
   const el = document.getElementById('chat-messages');
   if(!el) return;
-  el.innerHTML = chatHistory.map(m=>`
-    <div class="msg ${m.role==='user'?'user':'ai'}">
-      <div class="msg-label">${m.role==='user'?'you':'qj intelligence'}</div>
-      <div class="msg-bubble">${m.content.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>
-    </div>`).join('');
+  el.innerHTML = chatHistory.map(m => {
+    const isUser = m.role === 'user';
+    const label  = isUser ? 'you' : 'qj intelligence';
+    let bubble = '';
+    if (m._fileDisplay) {
+      const fd = m._fileDisplay;
+      if (fd.kind === 'image' && fd.dataUrl) {
+        bubble += `<img src="${fd.dataUrl}" style="max-width:220px;border-radius:8px;display:block;margin-bottom:0.4rem">`;
+      } else {
+        const icon = fd.kind === 'pdf' ? '📄' : '📝';
+        bubble += `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;color:var(--muted);margin-bottom:0.4rem">${icon} ${fd.name.replace(/</g,'&lt;')}</div>`;
+      }
+    }
+    const textContent = typeof m.content === 'string' ? m.content : '';
+    const displayText = m._fileDisplay
+      ? textContent.replace(/^\[.*?\]\n\n/, '').replace(/^\[.*?\]/, '').trim()
+      : textContent;
+    if (displayText) bubble += displayText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    return `<div class="msg ${isUser?'user':'ai'}"><div class="msg-label">${label}</div><div class="msg-bubble">${bubble}</div></div>`;
+  }).join('');
   el.scrollTop = el.scrollHeight;
 }
 

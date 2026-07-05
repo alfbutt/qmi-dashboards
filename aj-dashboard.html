@@ -244,7 +244,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .msg.assistant .msg-bubble { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
 .msg-time { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 4px; padding: 0 4px; }
 .msg.user .msg-time { text-align: right; }
-.chat-input-row { display: flex; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.chat-input-wrap { padding-top: 1rem; border-top: 1px solid var(--border); }
+.chat-input-row { display: flex; gap: 0.75rem; }
+.chat-file-preview-inner { display:flex;align-items:center;gap:0.75rem;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:0.5rem 0.75rem;margin-bottom:0.5rem; }
+.chat-attach-btn { display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:12px;background:var(--card);border:1px solid var(--border2);cursor:pointer;font-size:1.1rem;transition:all 0.2s;flex-shrink:0;align-self:flex-end; }
+.chat-attach-btn:hover { border-color:var(--accent); }
 .chat-input {
   flex: 1; background: var(--card); border: 1px solid var(--border2); border-radius: 12px;
   padding: 0.75rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.83rem;
@@ -771,9 +775,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
             <div class="msg-time">Now</div>
           </div>
         </div>
-        <div class="chat-input-row">
-          <textarea class="chat-input" id="chatInput" placeholder="Ask about a client, process, or anything else…" rows="1" onkeydown="chatKeydown(event)"></textarea>
-          <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send →</button>
+        <div class="chat-input-wrap">
+          <div id="aj-chat-file-preview"></div>
+          <div class="chat-input-row">
+            <label class="chat-attach-btn" title="Attach image, PDF, or text file">
+              📎
+              <input type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" onchange="attachAjChatFile(this)" style="display:none">
+            </label>
+            <textarea class="chat-input" id="chatInput" placeholder="Ask about a client, or attach a document…" rows="1" onkeydown="chatKeydown(event)"></textarea>
+            <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send →</button>
+          </div>
         </div>
         <div class="chat-hint">Powered by Claude · Your API key is stored locally only</div>
       </div>
@@ -1530,10 +1541,42 @@ Your job is to help AJ:
 Always be direct, practical, and specific. Alfie is a media buyer who wants actionable answers, not vague advice.`;
 }
 
+let _ajChatAttachedFile = null;
+
+function attachAjChatFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const isImage = file.type.startsWith('image/');
+  const isPdf   = file.type === 'application/pdf';
+  const isText  = !isImage && !isPdf;
+  const reader  = new FileReader();
+  reader.onload = e => {
+    const result = e.target.result;
+    if (isImage || isPdf) {
+      const b64 = result.split(',')[1];
+      _ajChatAttachedFile = { kind: isImage ? 'image' : 'pdf', name: file.name, base64: b64, mimeType: file.type, dataUrl: isImage ? result : null };
+    } else {
+      _ajChatAttachedFile = { kind: 'text', name: file.name, text: result };
+    }
+    const icon = isImage ? '🖼️' : isPdf ? '📄' : '📝';
+    const preview = document.getElementById('aj-chat-file-preview');
+    if (preview) preview.innerHTML = `<div class="chat-file-preview-inner"><span style="font-size:1.3rem">${icon}</span><span style="font-size:0.72rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span><button onclick="clearAjChatFile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;line-height:1">✕</button></div>`;
+  };
+  isText ? reader.readAsText(file) : reader.readAsDataURL(file);
+}
+
+function clearAjChatFile() {
+  _ajChatAttachedFile = null;
+  const p = document.getElementById('aj-chat-file-preview');
+  if (p) p.innerHTML = '';
+}
+
 async function sendChat() {
-  const input = document.getElementById('chatInput');
-  const msg   = input.value.trim();
-  if (!msg) return;
+  const input  = document.getElementById('chatInput');
+  const msg    = input.value.trim();
+  const file   = _ajChatAttachedFile;
+  if (!msg && !file) return;
 
   const apiKey = localStorage.getItem(STORAGE_API_KEY);
   if (!apiKey) {
@@ -1541,14 +1584,48 @@ async function sendChat() {
     return;
   }
 
-  addChatMsg('user', msg);
   input.value = '';
-  chatHistory.push({ role: 'user', content: msg });
-
+  clearAjChatFile();
   const btn = document.getElementById('chatSendBtn');
   btn.disabled = true; btn.textContent = '…';
 
+  // Build API content
+  let userContent;
+  let historyContent;
+  if (file) {
+    const parts = [];
+    if (file.kind === 'image') {
+      parts.push({ type: 'image', source: { type: 'base64', media_type: file.mimeType, data: file.base64 } });
+    } else if (file.kind === 'pdf') {
+      parts.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: file.base64 } });
+    } else {
+      parts.push({ type: 'text', text: `[File: ${file.name}]\n\n${file.text}` });
+    }
+    if (msg) parts.push({ type: 'text', text: msg });
+    userContent = parts;
+    historyContent = file.kind === 'text'
+      ? `[File: ${file.name}]\n\n${file.text}${msg ? '\n\n' + msg : ''}`
+      : `[${file.kind === 'image' ? '🖼️ Image' : '📄 PDF'}: ${file.name}]${msg ? '\n\n' + msg : ''}`;
+    // Show in chat
+    const displayEl = addChatMsg('user', '');
+    const bubble = displayEl.querySelector('.msg-bubble');
+    if (file.kind === 'image' && file.dataUrl) {
+      bubble.innerHTML = `<img src="${file.dataUrl}" style="max-width:200px;border-radius:8px;display:block;margin-bottom:0.3rem">${msg ? `<div>${msg}</div>` : ''}`;
+    } else {
+      const icon = file.kind === 'pdf' ? '📄' : '📝';
+      bubble.innerHTML = `<div style="font-size:0.78rem;margin-bottom:0.3rem">${icon} ${file.name}</div>${msg ? `<div>${msg}</div>` : ''}`;
+    }
+  } else {
+    userContent = msg;
+    historyContent = msg;
+    addChatMsg('user', msg);
+  }
+  chatHistory.push({ role: 'user', content: historyContent });
+
   const typingEl = addChatMsg('assistant', '…', true);
+
+  const apiMessages = chatHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+  apiMessages.push({ role: 'user', content: userContent });
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1561,9 +1638,9 @@ async function sendChat() {
       },
       body: JSON.stringify({
         model: 'claude-opus-4-8',
-        max_tokens: 1000,
+        max_tokens: 2048,
         system: buildChatContext(),
-        messages: chatHistory.slice(-10)
+        messages: apiMessages.slice(-10)
       })
     });
     const data = await res.json();
