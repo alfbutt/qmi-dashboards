@@ -3051,10 +3051,12 @@ function getAllAjClients() {
   ];
 }
 
+const AJ_PAUSED_HARDCODED = ["Kogalo Trades - Renovations & Maintenance"];
 function ajIsPaused(name) {
   try {
-    const list = JSON.parse(localStorage.getItem('qj_paused_clients') || '[]');
     const n = name.toLowerCase().replace(/\s+/g,'');
+    if (AJ_PAUSED_HARDCODED.some(p => p.toLowerCase().replace(/\s+/g,'') === n)) return true;
+    const list = JSON.parse(localStorage.getItem('qj_paused_clients') || '[]');
     return list.some(x => (x.name || x).toLowerCase().replace(/\s+/g,'') === n);
   } catch(e) { return false; }
 }
