@@ -1196,8 +1196,8 @@ function renderDashboard() {
   document.getElementById('clientGrid').innerHTML = clients.map(c => {
     const p = isPaused(c.name);
     const links = [
-      `<a href="https://drive.google.com/drive/search?q=${encodeURIComponent(c.name)}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:#f97316;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="Open ${c.name} ad creative folder">📂 Ad Drive</a>`,
-      c.statsUrl    ? `<a href="${c.statsUrl}"    target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📊 Stats</a>` : '',
+      `<a href="https://drive.google.com/drive/folders/1DebQdls9aJsCReV8yVgprJ16B5UBIx7O?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:#f97316;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📂 Ad Drive</a>`,
+      `<a href="https://drive.google.com/drive/folders/1hKiXSFlLhYcS2p5OPjSsVq-55y-fPs_q?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📊 Stats</a>`,
       c.overviewUrl ? `<a href="${c.overviewUrl}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📄 Overview</a>` : '',
     ].filter(Boolean).join('<span style="color:var(--border2);margin:0 4px">·</span>');
     return `<div class="client-card">
@@ -2754,7 +2754,7 @@ function _ccRenderClientsGrid(rows, filter) {
               <span class="cc-client-badge active">Active</span>
               ${c.liveDate ? `<span class="cc-client-badge live">Live ${c.liveDate}</span>` : ''}
               ${c.website ? `<span class="cc-client-badge link" onclick="window.open('${c.website.startsWith('http')?c.website:'https://'+c.website}','_blank')">📁 Drive</span>` : ''}
-              <span class="cc-client-badge link" onclick="window.open('https://drive.google.com/drive/search?q=${encodeURIComponent(c.name)}','_blank')" style="background:rgba(255,165,0,0.08);color:#f97316;border:1px solid rgba(249,115,22,0.3)" title="Open ${c.name} ad creative folder">📂 Ad Drive</span>
+              <span class="cc-client-badge link" onclick="window.open('https://drive.google.com/drive/folders/1DebQdls9aJsCReV8yVgprJ16B5UBIx7O?usp=drive_link','_blank')" style="background:rgba(255,165,0,0.08);color:#f97316;border:1px solid rgba(249,115,22,0.3)">📂 Ad Drive</span>
             </div>
           </div>
           <div class="cc-client-card-body">
