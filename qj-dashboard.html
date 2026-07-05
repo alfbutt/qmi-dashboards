@@ -5462,16 +5462,24 @@ function _buildBrainSystemPrompt() {
       clientSections += `\n\n📄 OVERVIEW DOC:\n${ov.slice(0, 1500)}${ov.length > 1500 ? '\n[truncated]' : ''}`;
     }
 
-    // WhatsApp history
+    // WhatsApp history — last 40 messages per client only
     const clientMsgs = byClient[client];
     if (clientMsgs && clientMsgs.length) {
-      const lines = [...clientMsgs].sort((a, b) => parseWaTs(a.ts) - parseWaTs(b.ts)).map(m => {
+      const sorted = [...clientMsgs].sort((a, b) => parseWaTs(a.ts) - parseWaTs(b.ts));
+      const recent = sorted.slice(-40);
+      const omitted = sorted.length - recent.length;
+      const lines = recent.map(m => {
         const who  = m.type === 'aj' ? 'YOU' : (m.sender || 'CLIENT');
         const when = m.ts ? m.ts.split(',')[0].trim() + ' ' + (m.ts.split(',')[1] || '').trim() : '';
         return `[${when}] ${who}: ${m.text}`;
       });
-      clientSections += `\n\n💬 WHATSAPP HISTORY:\n${lines.join('\n')}`;
+      clientSections += `\n\n💬 WHATSAPP HISTORY (last 40 of ${sorted.length}):${omitted > 0 ? ` [${omitted} older msgs omitted]` : ''}\n${lines.join('\n')}`;
     }
+  }
+
+  // Hard cap on total size to stay within API context limits
+  if (clientSections.length > 80000) {
+    clientSections = clientSections.slice(0, 80000) + '\n\n[Context truncated to fit API limits]';
   }
 
   const sopSection = sop ? `\n\n=== CLIENT COMMUNICATION SOP ===\n${sop}` : '';
@@ -5551,6 +5559,7 @@ async function sendBrainMessage() {
       body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 2048, system: _buildBrainSystemPrompt(), messages })
     });
     const data  = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const reply = data.content?.[0]?.text || '(no response)';
     document.getElementById(typingId)?.remove();
 
