@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quality Jobs · Agent Hub</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #111110; --surface: #1a1916; --surface2: #23221e;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #f5f2ea; --muted: #8a8678;
+  --accent: #c9960c; --accent-glow: rgba(201,150,12,0.2);
+  --green: #34d399; --amber: #fbbf24; --red: #f87171;
+  --jules: #c9960c; --ayessa: #e6b84a;
+}
+body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  padding: 1.2rem 2.5rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--bg); z-index: 100; backdrop-filter: blur(10px);
+}
+.header-brand { display: flex; align-items: center; gap: 0.85rem; }
+.header-left h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; }
+.header-left p { font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.agent-badge {
+  font-size: 0.58rem; font-family: 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase;
+  background: rgba(201,150,12,0.1); color: var(--accent); border: 1px solid rgba(201,150,12,0.25);
+  border-radius: 100px; padding: 3px 10px;
+}
+.header-right { display: flex; align-items: center; gap: 10px; }
+.live-badge {
+  display: flex; align-items: center; gap: 6px; font-size: 0.68rem;
+  font-family: 'DM Mono', monospace; color: var(--accent);
+  background: rgba(201,150,12,0.1); border: 1px solid rgba(201,150,12,0.25);
+  border-radius: 100px; padding: 4px 12px;
+}
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── NAV ── */
+.nav-tabs {
+  display: flex; gap: 2px; padding: 0 2.5rem;
+  border-bottom: 1px solid var(--border); background: var(--bg); overflow-x: auto;
+}
+.nav-tab {
+  padding: 0.75rem 1.2rem; font-size: 0.75rem; font-family: 'DM Mono', monospace;
+  color: var(--muted); cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent; transition: all 0.2s; letter-spacing: 0.04em; white-space: nowrap;
+}
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-tab:hover:not(.active) { color: var(--text); }
+
+/* ── MAIN ── */
+.main { padding: 2rem 2.5rem; max-width: 1500px; margin: 0 auto; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── PLACEHOLDERS ── */
+.coming-soon {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 55vh; gap: 0.65rem; text-align: center; opacity: 0.35;
+}
+.coming-soon-icon { font-size: 2.5rem; margin-bottom: 0.25rem; }
+.coming-soon-title { font-size: 1rem; font-weight: 700; }
+.coming-soon-sub { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+
+/* ── LOADING ── */
+.loading { display:flex; align-items:center; justify-content:center; height:300px; color:var(--muted); font-family:'DM Mono',monospace; font-size:0.82rem; flex-direction:column; gap:1rem; }
+.spinner { width:28px; height:28px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── CLIENTS PAGE ── */
+.clients-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem; }
+.clients-title { font-size:1.1rem; font-weight:800; letter-spacing:-0.02em; }
+.clients-sub { font-size:0.7rem; font-family:'DM Mono',monospace; color:var(--muted); margin-top:3px; }
+.clients-search { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+.clients-search input {
+  background:var(--surface); border:1px solid var(--border2); border-radius:8px;
+  padding:0.48rem 0.85rem; color:var(--text); font-family:'DM Mono',monospace;
+  font-size:0.76rem; outline:none; width:200px;
+}
+.clients-search input:focus { border-color:var(--accent); }
+.clients-filter {
+  background:var(--surface); border:1px solid var(--border2); border-radius:8px;
+  padding:0.48rem 0.75rem; color:var(--muted); font-family:'DM Mono',monospace;
+  font-size:0.72rem; cursor:pointer; transition:all 0.15s;
+}
+.clients-filter.active-filter { color:var(--accent); border-color:var(--accent); background:rgba(201,150,12,0.06); }
+.clients-filter:hover:not(.active-filter) { color:var(--text); }
+
+.clients-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:1.25rem; }
+
+.client-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s; cursor:pointer;
+}
+.client-card:hover { border-color:var(--border2); box-shadow:0 4px 20px rgba(0,0,0,0.25); }
+.client-card.expanded { border-color:rgba(201,150,12,0.35); }
+
+.client-card-head {
+  padding:1.1rem 1.4rem 1rem; display:flex; align-items:flex-start;
+  justify-content:space-between; gap:0.75rem; border-bottom:1px solid var(--border);
+}
+.client-card-head-left { flex:1; min-width:0; }
+.client-card-business { font-size:1.05rem; font-weight:700; letter-spacing:-0.01em; color:var(--text); line-height:1.2; margin-bottom:3px; }
+.client-card-contact { font-size:0.73rem; font-family:'DM Mono',monospace; color:var(--muted); margin-bottom:6px; }
+.client-card-meta { display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap; }
+.client-badge {
+  font-size:0.58rem; font-family:'DM Mono',monospace; letter-spacing:0.08em;
+  text-transform:uppercase; padding:2px 8px; border-radius:100px;
+}
+.client-badge.jules { background:rgba(201,150,12,0.12); color:var(--jules); border:1px solid rgba(201,150,12,0.25); }
+.client-badge.ayessa { background:rgba(230,184,74,0.12); color:var(--ayessa); border:1px solid rgba(230,184,74,0.25); }
+.client-badge.active-badge { background:rgba(52,211,153,0.1); color:var(--green); border:1px solid rgba(52,211,153,0.2); }
+.client-card-head-right { display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; flex-shrink:0; }
+
+.call-mode-btn {
+  display:flex; align-items:center; gap:5px; flex-shrink:0;
+  background:rgba(201,150,12,0.08); border:1px solid rgba(201,150,12,0.3);
+  border-radius:8px; padding:5px 12px; color:var(--accent);
+  font-family:'DM Mono',monospace; font-size:0.64rem; font-weight:700;
+  cursor:pointer; letter-spacing:0.04em; transition:all 0.2s; white-space:nowrap;
+}
+.call-mode-btn:hover { background:rgba(201,150,12,0.18); border-color:var(--accent); }
+
+/* Summary strip — always visible */
+.client-card-summary {
+  padding:0.7rem 1.4rem; display:grid; grid-template-columns:repeat(3,1fr); gap:0.5rem 1rem;
+  border-bottom:1px solid var(--border); background:rgba(255,255,255,0.01);
+}
+.client-summary-item { display:flex; flex-direction:column; gap:1px; }
+.client-summary-lbl { font-size:0.55rem; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:0.07em; text-transform:uppercase; }
+.client-summary-val { font-size:0.75rem; font-family:'DM Mono',monospace; color:var(--text); line-height:1.35; }
+.client-summary-val.empty { color:var(--muted); opacity:0.4; font-style:italic; }
+
+/* Expand toggle */
+.client-expand-toggle {
+  padding:0.5rem 1.4rem; display:flex; align-items:center; justify-content:space-between;
+  font-size:0.68rem; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:0.05em;
+  border-bottom:1px solid transparent; transition:color 0.15s;
+}
+.client-card.expanded .client-expand-toggle { color:var(--accent); border-bottom-color:var(--border); }
+.client-expand-arrow { transition:transform 0.25s; display:inline-block; }
+.client-card.expanded .client-expand-arrow { transform:rotate(180deg); }
+
+/* Expandable body — grid animation */
+.client-card-expand { display:grid; grid-template-rows:0fr; transition:grid-template-rows 0.3s ease; }
+.client-card.expanded .client-card-expand { grid-template-rows:1fr; }
+.client-card-expand > div { overflow:hidden; }
+
+.client-card-body { padding:1rem 1.4rem 1.25rem; }
+.client-section-lbl {
+  font-size:0.58rem; font-family:'DM Mono',monospace; color:var(--accent);
+  letter-spacing:0.1em; text-transform:uppercase; margin:1rem 0 0.5rem;
+  padding-bottom:0.3rem; border-bottom:1px solid rgba(201,150,12,0.15);
+}
+.client-section-lbl:first-child { margin-top:0; }
+.client-fields { display:grid; grid-template-columns:1fr 1fr; gap:0.55rem 1rem; }
+.client-field { display:flex; flex-direction:column; gap:2px; }
+.client-field.full { grid-column:1/-1; }
+.client-field-lbl { font-size:0.57rem; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; }
+.client-field-val { font-size:0.76rem; font-family:'DM Mono',monospace; color:var(--text); line-height:1.45; }
+.client-field-val.empty { color:var(--muted); opacity:0.35; font-style:italic; }
+.client-field-val.prose { font-family:'Syne',sans-serif; font-size:0.8rem; color:var(--fg); line-height:1.6; }
+.client-field-val a { color:var(--accent); text-decoration:none; }
+.client-field-val a:hover { text-decoration:underline; }
+
+/* ── OVERVIEW TAB ── */
+.overview-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem; }
+.overview-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 1rem 1.5rem; display: grid;
+  grid-template-columns: 1fr 80px 75px 75px 85px 70px 70px 90px 90px 100px;
+  align-items: center; gap: 0.75rem; transition: background 0.15s;
+}
+.overview-card:hover { background: var(--surface2); }
+.overview-card.header-row {
+  background: rgba(255,255,255,0.02); border-radius: 10px;
+  font-size: 0.62rem; font-family: 'DM Mono', monospace; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); padding: 0.6rem 1.5rem;
+}
+.period-select {
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+  border-radius: 8px; padding: 5px 10px; font-size: 0.73rem; font-family: 'DM Mono', monospace;
+  cursor: pointer; outline: none;
+}
+.ov-client { font-weight: 700; font-size: 0.88rem; }
+.ov-agent { font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 2px; }
+.ov-val { font-family: 'DM Mono', monospace; font-size: 0.88rem; text-align: center; }
+.ov-val.big { font-size: 1.1rem; font-weight: 700; }
+.section-divider {
+  font-size: 0.65rem; font-family: 'DM Mono', monospace; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); padding: 0.5rem 0; margin: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── CALLBACKS TAB ── */
+.primary-btn { background: var(--accent); color: #000; border: none; border-radius: 10px; padding: 0.7rem 1.4rem; font-size: 0.78rem; font-family: 'DM Mono', monospace; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.primary-btn:hover { opacity: 0.85; }
+.cb-setup { max-width: 480px; margin: 2rem auto; display: flex; flex-direction: column; gap: 1rem; }
+.cb-setup h2 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 0; }
+.cb-setup p { font-size: 0.75rem; color: var(--muted); margin: 0; line-height: 1.6; }
+.cb-setup input { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 0.7rem 1rem; font-size: 0.78rem; color: var(--text); font-family: 'DM Mono', monospace; width: 100%; box-sizing: border-box; }
+.cb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+.cb-badge { display: inline-flex; align-items: center; justify-content: center; background: #ef4444; color: #fff; border-radius: 100px; font-size: 0.62rem; font-weight: 700; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; }
+.cb-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.cb-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 1.25rem 1.4rem; display: flex; align-items: flex-start; gap: 1rem; transition: opacity 0.2s; position: relative; }
+.cb-card.done { opacity: 0.38; }
+.cb-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 16px 0 0 16px; background: #ef4444; }
+.cb-card.done::before { background: var(--border2); }
+.cb-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border2); background: none; cursor: pointer; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; color: transparent; font-size: 0.7rem; transition: all 0.15s; }
+.cb-card.done .cb-check { background: var(--green); border-color: var(--green); color: #000; }
+.cb-body { flex: 1; min-width: 0; }
+.cb-company { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+.cb-name { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.6rem; }
+.cb-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cb-time { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+.cb-ghl-btn { display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px solid var(--border2); border-radius: 8px; padding: 4px 10px; font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--accent); cursor: pointer; text-decoration: none; transition: all 0.15s; }
+.cb-ghl-btn:hover { background: rgba(201,150,12,0.1); border-color: var(--accent); }
+.cb-empty { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.78rem; font-family: 'DM Mono', monospace; }
+.cb-settings-btn { background: none; border: 1px solid var(--border2); border-radius: 8px; padding: 5px 12px; font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--muted); cursor: pointer; }
+
+/* ── CALL MODE MODAL ── */
+.call-mode-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:2000;
+  display:flex; align-items:center; justify-content:center; padding:1rem;
+  opacity:0; pointer-events:none; transition:opacity 0.2s;
+}
+.call-mode-overlay.open { opacity:1; pointer-events:all; }
+.call-mode-panel {
+  width:min(580px,96vw); max-height:92vh; overflow-y:auto;
+  background:var(--surface); border:1px solid var(--border2); border-radius:20px;
+  transform:translateY(18px); transition:transform 0.22s;
+}
+.call-mode-overlay.open .call-mode-panel { transform:translateY(0); }
+
+.cm-header {
+  padding:1.2rem 1.5rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; background:var(--surface); z-index:5; border-radius:20px 20px 0 0;
+}
+.cm-label { font-size:0.58rem; font-family:'DM Mono',monospace; color:var(--accent); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:3px; }
+.cm-client-name { font-size:1.15rem; font-weight:800; letter-spacing:-0.02em; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
+.cm-close {
+  background:none; border:1px solid var(--border2); border-radius:8px;
+  color:var(--muted); font-size:0.95rem; cursor:pointer; padding:0.3rem 0.65rem; transition:all 0.2s; flex-shrink:0;
+}
+.cm-close:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
+
+.cm-body { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:0.85rem; }
+
+.cm-block { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:0.95rem 1.2rem; }
+.cm-block.highlight { background:rgba(201,150,12,0.06); border-color:rgba(201,150,12,0.22); }
+.cm-block.danger { background:rgba(248,113,113,0.05); border-color:rgba(248,113,113,0.22); }
+.cm-block-label {
+  font-size:0.57rem; font-family:'DM Mono',monospace; color:var(--muted);
+  letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.45rem;
+}
+.cm-block.highlight .cm-block-label { color:var(--accent); }
+.cm-block.danger .cm-block-label { color:var(--red); }
+.cm-block-value { font-size:0.9rem; font-weight:700; color:var(--text); line-height:1.5; }
+.cm-block-value.big { font-size:1.2rem; }
+.cm-block-value.prose { font-family:'Syne',sans-serif; font-size:0.84rem; font-weight:400; color:var(--muted); line-height:1.65; }
+
+.cm-two-col { display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; }
+
+.cm-bullets { display:flex; flex-direction:column; gap:0.4rem; }
+.cm-bullet { display:flex; align-items:flex-start; gap:0.5rem; font-size:0.82rem; color:var(--text); line-height:1.45; }
+.cm-bullet::before { content:'✕'; color:var(--red); font-size:0.62rem; flex-shrink:0; margin-top:3px; font-weight:900; }
+
+.cm-tip {
+  background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.18);
+  border-radius:12px; padding:0.85rem 1.1rem;
+  font-size:0.73rem; font-family:'DM Mono',monospace; color:var(--green);
+  line-height:1.6; text-align:center; font-style:italic;
+}
+.cm-footer {
+  padding:1rem 1.5rem; border-top:1px solid var(--border);
+  display:flex; justify-content:flex-end;
+}
+.cm-footer-btn {
+  background:var(--surface2); border:1px solid var(--border2); border-radius:10px;
+  color:var(--muted); font-family:'DM Mono',monospace; font-size:0.72rem;
+  padding:0.6rem 1.4rem; cursor:pointer; transition:all 0.2s;
+}
+.cm-footer-btn:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
+
+@media (max-width:800px) {
+  .main { padding:1.5rem 1.25rem; }
+  .header { padding:1rem 1.25rem; }
+  .nav-tabs { padding:0 1.25rem; }
+  .clients-grid { grid-template-columns:1fr; }
+  .cm-two-col { grid-template-columns:1fr; }
+  .client-card-head { flex-direction:column; gap:0.75rem; }
+  .today-banner { grid-template-columns:1fr; }
+  .metrics-strip { grid-template-columns:1fr 1fr; }
+  .appt-hero { grid-template-columns:1fr 1fr; }
+  .client-grid { grid-template-columns:1fr; }
+}
+
+/* ── CALLS PAGE ── */
+:root { --green-bg:rgba(52,211,153,0.1); --amber-bg:rgba(251,191,36,0.1); --red-bg:rgba(248,113,113,0.1); }
+.last-updated { font-size:0.65rem; font-family:'DM Mono',monospace; color:var(--muted); text-align:right; margin-bottom:1.5rem; opacity:0.5; }
+.today-banner { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem; }
+.agent-card { border-radius:16px; padding:1.5rem; border:1px solid var(--border2); position:relative; overflow:hidden; }
+.agent-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+.agent-card.jules { background:linear-gradient(135deg,rgba(201,150,12,0.06),var(--surface)); }
+.agent-card.jules::before { background:var(--jules); }
+.agent-card.ayessa { background:linear-gradient(135deg,rgba(230,184,74,0.06),var(--surface)); }
+.agent-card.ayessa::before { background:var(--ayessa); }
+.agent-name { font-size:0.7rem; font-family:'DM Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:0.75rem; }
+.agent-card.jules .agent-name { color:var(--jules); }
+.agent-card.ayessa .agent-name { color:var(--ayessa); }
+.agent-count { font-size:3.5rem; font-weight:800; letter-spacing:-0.04em; line-height:1; margin-bottom:0.25rem; }
+.agent-card.jules .agent-count { color:var(--jules); }
+.agent-card.ayessa .agent-count { color:var(--ayessa); }
+.agent-sub { font-size:0.78rem; color:var(--muted); }
+.agent-clients { margin-top:1rem; font-size:0.75rem; color:var(--muted); font-family:'DM Mono',monospace; line-height:1.7; }
+.agent-appt-stat { margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border2); }
+.agent-appt-count { font-size:2.2rem; font-weight:800; letter-spacing:-0.04em; line-height:1; margin-bottom:0.2rem; }
+.agent-card.jules .agent-appt-count { color:var(--jules); opacity:0.8; }
+.agent-card.ayessa .agent-appt-count { color:var(--ayessa); opacity:0.8; }
+.agent-appt-label { font-size:0.72rem; color:var(--muted); }
+.leader-tag { display:inline-block; font-size:0.65rem; padding:2px 8px; border-radius:100px; font-family:'DM Mono',monospace; margin-left:8px; vertical-align:middle; }
+.leader-tag.jules { background:rgba(201,150,12,0.2); color:var(--jules); border:1px solid rgba(201,150,12,0.3); }
+.leader-tag.ayessa { background:rgba(230,184,74,0.2); color:var(--ayessa); border:1px solid rgba(230,184,74,0.3); }
+.metrics-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
+.metric { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.5rem; }
+.metric-label { font-size:0.68rem; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.5rem; }
+.metric-value { font-size:2rem; font-weight:800; letter-spacing:-0.03em; color:var(--text); }
+.metric-sub { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+.metric-sub span { color:var(--accent); }
+.chart-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; margin-bottom:2rem; }
+.section-title { font-size:0.68rem; font-family:'DM Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+.chart-legend { display:flex; gap:1.5rem; margin-bottom:1rem; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:0.73rem; font-family:'DM Mono',monospace; color:var(--muted); }
+.legend-dot { width:8px; height:8px; border-radius:2px; }
+.view-tabs { display:flex; gap:4px; background:var(--surface2); border-radius:8px; padding:3px; border:1px solid var(--border); }
+.view-tab { padding:5px 14px; border-radius:6px; font-size:0.73rem; font-family:'DM Mono',monospace; cursor:pointer; color:var(--muted); border:none; background:none; transition:all 0.2s; }
+.view-tab.active { background:var(--surface); color:var(--text); border:1px solid var(--border2); }
+.table-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:2rem; }
+.table-header { padding:1.1rem 1.5rem; border-bottom:1px solid var(--border); }
+table { width:100%; border-collapse:collapse; }
+th { font-size:0.63rem; font-family:'DM Mono',monospace; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); text-align:right; padding:0.7rem 1rem; border-bottom:1px solid var(--border); font-weight:400; }
+th:first-child { text-align:left; }
+td { font-size:0.8rem; font-family:'DM Mono',monospace; text-align:right; padding:0.65rem 1rem; border-bottom:1px solid var(--border); color:var(--muted); }
+td:first-child { text-align:left; color:var(--text); font-size:0.78rem; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--surface2); }
+.val-jules { color:var(--jules); }
+.val-ayessa { color:var(--ayessa); }
+.val-total { color:var(--text); font-weight:600; }
+.row-total { background:rgba(255,255,255,0.02); }
+.row-total td { font-weight:600; }
+.client-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem; }
+.client-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+.client-header { padding:1rem 1.5rem; border-bottom:1px solid var(--border); font-size:0.68rem; font-family:'DM Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; }
+.client-header.jules { color:var(--jules); }
+.client-header.ayessa { color:var(--ayessa); }
+.client-row { display:flex; align-items:center; justify-content:space-between; padding:0.65rem 1.5rem; border-bottom:1px solid var(--border); font-size:0.78rem; }
+.client-row:last-child { border-bottom:none; }
+.client-name { color:var(--muted); flex:0 0 160px; }
+.client-bar-wrap { flex:1; margin:0 1rem; height:4px; background:var(--border2); border-radius:2px; overflow:hidden; }
+.client-bar { height:100%; border-radius:2px; }
+.client-count { font-family:'DM Mono',monospace; color:var(--text); font-size:0.78rem; min-width:36px; text-align:right; }
+
+/* ── APPOINTMENTS PAGE ── */
+.appt-hero { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
+.appt-hero-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem 1.5rem; position:relative; overflow:hidden; }
+.appt-hero-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; }
+.appt-hero-card.green::after { background:var(--green); }
+.appt-hero-card.amber::after { background:var(--amber); }
+.appt-hero-card.red::after { background:var(--red); }
+.appt-hero-card.neutral::after { background:var(--accent); }
+.appt-hero-label { font-size:0.65rem; font-family:'DM Mono',monospace; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.5rem; }
+.appt-hero-value { font-size:2.2rem; font-weight:800; letter-spacing:-0.03em; }
+.appt-hero-sub { font-size:0.7rem; color:var(--muted); margin-top:3px; }
+.kpi-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:2rem; }
+.kpi-section-header { padding:1.1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.kpi-table { width:100%; border-collapse:collapse; }
+.kpi-table th { font-size:0.62rem; font-family:'DM Mono',monospace; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); text-align:center; padding:0.7rem 1rem; border-bottom:1px solid var(--border); font-weight:400; }
+.kpi-table th:first-child { text-align:left; }
+.kpi-table td { font-size:0.8rem; font-family:'DM Mono',monospace; text-align:center; padding:0.7rem 1rem; border-bottom:1px solid var(--border); color:var(--muted); }
+.kpi-table td:first-child { text-align:left; color:var(--text); }
+.kpi-table tr:last-child td { border-bottom:none; }
+.kpi-table tr:hover td { background:var(--surface2); }
+.kpi-table .total-row td { font-weight:700; color:var(--text); background:rgba(255,255,255,0.03); }
+.kpi-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:100px; font-size:0.72rem; font-weight:600; }
+.kpi-pill.green { background:var(--green-bg); color:var(--green); border:1px solid rgba(52,211,153,0.25); }
+.kpi-pill.amber { background:var(--amber-bg); color:var(--amber); border:1px solid rgba(251,191,36,0.25); }
+.kpi-pill.red   { background:var(--red-bg);   color:var(--red);   border:1px solid rgba(248,113,113,0.25); }
+.kpi-pill.neutral { background:rgba(255,255,255,0.06); color:var(--muted); border:1px solid var(--border2); }
+.days-live { font-size:0.6rem; font-family:'DM Mono',monospace; color:var(--muted); opacity:0.6; margin-left:6px; display:inline-block; line-height:1.6; vertical-align:middle; }
+
+/* ── SOPs PAGE ── */
+.sops-layout { display:flex; height:calc(100vh - 135px); min-height:500px; margin:-2rem -2.5rem 0; }
+.sops-main { flex:1; overflow-y:auto; padding:2rem 2.5rem; }
+.sops-sidebar { width:290px; flex-shrink:0; background:var(--surface); border-left:1px solid var(--border); overflow-y:auto; display:flex; flex-direction:column; }
+.sops-sidebar-head { padding:1.1rem 1.25rem; border-bottom:1px solid var(--border); flex-shrink:0; }
+.sops-sidebar-label { font-size:0.6rem; font-family:'DM Mono',monospace; color:var(--accent); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+.sops-progress-text { font-size:0.82rem; font-weight:700; color:var(--text); margin-bottom:6px; }
+.sops-progress-bar { height:3px; background:var(--border2); border-radius:2px; }
+.sops-progress-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s; }
+.sops-module { border-bottom:1px solid var(--border); }
+.sops-module-head { padding:0.9rem 1.25rem; cursor:pointer; display:flex; align-items:center; gap:0.65rem; transition:background 0.15s; user-select:none; }
+.sops-module-head:hover { background:rgba(255,255,255,0.025); }
+.sops-module-icon { font-size:1rem; flex-shrink:0; }
+.sops-module-info { flex:1; min-width:0; }
+.sops-module-title { font-size:0.78rem; font-weight:700; letter-spacing:-0.01em; }
+.sops-module-sub { font-size:0.6rem; font-family:'DM Mono',monospace; color:var(--muted); margin-top:1px; }
+.sops-chevron { font-size:0.6rem; color:var(--muted); transition:transform 0.2s; flex-shrink:0; }
+.sops-chevron.open { transform:rotate(90deg); }
+.sops-video-list { display:none; }
+.sops-video-list.open { display:block; }
+.sops-video-item { padding:0.65rem 1.25rem 0.65rem 2.75rem; cursor:pointer; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:0.6rem; transition:background 0.15s; }
+.sops-video-item:hover { background:rgba(255,255,255,0.02); }
+.sops-video-item.active { background:rgba(201,150,12,0.08); border-left:2px solid var(--accent); padding-left:calc(2.75rem - 2px); }
+.sops-video-item:last-child { border-bottom:none; }
+.sops-item-dot { width:15px; height:15px; border-radius:50%; border:1.5px solid var(--border2); flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:0.55rem; }
+.sops-item-dot.watched { background:rgba(52,211,153,0.15); border-color:var(--green); color:var(--green); }
+.sops-item-name { font-size:0.73rem; line-height:1.4; color:var(--muted); flex:1; }
+.sops-video-item.active .sops-item-name { color:var(--text); font-weight:600; }
+.sops-welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; height:60vh; text-align:center; opacity:0.3; gap:0.5rem; }
+.sops-welcome-icon { font-size:2.5rem; margin-bottom:0.25rem; }
+.sops-welcome-title { font-size:1rem; font-weight:700; }
+.sops-welcome-sub { font-size:0.7rem; font-family:'DM Mono',monospace; color:var(--muted); }
+.sops-player-wrap { position:relative; width:100%; padding-top:56.25%; background:var(--surface2); border-radius:14px; overflow:hidden; border:1px solid var(--border); margin-bottom:1.5rem; }
+.sops-player-wrap iframe { position:absolute; inset:0; width:100%; height:100%; border:none; }
+.sops-player-placeholder { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.65rem; opacity:0.3; text-align:center; padding:2rem; }
+.sops-player-placeholder-icon { font-size:2.5rem; }
+.sops-player-placeholder-text { font-size:0.74rem; font-family:'DM Mono',monospace; color:var(--muted); line-height:1.65; }
+.sops-video-module-tag { display:inline-block; font-size:0.58rem; font-family:'DM Mono',monospace; letter-spacing:0.08em; text-transform:uppercase; padding:2px 9px; border-radius:100px; background:rgba(201,150,12,0.1); color:var(--accent); border:1px solid rgba(201,150,12,0.25); margin-bottom:0.85rem; }
+.sops-video-title-main { font-size:1.15rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:0.85rem; }
+.sops-section-lbl { font-size:0.58rem; font-family:'DM Mono',monospace; color:var(--accent); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.55rem; margin-top:1.25rem; }
+.sops-video-desc { font-size:0.84rem; color:var(--muted); line-height:1.7; }
+.sops-docs-list { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem; }
+.sops-doc-chip { display:flex; align-items:center; gap:0.4rem; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:0.4rem 0.85rem; font-size:0.72rem; font-family:'DM Mono',monospace; color:var(--muted); text-decoration:none; transition:all 0.15s; cursor:pointer; }
+.sops-doc-chip:hover { color:var(--accent); border-color:rgba(201,150,12,0.35); }
+.sops-doc-add { background:none; border:1px dashed var(--border2); border-radius:8px; padding:0.4rem 0.85rem; font-size:0.72rem; font-family:'DM Mono',monospace; color:var(--muted); cursor:default; opacity:0.5; }
+.sops-watched-btn { display:inline-flex; align-items:center; gap:0.5rem; margin-top:1.75rem; padding:0.6rem 1.25rem; border-radius:9px; font-size:0.75rem; font-family:'DM Mono',monospace; cursor:pointer; transition:all 0.2s; border:1px solid var(--border2); background:none; color:var(--muted); }
+.sops-watched-btn:hover { color:var(--green); border-color:rgba(52,211,153,0.35); }
+.sops-watched-btn.marked { background:rgba(52,211,153,0.1); border-color:rgba(52,211,153,0.3); color:var(--green); }
+@media (max-width:800px) { .sops-layout { flex-direction:column; height:auto; } .sops-sidebar { width:100%; border-left:none; border-top:1px solid var(--border); } }
+
+/* ══ INTELLIGENCE TAB ══ */
+#app-intelligence { height:100%; }
+.intel-wrap { display:flex; flex-direction:column; height:calc(100vh - 135px); }
+.intel-top { display:flex; align-items:center; justify-content:space-between; padding:1.1rem 1.5rem; border-bottom:1px solid var(--border); flex-shrink:0; }
+.intel-title { font-family:'Syne',sans-serif; font-size:1.05rem; font-weight:700; color:var(--gold); }
+.intel-sub { font-size:0.73rem; color:var(--muted); margin-top:3px; }
+.intel-top-btns { display:flex; gap:0.5rem; }
+.intel-key-btn { background:transparent; border:1px solid var(--border); color:var(--muted); padding:0.3rem 0.7rem; border-radius:6px; cursor:pointer; font-size:0.73rem; transition:all 0.15s; }
+.intel-key-btn:hover { border-color:var(--gold); color:var(--gold); }
+.intel-no-key { background:rgba(201,150,12,0.07); border:1px solid rgba(201,150,12,0.22); border-radius:8px; margin:0.9rem 1.5rem 0; padding:0.65rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; font-size:0.79rem; color:var(--gold); flex-shrink:0; }
+.intel-no-key button { background:var(--gold); color:#000; border:none; padding:0.28rem 0.75rem; border-radius:5px; cursor:pointer; font-size:0.73rem; font-weight:700; white-space:nowrap; }
+.intel-msgs { flex:1; overflow-y:auto; padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:0.85rem; scroll-behavior:smooth; }
+.intel-welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2.5rem 1rem; flex:1; }
+.intel-welcome-icon { font-size:2.25rem; margin-bottom:0.9rem; opacity:0.7; }
+.intel-welcome h3 { font-family:'Syne',sans-serif; font-size:1.1rem; color:var(--fg); margin:0 0 0.45rem; }
+.intel-welcome p { color:var(--muted); font-size:0.82rem; max-width:400px; margin:0 0 1.4rem; line-height:1.6; }
+.intel-chips { display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center; max-width:540px; }
+.intel-chip { background:var(--surface); border:1px solid var(--border); color:var(--fg); padding:0.38rem 0.85rem; border-radius:20px; cursor:pointer; font-size:0.77rem; transition:all 0.15s; }
+.intel-chip:hover { border-color:var(--gold); color:var(--gold); background:rgba(201,150,12,0.06); }
+.intel-bubble { display:flex; gap:0.65rem; align-items:flex-start; max-width:82%; }
+.intel-bubble.user { align-self:flex-end; flex-direction:row-reverse; }
+.intel-bubble.assistant { align-self:flex-start; }
+.intel-avatar { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; flex-shrink:0; margin-top:3px; font-weight:700; }
+.intel-bubble.user .intel-avatar { background:var(--gold); color:#000; }
+.intel-bubble.assistant .intel-avatar { background:rgba(201,150,12,0.15); color:var(--gold); font-size:0.85rem; }
+.intel-text { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:0.7rem 1rem; font-size:0.845rem; line-height:1.65; color:var(--fg); word-break:break-word; }
+.intel-bubble.user .intel-text { background:rgba(201,150,12,0.09); border-color:rgba(201,150,12,0.25); border-radius:12px 4px 12px 12px; }
+.intel-bubble.assistant .intel-text { border-radius:4px 12px 12px 12px; }
+.intel-text p { margin:0 0 0.45rem; }
+.intel-text p:last-child { margin:0; }
+.intel-text ul,.intel-text ol { margin:0.35rem 0 0.35rem 1.2rem; padding:0; }
+.intel-text li { margin-bottom:0.22rem; }
+.intel-text strong { color:var(--gold); font-weight:600; }
+.intel-text code { background:rgba(255,255,255,0.07); padding:0.1em 0.35em; border-radius:3px; font-family:'DM Mono',monospace; font-size:0.81em; }
+.intel-text hr { border:none; border-top:1px solid var(--border); margin:0.6rem 0; }
+.intel-typing { display:flex; gap:4px; align-items:center; padding:0.25rem 0; }
+.intel-typing span { width:6px; height:6px; background:var(--gold); border-radius:50%; animation:itbounce 1.1s ease-in-out infinite; }
+.intel-typing span:nth-child(2){animation-delay:.18s} .intel-typing span:nth-child(3){animation-delay:.36s}
+@keyframes itbounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
+.intel-bar { border-top:1px solid var(--border); padding:0.85rem 1.5rem; display:flex; gap:0.65rem; align-items:flex-end; flex-shrink:0; }
+.intel-textarea { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--fg); font-size:0.875rem; padding:0.6rem 0.9rem; resize:none; outline:none; font-family:inherit; line-height:1.5; max-height:120px; transition:border-color 0.15s; }
+.intel-textarea:focus { border-color:rgba(201,150,12,0.4); }
+.intel-textarea::placeholder { color:var(--muted); }
+.intel-send { background:var(--gold); border:none; border-radius:8px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:opacity 0.15s; color:#000; }
+.intel-send:hover { opacity:0.85; }
+.intel-send:disabled { opacity:0.35; cursor:not-allowed; }
+/* Settings modal */
+.intel-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:2000; display:flex; align-items:center; justify-content:center; }
+.intel-modal { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:1.75rem; width:430px; max-width:92vw; }
+.intel-modal h3 { font-family:'Syne',sans-serif; font-size:1rem; color:var(--fg); margin:0 0 0.4rem; }
+.intel-modal p { font-size:0.8rem; color:var(--muted); margin:0 0 1.2rem; line-height:1.55; }
+.intel-modal input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--fg); padding:0.6rem 0.9rem; font-size:0.875rem; outline:none; box-sizing:border-box; font-family:'DM Mono',monospace; }
+.intel-modal input:focus { border-color:rgba(201,150,12,0.4); }
+.intel-modal-actions { display:flex; gap:0.65rem; margin-top:1.2rem; justify-content:flex-end; }
+.intel-modal-actions button { padding:0.42rem 1.1rem; border-radius:7px; cursor:pointer; font-size:0.8rem; font-weight:600; transition:opacity 0.15s; }
+.intel-modal-save { background:var(--gold); color:#000; border:none; }
+.intel-modal-save:hover { opacity:0.85; }
+.intel-modal-cancel { background:transparent; color:var(--muted); border:1px solid var(--border); }
+.intel-modal-cancel:hover { color:var(--fg); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <div class="header-left">
+      <h1>Quality Jobs · Agent Hub</h1>
+      <p>calling agents · live data from google sheets</p>
+    </div>
+    <span class="agent-badge">Agent View</span>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>live</div>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="nav-tab" onclick="switchPage('calls')">📞 Calls</button>
+  <button class="nav-tab" onclick="switchPage('callbacks')">📋 Missed Calls</button>
+  <button class="nav-tab" onclick="switchPage('leads')">🔔 New Leads</button>
+  <button class="nav-tab" onclick="switchPage('appointments')">📅 Appointments</button>
+  <button class="nav-tab" onclick="switchPage('overview')">🏢 Overview</button>
+  <button class="nav-tab active" onclick="switchPage('clients')">👥 Our Clients</button>
+  <button class="nav-tab" onclick="switchPage('sops')">📚 SOPs</button>
+  <button class="nav-tab" onclick="switchPage('intelligence')">✦ Intelligence</button>
+</nav>
+
+<main class="main">
+
+  <div id="page-calls" class="page">
+    <div id="app-calls"><div class="loading"><div class="spinner"></div>loading call data...</div></div>
+  </div>
+
+  <div id="page-appointments" class="page">
+    <div id="app-appts"><div class="loading"><div class="spinner"></div>loading appointments...</div></div>
+  </div>
+
+  <div id="page-overview" class="page">
+    <div id="app-overview"><div class="loading"><div class="spinner"></div>building overview...</div></div>
+  </div>
+
+  <!-- ══ OUR CLIENTS ══ -->
+  <div id="page-clients" class="page active">
+    <div id="app-clients"><div class="loading"><div class="spinner"></div>loading clients...</div></div>
+  </div>
+
+  <div id="page-callbacks" class="page">
+    <div id="app-callbacks"><div class="loading"><div class="spinner"></div>loading callbacks...</div></div>
+  </div>
+
+  <!-- ══ NEW LEADS ══ -->
+  <div id="page-leads" class="page">
+    <div id="app-leads"><div class="loading"><div class="spinner"></div>loading leads...</div></div>
+  </div>
+
+  <div id="page-sops" class="page">
+    <div id="app-sops"></div>
+  </div>
+
+  <div id="page-intelligence" class="page">
+    <div id="app-intelligence"></div>
+  </div>
+
+</main>
+
+<!-- ══ CALL MODE OVERLAY ══ -->
+<div class="call-mode-overlay" id="callModeOverlay" onclick="handleOverlayClick(event)">
+  <div class="call-mode-panel" id="callModePanel"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// CONFIG — same Apps Script proxy & Sheet IDs as main dashboard
+// When a new client is added to the Sheets, they auto-populate here.
+// Also add their entry to CLIENT_OVERVIEW_DATA below.
+// ════════════════════════════════════════════════
+const PROXY_URL        = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const CLIENTS_SHEET_ID = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
+const ADS_SHEET_ID     = '1VB_sgg-DvvG7AVKwXrq5wTfnuDWpuc1Vygl7_OcSSkg';
+
+// ════════════════════════════════════════════════
+// CLIENT OVERVIEW DATA
+// Sourced from Google Drive "Client Overview Documents (Call Centre)"
+// ADD A NEW ENTRY HERE when a new client is onboarded.
+// ════════════════════════════════════════════════
+const CLIENT_OVERVIEW_DATA = {
+  'Favourite Home': {
+    owner:'Armin',
+    website:'favouritehome.com.au', email:'arminriazifar68@gmail.com',
+    businessAddress:'Sydney, NSW', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'50km of Sydney CBD', constructionCategory:'Renovations',
+    serviceName:'Bathroom Renovation',
+    offer:'3 week completion guarantee, 3 year extended warranty, fixed quote — no hidden costs.',
+    idealClientProfile:'Homeowners with a budget of at least $18k, serious about renovating, within 50km of Sydney CBD.',
+    agreedOffer:'3 week completion guarantee + 3 year extended warranty + fixed quote, no hidden costs',
+    qualification:'Budget $18k+. Within 50km of Sydney. Homeowner (or renter with written permission). Ready to proceed within 30–60 days. No scope mismatch.',
+    aimOfCall:'Qualify the lead, confirm seriousness & budget, then book an onsite consultation with Armin.',
+    preferredTimeSlots:'TBC',
+  },
+  'PrimeBuild Solutions': {
+    owner:'Andrew',
+    website:'primebuildsolutions.com.au', email:'info@primebuildsolutions.com.au',
+    businessAddress:'22 Bronson Cct, Cranbourne North VIC 3977', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'Melbourne Metro', constructionCategory:'Renovations',
+    serviceName:'Bathroom / Kitchen / Laundry Renovation',
+    offer:'Finish within 4 weeks for every bathroom renovation. Quote accurate to final invoice.',
+    idealClientProfile:'Homeowners in Melbourne Metro willing to pay $18–20k+ for a bathroom, kitchen, or laundry renovation.',
+    agreedOffer:'4 week completion guarantee + quote accurate to final invoice',
+    qualification:'Budget $18–20k+. Melbourne Metro. Homeowner. Ready to proceed within 30–60 days.',
+    aimOfCall:'Book the homeowner directly into the client\'s calendar for an on-site quote.',
+    preferredTimeSlots:'Any day without a blocked slot, preferably evenings',
+  },
+  'L2 Homes': {
+    owner:'Jackson',
+    website:'l2homes.com.au', email:'admin@l2homes.com.au',
+    businessAddress:'40 Townshend Street, Phillip ACT 2606', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'Canberra Metro', constructionCategory:'Renovations',
+    serviceName:'Kitchen, Bathroom & Laundry Renovation',
+    offer:'On-time completion guarantee + free consultation. Fixed-scope pricing.',
+    idealClientProfile:'Homeowners in Canberra Metro with a budget of $20k+.',
+    agreedOffer:'On-time completion guarantee + free consultation',
+    qualification:'Budget $20k+. Canberra Metro. Homeowner. Ready to proceed within 30–60 days.',
+    aimOfCall:'Book the prospect for a consultation with Jackson (Owner). Establish job type, scope, urgency, and motivation.',
+    preferredTimeSlots:'TBC',
+  },
+  'Quality Custom Homes': {
+    owner:'Sean',
+    website:'qualitycustomhomes.com.au', email:'sean@qualitycustomhomes.com.au',
+    businessAddress:'South Burnett Region, QLD', timeZone:'AEST (UTC+10)',
+    serviceArea:'South Burnett Region, QLD', constructionCategory:'New Builds & Renovations',
+    serviceName:'Bathroom Renovation',
+    offer:'On-time finish guarantee, fixed quote with no invoice run-overs, extended warranty.',
+    idealClientProfile:'Homeowners in the South Burnett Region with budgets of $22k+.',
+    agreedOffer:'On-time finish guarantee + fixed quote (no invoice run-overs) + extended warranty',
+    qualification:'Budget $22k+. South Burnett Region. Homeowner. Ready to proceed within 30–60 days.',
+    aimOfCall:'Book the homeowner in for an on-site quote with Sean.',
+    preferredTimeSlots:'TBC',
+  },
+  'Spa Space': {
+    owner:'Josh',
+    website:'spaspace.au', email:'elijah@spaspace.au',
+    businessAddress:'Kangaroo Point QLD 4169', timeZone:'AEST (UTC+10)',
+    serviceArea:'Brisbane, QLD', constructionCategory:'Renovations',
+    serviceName:'Bathroom Renovation',
+    offer:'Fixed price quote + 1 year extended warranty for all bathrooms.',
+    idealClientProfile:'Homeowners in Brisbane genuinely interested in a bathroom renovation with a budget of $20k+, ideally $30k+.',
+    agreedOffer:'Fixed price quote + 1 year extended warranty',
+    qualification:'Budget $20k+ (ideally $30k+). Brisbane area. Homeowner. Genuinely interested, not just browsing.',
+    aimOfCall:'Qualify the homeowner on budget, motivation, and location — then book directly for an on-site quote with Elijah.',
+    preferredTimeSlots:'4pm onwards & weekends',
+  },
+  'Streamline Building Projects': {
+    owner:'Vish',
+    website:'slbp.com.au', email:'',
+    businessAddress:'Canberra, ACT', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'Canberra Metro', constructionCategory:'Renovations & Extensions',
+    serviceName:'Kitchen, Bathroom & Laundry Renovation',
+    offer:'On-time guarantee (or $2,000 cashback) + free consultation.',
+    idealClientProfile:'Homeowners in Canberra Metro with a budget of $17k+.',
+    agreedOffer:'On-time guarantee or $2,000 cashback + free consultation',
+    qualification:'Budget $17k+. Canberra Metro. Homeowner. Ready to proceed within 30–60 days.',
+    aimOfCall:'Book the prospect for an ON-SITE CONSULTATION with Vish. Establish job type, scope, urgency, and motivation.',
+    preferredTimeSlots:'Any day without a blocked slot',
+  },
+  'Buildavate': {
+    owner:'Andrew',
+    website:'buildavate.com.au', email:'andrew@buildavate.com.au', phone:'0411 314 748',
+    businessAddress:'Arundel QLD 4214', timeZone:'AEST (UTC+10)',
+    serviceArea:'Gold Coast (35–40km radius)', constructionCategory:'Renovations',
+    serviceName:'Bathroom / Kitchen / Home Renovation',
+    offer:'Fixed quote, 3 year extended workmanship warranty on all bathrooms, custom 3D render.',
+    idealClientProfile:'Homeowners within 35–40km of Gold Coast with a budget of $17k+, motivated to get a quote.',
+    agreedOffer:'Fixed quote + 3 year extended workmanship warranty + custom 3D render',
+    qualification:'Budget $17k+. Within 35–40km of Gold Coast. Homeowner. Motivated to get a quote.',
+    aimOfCall:'Qualify the lead and book into Andrew\'s calendar for an on-site quote.',
+    preferredTimeSlots:'TBC',
+  },
+  'Allspec Homes': {
+    owner:'Joseph',
+    website:'allspechomes.com.au', email:'',
+    businessAddress:'546 Rocky Point Road, Sans Souci NSW 2219', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'Sydney Metro', constructionCategory:'Renovations',
+    serviceName:'Kitchen, Bathroom & Laundry Renovation',
+    offer:'On-time guarantee, accurate quote, extended warranty.',
+    idealClientProfile:'Homeowners in Sydney Metro looking for kitchen/bathroom/laundry renovation with a budget of $20k+.',
+    agreedOffer:'On-time completion guarantee + accurate quote + extended warranty',
+    qualification:'Budget $20k+. Sydney Metro. Homeowner. Ready to proceed within 30–60 days.',
+    aimOfCall:'Qualify the client and book in for a consultation with Joseph (Owner, Allspec Homes).',
+    preferredTimeSlots:'TBC',
+  },
+  'UrbanRise Property': {
+    owner:'Cam',
+    website:'urbanrisepropertygroup.com.au', email:'cam@urbanrisepropertygroup.com.au',
+    businessAddress:'North Melbourne, VIC', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'Melbourne & surrounding suburbs', constructionCategory:'Renovations & Property',
+    serviceName:'Home Renovation & Buyers Agency',
+    offer:'On-time guarantee, fixed quote pricing, extended warranty, help selling the property.',
+    idealClientProfile:'Clients in Melbourne looking for a substantial property project with a budget of $15k+.',
+    agreedOffer:'On-time guarantee + fixed quote + extended warranty + help selling the property',
+    qualification:'Budget $15k+. Melbourne area. Looking for a substantial project. Ready to proceed.',
+    aimOfCall:'Qualify the lead and book into Cameron\'s calendar for an on-site quote.',
+    preferredTimeSlots:'9am–1pm',
+  },
+  'Silk Touch Joinery': {
+    owner:'Riyaz & Emad',
+    website:'silktouchjoinery.com.au', email:'info@silktouchjoinery.com.au',
+    businessAddress:'Camberwell, VIC (team operates across Melbourne)', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'Melbourne Metro', constructionCategory:'Renovations',
+    serviceName:'Kitchen Renovation',
+    offer:'Guaranteed 2-week finish, quote accurate to final invoice, free consultation & custom 3D render.',
+    idealClientProfile:'Homeowners in Melbourne Metro looking to renovate their kitchen with a budget of $18–20k+.',
+    agreedOffer:'Guaranteed 2-week finish + quote accurate to final invoice + free consultation + custom 3D kitchen render',
+    qualification:'Budget $18–20k+. Melbourne Metro. Homeowner. Full kitchen renovations only. For small jobs (benchtop only / refacing), ask them to send photos first.',
+    aimOfCall:'Book the homeowner into Rez\'s calendar for a kitchen renovation quote. Note: no showroom — we bring material samples to the home.',
+    preferredTimeSlots:'Any day without a blocked slot',
+  },
+  'Generational Bathrooms': {
+    owner:'Paul',
+    website:'', email:'buildingswr@iinet.net.au',
+    businessAddress:'South West Rocks, NSW', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'Port Macquarie – South West Rocks & surrounds', constructionCategory:'Renovations',
+    serviceName:'Bathroom Renovation',
+    offer:'4 week completion guarantee + fixed quote.',
+    idealClientProfile:'Homeowners in the Port Macquarie–South West Rocks area serious about a bathroom renovation.',
+    agreedOffer:'4 week completion guarantee + fixed quote',
+    qualification:'Port Macquarie–South West Rocks area. Homeowner. Serious about renovation, not just browsing.',
+    aimOfCall:'Qualify the lead and book in for an on-site quote with Paul.',
+    preferredTimeSlots:'5pm onwards & weekends',
+  },
+  'Barco Build': {
+    owner:'Ryan',
+    website:'', email:'ryan.paul.seaman@gmail.com',
+    businessAddress:'Adelaide, SA', timeZone:'ACST/ACDT (UTC+9:30)',
+    serviceArea:'Adelaide, SA', constructionCategory:'Renovations',
+    serviceName:'Bathroom Renovation',
+    offer:'Quote accurate to final invoice. Bathroom finished in 4 weeks.',
+    idealClientProfile:'Homeowners in Adelaide with budgets of $17k+ for a bathroom, motivated to start within 3 months.',
+    agreedOffer:'Quote accurate to final invoice + 4 week completion guarantee',
+    qualification:'Budget $17k+. Adelaide area. Homeowner. Motivated to start work within 3 months.',
+    aimOfCall:'Qualify the lead and book in for an on-site consultation with Ryan.',
+    preferredTimeSlots:'After 4pm weekdays',
+  },
+  'Renovate Right Homes': {
+    owner:'Derrick',
+    website:'renovaterighthomes.com.au', email:'derek@renovaterighthomes.com.au', phone:'0410 345 980',
+    businessAddress:'41 Doolan St, Ormeau QLD 4208', timeZone:'AEST (UTC+10)',
+    serviceArea:'Brisbane, Ipswich & Gold Coast QLD', constructionCategory:'Renovations',
+    serviceName:'Bathroom, Kitchen, Laundry & Outdoor Renovation',
+    offer:'On-time completion guarantee, fixed quote, post-renovation cleaning, bundle discount. QBCC Licensed. 16+ years experience.',
+    idealClientProfile:'Homeowners in SEQ (Brisbane–Gold Coast corridor) looking to spend $20k+ on a renovation.',
+    agreedOffer:'On-time guarantee + fixed quote + post-renovation cleaning + bundle discount',
+    qualification:'Budget $20k+. Between Brisbane & Gold Coast. Homeowner. Serious about starting.',
+    aimOfCall:'Ask qualifying questions to gauge interest & budget, then book for a consultation with Derek.',
+    preferredTimeSlots:'TBC',
+  },
+  'Imperial Bathrooms': {
+    owner:'Manny',
+    website:'imperialbathrooms.com', email:'infoimpereno@gmail.com', phone:'+61 433 864 050',
+    businessAddress:'Brisbane, QLD', timeZone:'AEST (UTC+10)',
+    serviceArea:'Brisbane & surrounds — North/South Brisbane, Logan, Ipswich, Redlands (30+ suburbs)',
+    constructionCategory:'Renovations', serviceName:'Full Bathroom Renovation',
+    offer:'4 week finish guarantee, fixed quote (no run-overs), extended workmanship warranty. 10+ years, 250+ bathrooms completed.',
+    idealClientProfile:'Homeowners in Brisbane needing a FULL bathroom renovation with a budget of $18k+. No minor adjustments.',
+    agreedOffer:'4 week finish guarantee + fixed quote + extended workmanship warranty',
+    qualification:'Budget $18k+. Brisbane area. Full bathroom renovation only — no minor adjustments. Homeowner.',
+    aimOfCall:'Confirm serious interest in a full bathroom renovation. Gauge budget. Book for consultation with Mani.',
+    preferredTimeSlots:'TBC',
+  },
+  'Kogalo Renovations': {
+    owner:'Robert',
+    website:'instagram.com/kogalo_trades/', email:'kogalotms@gmail.com',
+    businessAddress:'Berwick VIC 3806', timeZone:'AEST/AEDT (UTC+10)',
+    serviceArea:'50km around Berwick, VIC', constructionCategory:'Renovations & Maintenance',
+    serviceName:'Bathroom / Kitchen / Laundry Renovation',
+    offer:'Extended warranty, 4 week completion guarantee, fixed quote, post-renovation clean.',
+    idealClientProfile:'Homeowners within 50km of Berwick, VIC. Any renovation or maintenance work welcome — preferably full renovations.',
+    agreedOffer:'Extended warranty + 4 week guarantee + fixed quote + post-renovation clean',
+    qualification:'Within 50km of Berwick. Homeowner. Willing to proceed. Loose qualification — maintenance jobs also accepted.',
+    aimOfCall:'Have a genuine conversation, qualify the lead, gauge interest, book for on-site consultation with Rob.',
+    preferredTimeSlots:'TBC',
+  },
+  'Elegance Tiles & Bath': {
+    owner:'Riyaz',
+    website:'elegancetilesandbath.com.au', email:'elegancetilesandbath@gmail.com', phone:'0433 137 717',
+    businessAddress:'4/58 Crocker Dr, Malaga WA 6090', timeZone:'AWST (UTC+8)',
+    serviceArea:'Perth, WA (focus: Cannington, Harrisdale & Kalamunda)',
+    constructionCategory:'Renovations & Tiles', serviceName:'Bathroom Renovation & Tile Supply',
+    offer:'4 week completion guarantee, fixed quote, post-renovation clean. Physical showroom in Malaga.',
+    idealClientProfile:'Homeowners in Perth (especially Cannington, Harrisdale, Kalamunda) for full bathroom/kitchen/laundry renovation. Full renovations only.',
+    agreedOffer:'4 week completion guarantee + fixed quote + post-renovation clean',
+    qualification:'Full renovations only (no small jobs). Perth area. Homeowner. Ready to proceed.',
+    aimOfCall:'Book in for an on-site consultation with Riyaz. Note: they have a showroom in Malaga — can mention this.',
+    preferredTimeSlots:'TBC',
+  },
+};
+
+function _findClientOverride(name) {
+  if (!name) return {};
+  const exact = CLIENT_OVERVIEW_DATA[name];
+  if (exact) return exact;
+  const nl = name.toLowerCase().replace(/\s+/g,'');
+  const found = Object.entries(CLIENT_OVERVIEW_DATA).find(([k]) => {
+    const kl = k.toLowerCase().replace(/\s+/g,'');
+    return kl === nl || nl.includes(kl.slice(0,8)) || kl.includes(nl.slice(0,8));
+  });
+  return found ? found[1] : {};
+}
+
+// ════════════════════════════════════════════════
+// CALLS & APPOINTMENTS — SHEET IDs + FALLBACKS
+// ════════════════════════════════════════════════
+const CALLS_SHEET_ID = '1XaiWFoSDvlfAwMBZOUOV37xKks2I4ZdeFeh1CuuEFCo';
+const APPT_SHEET_ID  = '1ymNqgTm5XaL9Hxj4P_UgO81AHiEYaktFowYy_1MQsgo';
+
+const JULES_FALLBACK  = ['Favourite Home','PrimeBuild Solutions','L2 Homes','Quality Custom Homes','Spa Space','Streamline Building Projects','Imperial Renovations','Quality Custom Homes PTY LTD','Elegance Tiles and Bath'];
+const AYESSA_FALLBACK = ['Buildavate','UrbanRise Property Group','Allspec Homes','Generational Bathrooms','Silk Touch Joinery','Barco Build','Renovate Right Homes'];
+let JULES_ACCOUNTS  = [...JULES_FALLBACK];
+let AYESSA_ACCOUNTS = [...AYESSA_FALLBACK];
+
+const MONTH_ORDER  = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
+const TARGET_MONTHS = new Set(['March','April','May','June','July','August','September','October','November','December']);
+
+let charts = {};
+let currentView = 'daily';
+window._callsData     = null;
+window._apptsData     = null;
+window._configData    = null;
+window._todayApptsData = null;
+window._adsData       = null;
+let overviewPeriod    = 30;
+
+// ════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════
+function fmt(n) { return (n === null || n === undefined) ? '—' : n.toLocaleString(); }
+
+function parseDateStr(raw) {
+  if (!raw) return null;
+  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  const d = new Date(raw); return isNaN(d) ? null : d;
+}
+
+function getWeekKey(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay() + 1);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function getTodayStr() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+}
+
+function getAgent(name) {
+  const n = (name||'').trim().toLowerCase();
+  if (JULES_ACCOUNTS.some(a => a.toLowerCase() === n)) return 'Jules';
+  if (AYESSA_ACCOUNTS.some(a => a.toLowerCase() === n)) return 'Ayessa';
+  return null;
+}
+
+function kpiClass(val, daysLive) {
+  if (val === null || val === undefined || typeof val !== 'number') return 'neutral';
+  const days = Math.min(Math.max(daysLive || 30, 1), 30);
+  const scale = days / 30;
+  if (val >= Math.ceil(8 * scale)) return 'green';
+  if (val >= Math.ceil(4 * scale)) return 'amber';
+  return 'red';
+}
+
+function kpiDot(cls) {
+  const icons = {green:'●', amber:'●', red:'●', neutral:'○'};
+  return `<span class="kpi-pill ${cls}">${icons[cls]} ${cls.toUpperCase()}</span>`;
+}
+
+function daysLiveLabel(daysLive, liveDate) {
+  if (daysLive === undefined || daysLive === null) return '';
+  const liveText = daysLive === 0 ? 'went live today'
+    : daysLive === 1 ? 'went live 1 day ago'
+    : daysLive < 30  ? `went live ${daysLive} days ago`
+    : daysLive < 60  ? `live ${Math.floor(daysLive/7)} weeks`
+    : `live ${Math.floor(daysLive/30)} months`;
+  let dateStr = '';
+  if (liveDate) {
+    const d = liveDate instanceof Date ? liveDate : new Date(liveDate);
+    const day = d.getDate(), v = day % 100;
+    const suffix = (v >= 11 && v <= 13) ? 'th' : (['th','st','nd','rd'][day % 10] || 'th');
+    const mo = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    dateStr = `${day}${suffix} ${mo[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  return `<span class="days-live">· ${liveText}${dateStr ? `<br>${dateStr}` : ''}</span>`;
+}
+
+function getConfig(name) {
+  if (!window._configData) return { daysLive: 30, target: 10 };
+  const exact = window._configData[name];
+  if (exact) return exact;
+  const fuzzy = Object.keys(window._configData).find(k =>
+    k.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,'') ||
+    name.toLowerCase().includes(k.toLowerCase().slice(0,6))
+  );
+  return fuzzy ? window._configData[fuzzy] : { daysLive: 30, target: 10 };
+}
+
+function fmtCurrency(n) {
+  if (n === null || n === undefined || n === 0) return '—';
+  return '$' + Math.round(n).toLocaleString('en-AU');
+}
+
+async function fetchAdsData() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=STATS%20DASHBOARD`);
+    if (!res.ok) return {};
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return {};
+    const data = {};
+    for (let i = 1; i < rows.length; i++) {
+      const row  = rows[i];
+      const name = String(row[1]||'').trim();
+      const spent = parseFloat(String(row[5]).replace(/[^0-9.]/g,'')) || 0;
+      const leads = parseInt(row[6]) || 0;
+      const cpl   = parseFloat(String(row[7]).replace(/[^0-9.]/g,'')) || 0;
+      if (!name) continue;
+      data[name] = { spent, leads, cpl };
+    }
+    return data;
+  } catch(e) { console.warn('Ads fetch failed:', e); return {}; }
+}
+
+function getAds(name) {
+  if (!window._adsData) return null;
+  const exact = window._adsData[name];
+  if (exact) return exact;
+  const key = Object.keys(window._adsData).find(k =>
+    k.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,'') ||
+    name.toLowerCase().includes(k.toLowerCase().slice(0,6)) ||
+    k.toLowerCase().includes(name.toLowerCase().slice(0,6))
+  );
+  return key ? window._adsData[key] : null;
+}
+
+function renderOverview() {
+  const callsData = window._callsData;
+  const apptsData = window._apptsData;
+  const el = document.getElementById('app-overview');
+  if (!callsData || !apptsData) {
+    el.innerHTML = '<div class="loading">Waiting for data...</div>';
+    return;
+  }
+
+  function clientCallsInPeriod(name, days) {
+    const subDay = callsData.subDay || {};
+    const today = new Date(); today.setHours(0,0,0,0);
+    const cutoff = new Date(today.getTime() - days * 24*60*60*1000);
+    let total = 0;
+    for (const [dateStr, count] of Object.entries(subDay[name] || {})) {
+      if (new Date(dateStr) >= cutoff) total += count;
+    }
+    return total;
+  }
+
+  function buildRows(clientNames, agent) {
+    return clientNames.map(name => {
+      const calls = clientCallsInPeriod(name, overviewPeriod);
+      const apptClients = agent === 'Jules' ? apptsData.julesClients : apptsData.ayessaClients;
+      const apptMatch = apptClients.find(c => c.name.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,''))
+                     || apptClients.find(c => name.toLowerCase().includes(c.name.toLowerCase().slice(0,6)));
+      const appts = apptMatch?.last30 ?? null;
+      const callRatio = (appts && appts > 0) ? (calls / appts).toFixed(1) : '—';
+      const cfg = getConfig(apptMatch?.name || name);
+      const cls = (typeof appts === 'number') ? kpiClass(appts, cfg.daysLive) : 'neutral';
+      const agentColor = agent === 'Jules' ? 'var(--jules)' : 'var(--ayessa)';
+      const ads = getAds(name);
+      const spent  = ads ? fmtCurrency(ads.spent) : '—';
+      const leads  = ads ? fmt(ads.leads) : '—';
+      const leadBookPct = (ads && ads.leads > 0 && appts !== null)
+        ? Math.round((appts / ads.leads) * 100) + '%' : '—';
+      const costPerBooking = (ads && ads.spent > 0 && appts)
+        ? fmtCurrency(ads.spent / appts) : '—';
+      return `
+        <div class="overview-card">
+          <div>
+            <div class="ov-client">${name}${daysLiveLabel(cfg.daysLive, cfg.liveDate)}</div>
+            <div class="ov-agent" style="color:${agentColor}">${agent}</div>
+          </div>
+          <div class="ov-val" style="color:${agentColor}">${fmt(calls)}</div>
+          <div class="ov-val">${appts !== null ? fmt(appts) : '—'}</div>
+          <div class="ov-val">${callRatio !== '—' ? callRatio+':1' : '—'}</div>
+          <div class="ov-val" style="color:var(--amber)">${spent}</div>
+          <div class="ov-val">${leads}</div>
+          <div class="ov-val">${ads ? fmtCurrency(ads.cpl) : '—'}</div>
+          <div class="ov-val">${leadBookPct}</div>
+          <div class="ov-val" style="color:var(--green)">${costPerBooking}</div>
+          <div class="ov-val">${kpiDot(cls)}</div>
+        </div>`;
+    }).join('');
+  }
+
+  el.innerHTML = `
+    <div class="last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+      <div style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;">client overview</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.73rem;font-family:'DM Mono',monospace;color:var(--muted);">
+        period
+        <select class="period-select" onchange="switchOverviewPeriod(parseInt(this.value))">
+          <option value="30" ${overviewPeriod===30?'selected':''}>Last 30 days</option>
+          <option value="60" ${overviewPeriod===60?'selected':''}>Last 60 days</option>
+          <option value="90" ${overviewPeriod===90?'selected':''}>Last 90 days</option>
+        </select>
+      </div>
+    </div>
+    <div class="overview-card header-row">
+      <div>Client</div>
+      <div style="text-align:center">Calls (${overviewPeriod}d)</div>
+      <div style="text-align:center">Appts (30d)</div>
+      <div style="text-align:center">Ratio</div>
+      <div style="text-align:center;color:var(--amber)">Ad Spend</div>
+      <div style="text-align:center">Leads</div>
+      <div style="text-align:center">CPL</div>
+      <div style="text-align:center">Lead→Book%</div>
+      <div style="text-align:center;color:var(--green)">Cost/Booking</div>
+      <div style="text-align:center">KPI</div>
+    </div>
+    <div class="section-divider"><span style="color:var(--jules)">● Jules</span></div>
+    <div class="overview-grid">${buildRows(JULES_ACCOUNTS, 'Jules')}</div>
+    <div class="section-divider"><span style="color:var(--ayessa)">● Ayessa</span></div>
+    <div class="overview-grid">${buildRows(AYESSA_ACCOUNTS, 'Ayessa')}</div>
+  `;
+}
+
+function switchOverviewPeriod(days) {
+  overviewPeriod = days;
+  renderOverview();
+}
+
+function syncBadge() {
+  const badge = document.querySelector('.live-badge');
+  if (badge) {
+    const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    badge.innerHTML = `<div class="live-dot"></div>live · ${t}`;
+  }
+}
+setInterval(syncBadge, 30000);
+
+// ════════════════════════════════════════════════
+// FETCH — update Jules/Ayessa account lists from Sheets
+// ════════════════════════════════════════════════
+async function _fetchClientsList() {
+  try {
+    const res  = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return;
+    const jules = [], ayessa = [];
+    for (let i = 1; i < rows.length; i++) {
+      const name   = String(rows[i][0] || '').trim();
+      const agent  = String(rows[i][1] || '').trim();
+      const status = String(rows[i][8] || '').trim();
+      if (!name || status === 'Churned') continue;
+      if (agent === 'Jules')  jules.push(name);
+      if (agent === 'Ayessa') ayessa.push(name);
+    }
+    if (jules.length || ayessa.length) {
+      JULES_ACCOUNTS  = jules.length  ? jules  : JULES_FALLBACK;
+      AYESSA_ACCOUNTS = ayessa.length ? ayessa : AYESSA_FALLBACK;
+    }
+  } catch(e) { /* use fallback lists */ }
+}
+
+// ════════════════════════════════════════════════
+// FETCH — CALLS
+// ════════════════════════════════════════════════
+async function fetchCallsData() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`);
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return null;
+
+    const today = getTodayStr();
+    const agentDay={}, agentWeek={}, agentMonth={}, subMonth={}, subDay={};
+    const todayJules={total:0,clients:[]}, todayAyessa={total:0,clients:[]};
+    const allDates=new Set(), allWeeks=new Set();
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const monthName = String(row[0]||'').trim();
+      const subRaw    = String(row[5]||'').trim();
+      const dateRaw   = String(row[1]||'').trim();
+      if (!monthName || !subRaw) continue;
+      if (!TARGET_MONTHS.has(monthName)) continue;
+      const agent = getAgent(subRaw);
+      if (!agent) continue;
+      const dateObj = parseDateStr(dateRaw);
+      if (!dateObj) continue;
+      const year = dateObj.getFullYear();
+      if (year === 2025 && MONTH_ORDER[monthName] >= 10) continue;
+
+      const dStr = `${year}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')}`;
+      const wKey = getWeekKey(dateObj);
+      allDates.add(dStr); allWeeks.add(wKey);
+
+      if (!agentDay[agent])   agentDay[agent]={};
+      if (!agentWeek[agent])  agentWeek[agent]={};
+      if (!agentMonth[agent]) agentMonth[agent]={};
+      agentDay[agent][dStr]        = (agentDay[agent][dStr]        || 0) + 1;
+      agentWeek[agent][wKey]       = (agentWeek[agent][wKey]       || 0) + 1;
+      agentMonth[agent][monthName] = (agentMonth[agent][monthName] || 0) + 1;
+
+      if (!subMonth[subRaw]) subMonth[subRaw]={};
+      subMonth[subRaw][monthName] = (subMonth[subRaw][monthName] || 0) + 1;
+      if (!subDay[subRaw]) subDay[subRaw]={};
+      subDay[subRaw][dStr] = (subDay[subRaw][dStr] || 0) + 1;
+
+      if (dStr === today) {
+        const bucket = agent === 'Jules' ? todayJules : todayAyessa;
+        bucket.total++;
+        const ex = bucket.clients.findIndex(c => c.startsWith(subRaw + ':'));
+        if (ex >= 0) { const n = parseInt(bucket.clients[ex].split(': ')[1]) + 1; bucket.clients[ex] = `${subRaw}: ${n}`; }
+        else bucket.clients.push(`${subRaw}: 1`);
+      }
+    }
+
+    const sortedDates = [...allDates].sort();
+    const sortedWeeks = [...allWeeks].sort((a,b) => {
+      const [da,ma,ya]=a.split('/'), [db,mb,yb]=b.split('/');
+      return new Date(+ya,+ma-1,+da) - new Date(+yb,+mb-1,+db);
+    });
+    const sortedMonths = ['March','April','May','June','July','August','September','October','November','December'];
+
+    const julesClients={}, ayessaClients={};
+    for (const acc of JULES_ACCOUNTS)  if (subMonth[acc]) julesClients[acc]  = subMonth[acc];
+    for (const acc of AYESSA_ACCOUNTS) if (subMonth[acc]) ayessaClients[acc] = subMonth[acc];
+
+    return {
+      today: { jules: todayJules, ayessa: todayAyessa },
+      daily:   { dates: sortedDates,  jules: sortedDates.map(d=>(agentDay['Jules']||{})[d]||0),   ayessa: sortedDates.map(d=>(agentDay['Ayessa']||{})[d]||0)   },
+      weekly:  { weeks: sortedWeeks,  jules: sortedWeeks.map(w=>(agentWeek['Jules']||{})[w]||0),  ayessa: sortedWeeks.map(w=>(agentWeek['Ayessa']||{})[w]||0)  },
+      monthly: { months: sortedMonths, jules: sortedMonths.map(m=>(agentMonth['Jules']||{})[m]||0), ayessa: sortedMonths.map(m=>(agentMonth['Ayessa']||{})[m]||0) },
+      julesClients, ayessaClients, subMonth, subDay,
+    };
+  } catch(e) { console.warn('Calls fetch failed:', e); return null; }
+}
+
+// ════════════════════════════════════════════════
+// FETCH — TODAY'S APPOINTMENT COUNTS
+// ════════════════════════════════════════════════
+async function fetchTodayApptCounts() {
+  // Appointments sheet has no raw-data tab — read last-7-days totals from Summary
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Summary`);
+    if (!res.ok) throw new Error('summary fetch failed');
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) throw new Error('empty');
+    let jules = 0, ayessa = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const row   = rows[i];
+      const name  = String(row[0]||'').trim();
+      const agent = String(row[1]||'').trim();
+      if (!name || !agent) continue;
+      if (name.includes('▶') || name.includes('TOTAL') || name.includes('GRAND')) continue;
+      const last7 = parseInt(row[3]) || 0;  // col index 3 = "Last 7 Days"
+      if (agent === 'Jules')                  jules  += last7;
+      else if (agent === 'Ayessa' || agent === 'Ayesa') ayessa += last7;
+    }
+    return { jules, ayessa };
+  } catch(e) { return { jules: 0, ayessa: 0 }; }
+}
+
+// ════════════════════════════════════════════════
+// FETCH — APPOINTMENTS SUMMARY
+// ════════════════════════════════════════════════
+async function fetchApptsData() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Summary`);
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return null;
+    const clients = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const name  = String(row[0]||'').trim();
+      const agent = String(row[1]||'').trim();
+      if (!name || !agent) continue;
+      if (name.includes('▶') || name.includes('TOTAL') || name.includes('GRAND')) continue;
+      if (agent !== 'Jules' && agent !== 'Ayessa' && agent !== 'Ayesa') continue;
+      const last7=parseInt(row[3])||0, last14=parseInt(row[4])||0, last30=parseInt(row[5])||0, allTime=parseInt(row[6])||0;
+      clients.push({ name: name.trim(), agent: agent === 'Ayesa' ? 'Ayessa' : agent, last7, last14, last30, allTime });
+    }
+    const julesClients  = clients.filter(c => c.agent === 'Jules');
+    const ayessaClients = clients.filter(c => c.agent === 'Ayessa');
+    const jTotals = {last7:0,last14:0,last30:0,allTime:0};
+    const aTotals = {last7:0,last14:0,last30:0,allTime:0};
+    julesClients.forEach(c  => { jTotals.last7+=c.last7; jTotals.last14+=c.last14; jTotals.last30+=c.last30; jTotals.allTime+=c.allTime; });
+    ayessaClients.forEach(c => { aTotals.last7+=c.last7; aTotals.last14+=c.last14; aTotals.last30+=c.last30; aTotals.allTime+=c.allTime; });
+    return { clients, julesClients, ayessaClients, jTotals, aTotals };
+  } catch(e) { console.warn('Appts fetch failed:', e); return null; }
+}
+
+async function fetchClientConfig() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Client%20Config`);
+    if (!res.ok) return {};
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return {};
+    const config = {};
+    const today = new Date(); today.setHours(0,0,0,0);
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const name    = String(row[0]||'').trim();
+      const dateRaw = String(row[1]||'').trim();
+      if (!name || !dateRaw) continue;
+      const liveDate = parseDateStr(dateRaw);
+      if (!liveDate) continue;
+      const daysLive = Math.max(0, Math.floor((today - liveDate) / 86400000));
+      config[name] = { liveDate, daysLive, target: parseInt(row[2])||10 };
+    }
+    return config;
+  } catch(e) { return {}; }
+}
+
+// ════════════════════════════════════════════════
+// RENDER — CALLS
+// ════════════════════════════════════════════════
+function renderCalls(data) {
+  const totalJules  = data.monthly.jules.reduce((a,b)=>a+b,0);
+  const totalAyessa = data.monthly.ayessa.reduce((a,b)=>a+b,0);
+  const grandTotal  = totalJules + totalAyessa;
+  const todayLeader = data.today.ayessa.total > data.today.jules.total ? 'ayessa'
+    : data.today.jules.total > data.today.ayessa.total ? 'jules' : null;
+  const leadDiff  = Math.abs(data.today.ayessa.total - data.today.jules.total);
+  const lastWeekJ = data.weekly.jules[data.weekly.jules.length-1] || 0;
+  const lastWeekA = data.weekly.ayessa[data.weekly.ayessa.length-1] || 0;
+  const todayJ = (window._todayApptsData || {jules:0}).jules;
+  const todayA = (window._todayApptsData || {ayessa:0}).ayessa;
+
+  document.getElementById('app-calls').innerHTML = `
+    <div class="last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
+
+    <div class="today-banner">
+      <div class="agent-card jules">
+        <div class="agent-name">Jules ${todayLeader==='jules'?'<span class="leader-tag jules">leading</span>':''}</div>
+        <div class="agent-count">${fmt(data.today.jules.total)}</div>
+        <div class="agent-sub">calls today</div>
+        ${data.today.jules.clients.length ? `<div class="agent-clients">${data.today.jules.clients.join('<br>')}</div>` : '<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
+        <div class="agent-appt-stat">
+          <div class="agent-appt-count">${todayJ}</div>
+          <div class="agent-appt-label">appts last 7 days</div>
+        </div>
+      </div>
+      <div class="agent-card ayessa">
+        <div class="agent-name">Ayessa ${todayLeader==='ayessa'?'<span class="leader-tag ayessa">leading</span>':''}</div>
+        <div class="agent-count">${fmt(data.today.ayessa.total)}</div>
+        <div class="agent-sub">calls today</div>
+        ${data.today.ayessa.clients.length ? `<div class="agent-clients">${data.today.ayessa.clients.join('<br>')}</div>` : '<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
+        <div class="agent-appt-stat">
+          <div class="agent-appt-count">${todayA}</div>
+          <div class="agent-appt-label">appts last 7 days</div>
+        </div>
+      </div>
+    </div>
+    ${todayLeader ? `<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:2rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Jules'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>` : ''}
+
+    <div class="metrics-strip">
+      <div class="metric"><div class="metric-label">Total Calls (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across both agents</div></div>
+      <div class="metric"><div class="metric-label">Calls This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Jules ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Jules Total</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${grandTotal?Math.round(totalJules/grandTotal*100):0}% of all calls</div></div>
+      <div class="metric"><div class="metric-label">Ayessa Total</div><div class="metric-value" style="color:var(--ayessa)">${fmt(totalAyessa)}</div><div class="metric-sub">${grandTotal?Math.round(totalAyessa/grandTotal*100):0}% of all calls</div></div>
+    </div>
+
+    <div class="chart-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div class="section-title">calls over time</div>
+        <div class="view-tabs">
+          <button class="view-tab ${currentView==='daily'?'active':''}" onclick="switchView('daily')">daily</button>
+          <button class="view-tab ${currentView==='weekly'?'active':''}" onclick="switchView('weekly')">weekly</button>
+          <button class="view-tab ${currentView==='monthly'?'active':''}" onclick="switchView('monthly')">monthly</button>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--jules)"></div>Jules</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ayessa)"></div>Ayessa</div>
+      </div>
+      <div style="position:relative;width:100%;height:280px;"><canvas id="mainChart"></canvas></div>
+    </div>
+
+    <div class="table-section">
+      <div class="table-header"><div class="section-title">weekly breakdown</div></div>
+      <div style="overflow-x:auto;">
+        <table><thead><tr><th>week starting</th>${data.weekly.weeks.map(w=>`<th>${w.slice(0,5)}</th>`).join('')}</tr></thead>
+        <tbody>
+          <tr><td style="color:var(--jules)">Jules</td>${data.weekly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
+          <tr><td style="color:var(--ayessa)">Ayessa</td>${data.weekly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
+          <tr class="row-total"><td>Total</td>${data.weekly.jules.map((j,i)=>`<td class="val-total">${fmt(j+data.weekly.ayessa[i])}</td>`).join('')}</tr>
+        </tbody></table>
+      </div>
+    </div>
+
+    <div class="table-section" style="margin-bottom:2rem;">
+      <div class="table-header"><div class="section-title">monthly summary</div></div>
+      <table><thead><tr><th>month</th>${data.monthly.months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        <tr><td style="color:var(--jules)">Jules</td>${data.monthly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
+        <tr><td style="color:var(--ayessa)">Ayessa</td>${data.monthly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
+        <tr class="row-total"><td>Total</td>${data.monthly.months.map((_,i)=>`<td class="val-total">${fmt(data.monthly.jules[i]+data.monthly.ayessa[i])}</td>`).join('')}</tr>
+      </tbody></table>
+    </div>
+
+    <div class="client-grid">
+      ${_renderClientCallBars('jules',  data.julesClients)}
+      ${_renderClientCallBars('ayessa', data.ayessaClients)}
+    </div>`;
+
+  _drawChart(data);
+}
+
+function _renderClientCallBars(agent, clients) {
+  const color = agent === 'jules' ? 'var(--jules)' : 'var(--ayessa)';
+  const label = agent === 'jules' ? 'Jules · call volume by client' : 'Ayessa · call volume by client';
+  const rows  = Object.entries(clients)
+    .map(([name, vals]) => ({ name, total: Object.values(vals).reduce((a,b)=>a+b,0) }))
+    .sort((a,b) => b.total - a.total);
+  const max = rows[0]?.total || 1;
+  return `<div class="client-section">
+    <div class="client-header ${agent}">${label}</div>
+    ${rows.map(r => `
+      <div class="client-row">
+        <div class="client-name">${r.name}</div>
+        <div class="client-bar-wrap"><div class="client-bar" style="width:${Math.round(r.total/max*100)}%;background:${color};opacity:0.7;"></div></div>
+        <div class="client-count">${fmt(r.total)}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function _drawChart(data) {
+  if (charts.main) { charts.main.destroy(); }
+  const ctx = document.getElementById('mainChart');
+  if (!ctx) return;
+  let labels, julesData, ayessaData;
+  if (currentView === 'daily')   { labels=data.daily.dates.map(d=>d.slice(5));         julesData=data.daily.jules;   ayessaData=data.daily.ayessa; }
+  else if (currentView === 'weekly')  { labels=data.weekly.weeks.map(w=>w.slice(0,5)); julesData=data.weekly.jules;  ayessaData=data.weekly.ayessa; }
+  else                                { labels=data.monthly.months;                    julesData=data.monthly.jules; ayessaData=data.monthly.ayessa; }
+  charts.main = new Chart(ctx, {
+    type: currentView === 'monthly' ? 'bar' : 'line',
+    data: { labels, datasets: [
+      { label:'Jules',  data:julesData,  borderColor:'#c9960c', backgroundColor:'rgba(201,150,12,0.12)', borderWidth:2, pointRadius:currentView==='daily'?0:4, pointHoverRadius:6, fill:true, tension:0.4 },
+      { label:'Ayessa', data:ayessaData, borderColor:'#e6b84a', backgroundColor:'rgba(230,184,74,0.12)', borderWidth:2, pointRadius:currentView==='daily'?0:4, pointHoverRadius:6, fill:true, tension:0.4 },
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode:'index', intersect:false },
+      plugins: { legend:{display:false}, tooltip:{backgroundColor:'#23221e',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#8a8678',bodyColor:'#f5f2ea',padding:12} },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#8a8678',font:{family:"'DM Mono',monospace",size:10},maxRotation:45,autoSkip:currentView==='daily'} },
+        y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#8a8678',font:{family:"'DM Mono',monospace",size:11}} },
+      },
+    },
+  });
+}
+
+function switchView(view) {
+  currentView = view;
+  if (window._callsData) renderCalls(window._callsData);
+}
+
+// ════════════════════════════════════════════════
+// RENDER — APPOINTMENTS
+// ════════════════════════════════════════════════
+function renderAppts(data) {
+  const grandLast7  = data.jTotals.last7  + data.aTotals.last7;
+  const grandLast14 = data.jTotals.last14 + data.aTotals.last14;
+  const grandLast30 = data.jTotals.last30 + data.aTotals.last30;
+  const grandAll    = data.jTotals.allTime + data.aTotals.allTime;
+
+  function clientRows(clients) {
+    return clients.map(c => {
+      const cfg = getConfig(c.name);
+      const cls30 = kpiClass(c.last30, cfg.daysLive);
+      return `<tr>
+        <td>${c.name}${daysLiveLabel(cfg.daysLive, cfg.liveDate)}</td>
+        <td>${fmt(c.last7)}</td>
+        <td>${fmt(c.last14)}</td>
+        <td>${kpiDot(cls30)} ${fmt(c.last30)}</td>
+        <td style="color:var(--muted)">${fmt(c.allTime)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const kc = kpiClass(grandLast30, 150);
+  document.getElementById('app-appts').innerHTML = `
+    <div class="last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
+
+    <div class="appt-hero">
+      <div class="appt-hero-card neutral">
+        <div class="appt-hero-label">Last 7 Days · Total</div>
+        <div class="appt-hero-value">${fmt(grandLast7)}</div>
+        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last7)} · Ayessa ${fmt(data.aTotals.last7)}</div>
+      </div>
+      <div class="appt-hero-card neutral">
+        <div class="appt-hero-label">Last 14 Days · Total</div>
+        <div class="appt-hero-value">${fmt(grandLast14)}</div>
+        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last14)} · Ayessa ${fmt(data.aTotals.last14)}</div>
+      </div>
+      <div class="appt-hero-card ${kc}">
+        <div class="appt-hero-label">Last 30 Days · Total</div>
+        <div class="appt-hero-value" style="color:var(--${kc==='green'?'green':kc==='amber'?'amber':'red'})">${fmt(grandLast30)}</div>
+        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last30)} · Ayessa ${fmt(data.aTotals.last30)}</div>
+      </div>
+      <div class="appt-hero-card neutral">
+        <div class="appt-hero-label">All Time · Total</div>
+        <div class="appt-hero-value">${fmt(grandAll)}</div>
+        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.allTime)} · Ayessa ${fmt(data.aTotals.allTime)}</div>
+      </div>
+    </div>
+
+    <div class="kpi-section">
+      <div class="kpi-section-header">
+        <div class="section-title">Jules · Appointments by Client</div>
+        <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted)">30-day KPI window</div>
+      </div>
+      <table class="kpi-table">
+        <thead><tr><th>Client</th><th>Last 7 Days</th><th>Last 14 Days</th><th>Last 30 Days</th><th>All Time</th></tr></thead>
+        <tbody>
+          ${clientRows(data.julesClients)}
+          <tr class="total-row"><td>Jules Total</td><td>${fmt(data.jTotals.last7)}</td><td>${fmt(data.jTotals.last14)}</td><td>${fmt(data.jTotals.last30)}</td><td>${fmt(data.jTotals.allTime)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="kpi-section">
+      <div class="kpi-section-header">
+        <div class="section-title">Ayessa · Appointments by Client</div>
+        <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted)">30-day KPI window</div>
+      </div>
+      <table class="kpi-table">
+        <thead><tr><th>Client</th><th>Last 7 Days</th><th>Last 14 Days</th><th>Last 30 Days</th><th>All Time</th></tr></thead>
+        <tbody>
+          ${clientRows(data.ayessaClients)}
+          <tr class="total-row"><td>Ayessa Total</td><td>${fmt(data.aTotals.last7)}</td><td>${fmt(data.aTotals.last14)}</td><td>${fmt(data.aTotals.last30)}</td><td>${fmt(data.aTotals.allTime)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:0.5rem;padding-bottom:2rem;">
+      <span>${kpiDot('green')} At or above KPI target</span>
+      <span>${kpiDot('amber')} Within 30% of target</span>
+      <span>${kpiDot('red')} More than 30% below target</span>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════
+// PAGE LOADERS — called by switchPage
+// ════════════════════════════════════════════════
+async function loadOverviewPage() {
+  const el = document.getElementById('app-overview');
+  const needsCalls  = !window._callsData;
+  const needsAppts  = !window._apptsData;
+  const needsConfig = !window._configData;
+  const needsAds    = !window._adsData;
+  if (needsCalls || needsAppts || needsConfig || needsAds) {
+    el.innerHTML = '<div class="loading"><div class="spinner"></div>building overview...</div>';
+    const fetches = [];
+    if (needsCalls)  fetches.push(fetchCallsData().then(d  => { if(d)  window._callsData  = d; }));
+    if (needsAppts)  fetches.push(fetchApptsData().then(d  => { if(d)  window._apptsData  = d; }));
+    if (needsConfig) fetches.push(fetchClientConfig().then(d=> { if(d)  window._configData = d; }));
+    if (needsAds)    fetches.push(fetchAdsData().then(d    => { window._adsData = Object.keys(d||{}).length ? d : null; }));
+    await Promise.all(fetches);
+  }
+  renderOverview();
+}
+
+async function loadCallsPage() {
+  if (window._callsData) { renderCalls(window._callsData); return; }
+  document.getElementById('app-calls').innerHTML = '<div class="loading"><div class="spinner"></div>loading call data...</div>';
+  const [callsData, todayAppts] = await Promise.all([fetchCallsData(), fetchTodayApptCounts()]);
+  window._todayApptsData = todayAppts || { jules: 0, ayessa: 0 };
+  if (callsData) { window._callsData = callsData; renderCalls(callsData); }
+  else document.getElementById('app-calls').innerHTML = '<div class="loading" style="opacity:0.5">Could not load call data — check proxy or network.</div>';
+}
+
+async function loadApptsPage() {
+  if (window._apptsData) { renderAppts(window._apptsData); return; }
+  document.getElementById('app-appts').innerHTML = '<div class="loading"><div class="spinner"></div>loading appointments...</div>';
+  const [apptsData, configData] = await Promise.all([fetchApptsData(), fetchClientConfig()]);
+  window._configData = configData || {};
+  if (apptsData) { window._apptsData = apptsData; renderAppts(apptsData); }
+  else document.getElementById('app-appts').innerHTML = '<div class="loading" style="opacity:0.5">Could not load appointments — check proxy or network.</div>';
+}
+
+// ════════════════════════════════════════════════
+// SOPs — TRAINING LIBRARY
+// ════════════════════════════════════════════════
+// To add a video URL: paste your YouTube embed URL into the `url` field below.
+// YouTube format:  https://www.youtube.com/embed/VIDEO_ID
+// Vimeo format:    https://player.vimeo.com/video/VIDEO_ID
+//
+// To attach a document to a video, add an object to its `docs` array:
+// { title: 'Script PDF', url: 'https://...' }
+// ─────────────────────────────────────────────
+const SOP_MODULES = [
+  {
+    id: 'schedule',
+    icon: '🗓',
+    title: 'CSR Schedule',
+    videos: [
+      {
+        id: 'csr-schedule',
+        title: 'CSR Daily Schedule',
+        url: '',
+        description: 'Your daily schedule as a Quality Jobs calling agent. Log in at 9:30 AM Melbourne time and follow the timetable below for your calling blocks, breaks, and end-of-day tasks.',
+        docs: [{ title: '📋 End of Day Form', url: 'https://api.leadconnectorhq.com/widget/form/AneXFuWvUQwzOFAwqMEj' }],
+        image: { src: 'csr-schedule.svg', caption: 'CSR Daily Schedule — Melbourne Time (AEST)' },
+      },
+    ]
+  },
+  {
+    id: 'welcome',
+    icon: '👋',
+    title: 'Welcome',
+    videos: [
+      {
+        id: 'welcome-intro',
+        title: 'Welcome to the Quality Jobs SOPs',
+        url: 'https://fast.wistia.net/embed/iframe/6uyfeflgte',
+        description: 'A quick welcome walkthrough covering what these SOPs are, how to use this library, and what to expect as a Quality Jobs calling agent.',
+        docs: [],
+      },
+    ]
+  },
+  {
+    id: 'setup',
+    icon: '🚀',
+    title: 'Getting Set Up',
+    videos: [
+      {
+        id: 'agent-hub',
+        title: 'CSR Agent Hub, KPIs & Slack',
+        url: 'https://fast.wistia.net/embed/iframe/3sm2psva1p',
+        description: 'A walkthrough of the Agent Hub dashboard — how to read your KPIs, track your call volume and appointments, and how to communicate through the Slack channel.',
+        docs: [
+          { title: 'Join the Quality Jobs Slack', url: 'https://join.slack.com/t/qualityjobs/shared_invite/zt-3zmpu42r4-dCiUsW6Nx_J8X7fHVMOEfw' },
+        ],
+      },
+      {
+        id: 'ghl-overview',
+        title: 'Go High Level Overview',
+        url: 'https://fast.wistia.net/embed/iframe/xn52hj09f1',
+        description: 'An introduction to Go High Level — the CRM our clients use to manage leads and appointments. Learn how to navigate GHL, read lead statuses, and update records after each call.',
+        docs: [],
+      },
+      {
+        id: 'power-dialer',
+        title: 'How to Use the Power Dialer',
+        url: 'https://fast.wistia.net/embed/iframe/392gkmczf5',
+        description: 'Setup and operation of the power dialer. Covers loading your list, managing dial speed, handling dispositions, and avoiding common mistakes.',
+        docs: [{ title: 'Call Disposition SOP', url: 'https://docs.google.com/document/d/1iYVfQMPtaSZC8LeI7Vhyn7wGvxPpKyDIiZ4SehDHhFg/edit?usp=sharing' }],
+      },
+      {
+        id: 'roles-responsibilities',
+        title: 'Roles & Responsibilities',
+        url: 'https://fast.wistia.net/embed/iframe/eamwyv8ivd',
+        description: 'A clear breakdown of what is expected from you as a Quality Jobs calling agent — your daily responsibilities, performance standards, and how your role fits within the wider team.',
+        docs: [],
+        image: { src: 'csr-schedule.svg', caption: 'CSR Daily Schedule — Melbourne Time (AEST)' },
+      },
+    ],
+  },
+  {
+    id: 'calling',
+    icon: '📞',
+    title: 'Making the Call',
+    videos: [
+      {
+        id: 'script',
+        title: 'The Calling Script',
+        url: 'https://fast.wistia.net/embed/iframe/f6xni5f8vb',
+        description: 'The exact script to follow on every call — the opening, how to transition into qualification questions, how to handle objections, and how to close for the appointment.',
+        docs: [
+          { title: 'CSR Qualifying Script', url: 'https://docs.google.com/document/d/1C0OXNftv4WSecNDlhWrpZYSoL3R3otX2Qx--zNl0fBo/edit?usp=sharing' },
+          { title: 'Renovation Cost Benchmark SOP', url: 'https://docs.google.com/document/d/1SDpMxsPgA32FUVoKou0ZeBJM9gjCygx_RUfeGsrgWJg/edit?usp=sharing' },
+        ],
+      },
+      {
+        id: 'new-lead-live',
+        title: 'Calling a New Lead — Live Example',
+        url: 'https://fast.wistia.net/embed/iframe/c4hfbaacxi',
+        description: 'A real live call from start to finish. Watch how to handle a brand new inbound lead — opening, qualification, objection handling, and booking the appointment.',
+        docs: [],
+      },
+      {
+        id: 'location-qualifying',
+        title: 'Location Qualifying',
+        url: 'https://fast.wistia.net/embed/iframe/qc2xu8ypg7',
+        description: 'How to correctly qualify a lead based on location and each client\'s service area. Covers how to handle leads that are borderline or outside the zone.',
+        docs: [],
+      },
+      {
+        id: 'booking',
+        title: 'How to Book Appointments',
+        url: 'https://fast.wistia.net/embed/iframe/4kp6sqb7y8',
+        description: 'The full process for booking an appointment — confirming qualification, selecting a time slot, confirming the booking in GHL, and setting reminders.',
+        docs: [],
+      },
+    ],
+  },
+];
+
+let _sopActiveVideo  = null;
+let _sopOpenModules  = new Set(['setup', 'calling']); // both expanded by default
+
+function _sopWatched() {
+  try { return JSON.parse(localStorage.getItem('qj_sop_watched') || '{}'); } catch(e) { return {}; }
+}
+function _sopMarkWatched(id, val) {
+  const w = _sopWatched(); w[id] = val;
+  localStorage.setItem('qj_sop_watched', JSON.stringify(w));
+}
+
+function renderSOPsPage() {
+  const el = document.getElementById('app-sops');
+  if (!el) return;
+  const watched     = _sopWatched();
+  const totalVids   = SOP_MODULES.reduce((a, m) => a + m.videos.length, 0);
+  const doneVids    = SOP_MODULES.reduce((a, m) => a + m.videos.filter(v => watched[v.id]).length, 0);
+  const pct         = totalVids ? Math.round(doneVids / totalVids * 100) : 0;
+
+  el.innerHTML = `
+    <div class="sops-layout">
+      <div class="sops-main" id="sops-main">
+        ${_sopActiveVideo ? _sopRenderPlayer(_sopActiveVideo, watched) : _sopRenderWelcome()}
+      </div>
+      <div class="sops-sidebar">
+        <div class="sops-sidebar-head">
+          <div class="sops-sidebar-label">Training Library</div>
+          <div class="sops-progress-text">${doneVids} / ${totalVids} completed</div>
+          <div class="sops-progress-bar"><div class="sops-progress-fill" style="width:${pct}%"></div></div>
+        </div>
+        ${SOP_MODULES.map(m => _sopRenderModule(m, watched)).join('')}
+      </div>
+    </div>`;
+}
+
+function _sopRenderWelcome() {
+  return `<div class="sops-welcome">
+    <div class="sops-welcome-icon">📚</div>
+    <div class="sops-welcome-title">Training Library</div>
+    <div class="sops-welcome-sub">Select a video from the sidebar to get started</div>
+  </div>`;
+}
+
+function _sopRenderModule(mod, watched) {
+  const isOpen  = _sopOpenModules.has(mod.id);
+  const done    = mod.videos.filter(v => watched[v.id]).length;
+  return `
+    <div class="sops-module">
+      <div class="sops-module-head" onclick="_sopToggleModule('${mod.id}')">
+        <span class="sops-module-icon">${mod.icon}</span>
+        <div class="sops-module-info">
+          <div class="sops-module-title">${mod.title}</div>
+          <div class="sops-module-sub">${done}/${mod.videos.length} watched</div>
+        </div>
+        <span class="sops-chevron ${isOpen ? 'open' : ''}">▶</span>
+      </div>
+      <div class="sops-video-list ${isOpen ? 'open' : ''}">
+        ${mod.videos.map(v => {
+          const isActive = _sopActiveVideo?.id === v.id;
+          const isDone   = watched[v.id];
+          return `<div class="sops-video-item${isActive ? ' active' : ''}" onclick="_sopSelectVideo('${mod.id}','${v.id}')">
+            <div class="sops-item-dot${isDone ? ' watched' : ''}">${isDone ? '✓' : ''}</div>
+            <div class="sops-item-name">${v.title}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function _sopRenderPlayer(video, watched) {
+  const mod    = SOP_MODULES.find(m => m.videos.some(v => v.id === video.id));
+  const isDone = watched[video.id];
+  const hasDocs = video.docs && video.docs.length > 0;
+  return `
+    ${video.url
+      ? `<div class="sops-player-wrap"><iframe src="${video.url}" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe></div>`
+      : video.image
+        ? ''
+        : `<div class="sops-player-wrap"><div class="sops-player-placeholder"><div class="sops-player-placeholder-icon">🎬</div><div class="sops-player-placeholder-text">Video coming soon</div></div></div>`}
+    <span class="sops-video-module-tag">${mod?.icon} ${mod?.title}</span>
+    <div class="sops-video-title-main">${video.title}</div>
+    <div class="sops-section-lbl">About this video</div>
+    <div class="sops-video-desc">${video.description}</div>
+    <div class="sops-section-lbl">📎 Resources & Documents</div>
+    <div class="sops-docs-list">
+      ${hasDocs
+        ? video.docs.map(d => `<a class="sops-doc-chip" href="${d.url}" target="_blank">📄 ${d.title}</a>`).join('')
+        : '<span class="sops-doc-add">No documents attached yet — add a URL to the docs array in SOP_MODULES</span>'}
+    </div>
+    ${video.image ? `
+    <div class="sops-section-lbl" style="margin-top:1.25rem">🗓 Schedule</div>
+    <div style="margin-top:0.6rem;border-radius:10px;overflow:hidden;border:1px solid var(--border);max-width:560px">
+      <img src="${video.image.src}" alt="${video.image.caption}" style="width:100%;display:block"/>
+    </div>
+    ${video.image.caption ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:0.45rem">${video.image.caption}</div>` : ''}
+    ` : ''}
+    <button class="sops-watched-btn${isDone ? ' marked' : ''}" onclick="_sopToggleWatched('${video.id}')">
+      ${isDone ? '✓&nbsp; Marked as watched' : '○&nbsp; Mark as watched'}
+    </button>`;
+}
+
+function _sopToggleModule(modId) {
+  if (_sopOpenModules.has(modId)) _sopOpenModules.delete(modId);
+  else _sopOpenModules.add(modId);
+  renderSOPsPage();
+}
+
+function _sopSelectVideo(modId, videoId) {
+  const mod = SOP_MODULES.find(m => m.id === modId);
+  _sopActiveVideo = mod?.videos.find(v => v.id === videoId) || null;
+  renderSOPsPage();
+  document.getElementById('sops-main')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function _sopToggleWatched(videoId) {
+  const w = _sopWatched();
+  _sopMarkWatched(videoId, !w[videoId]);
+  renderSOPsPage();
+}
+
+// ════════════════════════════════════════════════
+// PAGE SWITCHING
+// ════════════════════════════════════════════════
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page)?.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.getAttribute('onclick')?.includes("'" + page + "'")) t.classList.add('active');
+  });
+  if (page === 'clients')      renderClientsPage();
+  if (page === 'calls')        loadCallsPage();
+  if (page === 'appointments') loadApptsPage();
+  if (page === 'overview')     loadOverviewPage();
+  if (page === 'callbacks')    renderCallbacksPage();
+  if (page === 'leads')        renderLeadsPage();
+  if (page === 'sops')         renderSOPsPage();
+  if (page === 'intelligence') loadIntelligencePage();
+}
+
+// ════════════════════════════════════════════════
+// CALLBACKS
+// ════════════════════════════════════════════════
+let _cbRefreshTimer = null;
+
+function cbRelTime(ts) {
+  const secs = Math.floor(Date.now() / 1000 - parseFloat(ts));
+  if (secs < 60)    return 'just now';
+  if (secs < 3600)  return `${Math.floor(secs/60)} min ago`;
+  if (secs < 86400) return `${Math.floor(secs/3600)}h ago`;
+  const d = new Date(parseFloat(ts) * 1000);
+  return d.toLocaleDateString('en-AU', {day:'2-digit', month:'short'}) + ' ' +
+         d.toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit'});
+}
+
+function parseCallbackMsg(msg) {
+  const text = msg.text || '';
+  if (!/NBOUND CALL HOT LEAD/i.test(text)) return null;
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const companyRaw  = lines[1] || '';
+  const company     = companyRaw.replace(/\*/g, '').trim();
+  const nameLine    = lines[2] || '';
+  const nameMatch   = nameLine.match(/^(.+?)\s+is calling you back/i);
+  const name = nameMatch ? nameMatch[1] : nameLine;
+  const cbUrlSlack = text.match(/<(https:\/\/app\.gohighlevel\.com\/[^|>\s]+)[|>]/);
+  const cbUrlPlain = text.match(/https:\/\/app\.gohighlevel\.com\/[^\s<>|"')]+/);
+  const url  = cbUrlSlack ? cbUrlSlack[1] : (cbUrlPlain ? cbUrlPlain[0] : null);
+  const agent = getAgent(company);
+  return { ts: msg.ts, company, name, url, agent };
+}
+
+function cbDoneSet(agent) {
+  const key = `qj_callbacks_done_${agent.toLowerCase()}`;
+  try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(e) { return new Set(); }
+}
+
+function cbToggleDone(ts, agent) {
+  const key  = `qj_callbacks_done_${agent.toLowerCase()}`;
+  const done = cbDoneSet(agent);
+  if (done.has(ts)) done.delete(ts); else done.add(ts);
+  localStorage.setItem(key, JSON.stringify([...done]));
+  renderCallbacksList(window._cbItems || []);
+}
+
+function renderAgentColumn(agent, items) {
+  const done       = cbDoneSet(agent);
+  const agentItems = items.filter(i => i.agent === agent);
+  const pending    = agentItems.filter(i => !done.has(i.ts)).length;
+  const color      = agent === 'Jules' ? 'var(--jules)' : 'var(--ayessa)';
+
+  const cards = agentItems.length === 0
+    ? `<div class="cb-empty">No callbacks assigned to ${agent}.</div>`
+    : agentItems.map(item => {
+        const isDone = done.has(item.ts);
+        return `
+        <div class="cb-card ${isDone ? 'done' : ''}">
+          <button class="cb-check" onclick="cbToggleDone('${item.ts}','${agent}')" title="${isDone ? 'Undo' : 'Mark called back'}">✓</button>
+          <div class="cb-body">
+            <div class="cb-company">${item.company || 'Unknown'}</div>
+            <div class="cb-name">${item.name || 'Unknown contact'}</div>
+            <div class="cb-meta">
+              <span class="cb-time">⏱ ${cbRelTime(item.ts)}</span>
+              ${item.url ? `<a class="cb-ghl-btn" href="${item.url}" target="_blank">↗ GHL</a>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+  return `
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border2);">
+        <div style="font-size:1rem;font-weight:800;color:${color};">${agent}</div>
+        ${pending > 0 ? `<span class="cb-badge">${pending} pending</span>` : `<span style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--green);">✓ all done</span>`}
+      </div>
+      <div class="cb-list">${cards}</div>
+    </div>`;
+}
+
+function renderCallbacksList(items) {
+  window._cbItems = items;
+  const el = document.getElementById('cb-list-area');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;gap:2rem;align-items:flex-start;">
+      ${renderAgentColumn('Jules', items)}
+      <div style="width:1px;background:var(--border2);align-self:stretch;"></div>
+      ${renderAgentColumn('Ayessa', items)}
+    </div>
+    ${items.filter(i => !i.agent).length > 0 ? `
+    <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border2);">
+      <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.75rem;">UNASSIGNED</div>
+      <div class="cb-list">${items.filter(i => !i.agent).map(item => `
+        <div class="cb-card">
+          <div class="cb-body">
+            <div class="cb-company">${item.company || 'Unknown'}</div>
+            <div class="cb-name">${item.name || ''}</div>
+            <div class="cb-meta">
+              <span class="cb-time">⏱ ${cbRelTime(item.ts)}</span>
+              ${item.url ? `<a class="cb-ghl-btn" href="${item.url}" target="_blank">↗ GHL</a>` : ''}
+            </div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}`;
+}
+
+async function fetchAndRenderCallbacks() {
+  const token   = localStorage.getItem('qj_slack_token');
+  const channel = localStorage.getItem('qj_slack_channel_id');
+  if (!token || !channel) return;
+  const listEl = document.getElementById('cb-list-area');
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    const res  = await fetch(`${PROXY_URL}?service=slack_history&channel=${encodeURIComponent(channel)}&token=${encodeURIComponent(token)}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    const data = await res.json();
+    if (!data.ok) {
+      if (listEl) listEl.innerHTML = `<div class="cb-empty" style="color:#f87171;">Slack error: <strong>${data.error}</strong><br><br>Make sure <code>channels:history</code> or <code>groups:history</code> is enabled on your Slack bot.</div>`;
+      return;
+    }
+    const items = (data.messages || [])
+      .map(parseCallbackMsg)
+      .filter(Boolean)
+      .sort((a, b) => parseFloat(b.ts) - parseFloat(a.ts));
+    renderCallbacksList(items);
+  } catch(e) {
+    if (listEl) listEl.innerHTML = `<div class="cb-empty" style="color:#f87171;">Failed to fetch: <strong>${e.name === 'AbortError' ? 'Request timed out (20s)' : e.message}</strong></div>`;
+  }
+}
+
+async function saveCallbacksSetup() {
+  const token   = document.getElementById('cb-token-input').value.trim();
+  const channel = document.getElementById('cb-channel-input').value.trim().replace(/^#/, '');
+  if (!token || !channel) return;
+  const btn = document.getElementById('cb-save-btn');
+  btn.textContent = 'Connecting…'; btn.disabled = true;
+  try {
+    const res  = await fetch(`${PROXY_URL}?service=slack_channels&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const ch = (data.channels || []).find(c => c.name === channel || c.id === channel);
+    if (!ch) throw new Error(`Channel "${channel}" not found — make sure the bot is invited to it.`);
+    localStorage.setItem('qj_slack_token',        token);
+    localStorage.setItem('qj_slack_channel_id',   ch.id);
+    localStorage.setItem('qj_slack_channel_name', ch.name);
+    renderCallbacksPage();
+  } catch(e) {
+    btn.textContent = '✗ ' + e.message; btn.disabled = false;
+  }
+}
+
+function cbClearSetup() {
+  ['qj_slack_token','qj_slack_channel_id','qj_slack_channel_name'].forEach(k => localStorage.removeItem(k));
+  clearInterval(_cbRefreshTimer);
+  renderCallbacksPage();
+}
+
+function renderCallbacksPage() {
+  const el      = document.getElementById('app-callbacks');
+  const token   = localStorage.getItem('qj_slack_token');
+  const channel = localStorage.getItem('qj_slack_channel_id');
+  const chName  = localStorage.getItem('qj_slack_channel_name') || channel;
+
+  if (!token || !channel) {
+    el.innerHTML = `
+    <div class="cb-setup">
+      <h2>📋 Callbacks Setup</h2>
+      <p>Connect your Slack channel to pull in inbound callback notifications as a live to-do list, split by agent.</p>
+      <div>
+        <label style="font-size:0.72rem;color:var(--muted);display:block;margin-bottom:6px;">Bot User OAuth Token</label>
+        <input id="cb-token-input" type="password" placeholder="xoxb-…" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;color:var(--muted);display:block;margin-bottom:6px;">Channel name (without #)</label>
+        <input id="cb-channel-input" type="text" placeholder="callbacks" />
+      </div>
+      <button class="primary-btn" id="cb-save-btn" onclick="saveCallbacksSetup()">Connect</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="cb-header">
+      <div style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;">callbacks · #${chName}</div>
+      <button class="cb-settings-btn" onclick="cbClearSetup()">⚙ Reconnect</button>
+    </div>
+    <div id="cb-list-area"><div class="loading"><div class="spinner"></div>fetching…</div></div>`;
+
+  fetchAndRenderCallbacks();
+
+  clearInterval(_cbRefreshTimer);
+  _cbRefreshTimer = setInterval(() => {
+    if (document.getElementById('page-callbacks')?.classList.contains('active')) {
+      fetchAndRenderCallbacks();
+    }
+  }, 90 * 1000);
+}
+
+window.saveCallbacksSetup = saveCallbacksSetup;
+window.cbToggleDone       = cbToggleDone;
+window.cbClearSetup       = cbClearSetup;
+
+// ════════════════════════════════════════════════
+// NEW LEADS
+// ════════════════════════════════════════════════
+let _leadsRefreshTimer = null;
+
+function parseLeadMsg(msg) {
+  const text = (msg.text || '').trim();
+  if (!text) return null;
+  const lines = text.split('\n').map(l => l.replace(/\*/g, '').trim()).filter(l => l);
+
+  // Try to find a company name by matching against known accounts
+  let company = null;
+  let agent   = null;
+  for (const line of lines) {
+    const a = getAgent(line);
+    if (a) { company = line; agent = a; break; }
+  }
+  if (!company) {
+    for (const line of lines) {
+      for (const acc of [...JULES_ACCOUNTS, ...AYESSA_ACCOUNTS]) {
+        if (line.toLowerCase().includes(acc.toLowerCase().slice(0,6))) {
+          company = acc; agent = getAgent(acc); break;
+        }
+      }
+      if (company) break;
+    }
+  }
+
+  // Extract labelled fields (e.g. "Name: John Smith", "Email: ...")
+  function extractField(pattern) {
+    const m = text.match(pattern);
+    return m ? m[1].trim() : null;
+  }
+
+  const name    = extractField(/(?:name|full name|contact)[:\s]+([^\n]+)/i);
+  const email   = extractField(/(?:email|e-mail)[:\s]+([^\s\n]+)/i)
+               || (text.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i) || [])[0] || null;
+  const phone   = extractField(/(?:phone|mobile|number)[:\s]+([+\d\s\(\)-]{7,})/i)
+               || (text.match(/(?:\+?61|0)[2-9][\d\s]{7,10}/) || [])[0] || null;
+  const source  = extractField(/(?:source|lead source)[:\s]+([^\n]+)/i);
+  const service = extractField(/(?:service|interested in|looking for)[:\s]+([^\n]+)/i);
+  const message = extractField(/(?:message|notes?|comment)[:\s]+([^\n]+)/i);
+
+  // GHL contact link — handle Slack's <url> and <url|label> wrapping
+  const urlSlack = text.match(/<(https:\/\/app\.gohighlevel\.com\/[^|>\s]+)[|>]/);
+  const urlPlain = text.match(/https:\/\/app\.gohighlevel\.com\/[^\s<>|"')]+/);
+  const url = urlSlack ? urlSlack[1] : (urlPlain ? urlPlain[0] : null);
+
+  return { ts: msg.ts, company, agent, name, email, phone, source, service, message, url, text };
+}
+
+function leadDoneSet(agent) {
+  const key = `qj_leads_done_${agent.toLowerCase()}`;
+  try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(e) { return new Set(); }
+}
+
+function leadToggleDone(ts, agent) {
+  const key  = `qj_leads_done_${agent.toLowerCase()}`;
+  const done = leadDoneSet(agent);
+  if (done.has(ts)) done.delete(ts); else done.add(ts);
+  localStorage.setItem(key, JSON.stringify([...done]));
+  renderLeadsList(window._leadItems || []);
+}
+
+function renderLeadAgentColumn(agent, items) {
+  const done       = leadDoneSet(agent);
+  const agentItems = items.filter(i => i.agent === agent);
+  const pending    = agentItems.filter(i => !done.has(i.ts)).length;
+  const color      = agent === 'Jules' ? 'var(--jules)' : 'var(--ayessa)';
+
+  const cards = agentItems.length === 0
+    ? `<div class="cb-empty">No new leads for ${agent}.</div>`
+    : agentItems.map(item => {
+        const isDone = done.has(item.ts);
+        return `
+        <div class="cb-card ${isDone ? 'done' : ''}">
+          <button class="cb-check" onclick="leadToggleDone('${item.ts}','${agent}')" title="${isDone ? 'Undo' : 'Mark contacted'}">✓</button>
+          <div class="cb-body">
+            <div class="cb-company">${item.company || 'Unknown client'}</div>
+            ${item.name    ? `<div class="cb-name">${item.name}</div>` : ''}
+            ${item.email   ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Email&nbsp;</span>${item.email}</div>` : ''}
+            ${item.phone   ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Phone&nbsp;</span><span style="color:var(--accent)">${item.phone}</span></div>` : ''}
+            ${item.source  ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Source&nbsp;</span>${item.source}</div>` : ''}
+            ${item.service ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Service&nbsp;</span>${item.service}</div>` : ''}
+            ${item.message ? `<div class="cb-name" style="margin-top:0.35rem;color:var(--muted);font-size:0.75rem;line-height:1.4;">${item.message}</div>` : ''}
+            <div class="cb-meta" style="margin-top:0.6rem;">
+              <span class="cb-time">⏱ ${cbRelTime(item.ts)}</span>
+              ${item.url ? `<a class="cb-ghl-btn" href="${item.url}" target="_blank">↗ GHL</a>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+  return `
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border2);">
+        <div style="font-size:1rem;font-weight:800;color:${color};">${agent}</div>
+        ${pending > 0 ? `<span class="cb-badge">${pending} new</span>` : `<span style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--green);">✓ all contacted</span>`}
+      </div>
+      <div class="cb-list">${cards}</div>
+    </div>`;
+}
+
+function renderLeadsList(items) {
+  window._leadItems = items;
+  const el = document.getElementById('leads-list-area');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;gap:2rem;align-items:flex-start;">
+      ${renderLeadAgentColumn('Jules', items)}
+      <div style="width:1px;background:var(--border2);align-self:stretch;"></div>
+      ${renderLeadAgentColumn('Ayessa', items)}
+    </div>
+    ${items.filter(i => !i.agent).length > 0 ? `
+    <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border2);">
+      <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.75rem;">UNASSIGNED</div>
+      <div class="cb-list">${items.filter(i => !i.agent).map(item => `
+        <div class="cb-card">
+          <div class="cb-body">
+            <div class="cb-company">${item.company || 'Unknown'}</div>
+            ${item.name    ? `<div class="cb-name">${item.name}</div>` : ''}
+            ${item.email   ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Email&nbsp;</span>${item.email}</div>` : ''}
+            ${item.phone   ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Phone&nbsp;</span><span style="color:var(--accent)">${item.phone}</span></div>` : ''}
+            ${item.source  ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Source&nbsp;</span>${item.source}</div>` : ''}
+            ${item.service ? `<div class="cb-name"><span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Service&nbsp;</span>${item.service}</div>` : ''}
+            ${item.message ? `<div class="cb-name" style="margin-top:0.35rem;color:var(--muted);font-size:0.75rem;line-height:1.4;">${item.message}</div>` : ''}
+            <div class="cb-meta" style="margin-top:0.6rem;">
+              <span class="cb-time">⏱ ${cbRelTime(item.ts)}</span>
+              ${item.url ? `<a class="cb-ghl-btn" href="${item.url}" target="_blank">↗ GHL</a>` : ''}
+            </div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}`;
+}
+
+async function fetchAndRenderLeads() {
+  const token   = localStorage.getItem('qj_slack_token');
+  const channel = localStorage.getItem('qj_leads_channel_id');
+  if (!token || !channel) return;
+  const listEl = document.getElementById('leads-list-area');
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    const res  = await fetch(`${PROXY_URL}?service=slack_history&channel=${encodeURIComponent(channel)}&token=${encodeURIComponent(token)}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    const data = await res.json();
+    if (!data.ok) {
+      if (listEl) listEl.innerHTML = `<div class="cb-empty" style="color:#f87171;">Slack error: <strong>${data.error}</strong></div>`;
+      return;
+    }
+    const items = (data.messages || [])
+      .map(parseLeadMsg)
+      .filter(Boolean)
+      .sort((a, b) => parseFloat(b.ts) - parseFloat(a.ts));
+    renderLeadsList(items);
+  } catch(e) {
+    if (listEl) listEl.innerHTML = `<div class="cb-empty" style="color:#f87171;">Failed to fetch: <strong>${e.name === 'AbortError' ? 'Request timed out (20s)' : e.message}</strong></div>`;
+  }
+}
+
+async function saveLeadsSetup() {
+  const token   = localStorage.getItem('qj_slack_token') || document.getElementById('leads-token-input')?.value.trim();
+  const channel = document.getElementById('leads-channel-input').value.trim().replace(/^#/, '');
+  if (!token || !channel) return;
+  const btn = document.getElementById('leads-save-btn');
+  btn.textContent = 'Connecting…'; btn.disabled = true;
+  try {
+    const res  = await fetch(`${PROXY_URL}?service=slack_channels&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const ch = (data.channels || []).find(c => c.name === channel || c.id === channel);
+    if (!ch) throw new Error(`Channel "${channel}" not found — make sure the bot is invited to it.`);
+    if (token) localStorage.setItem('qj_slack_token', token);
+    localStorage.setItem('qj_leads_channel_id',   ch.id);
+    localStorage.setItem('qj_leads_channel_name', ch.name);
+    renderLeadsPage();
+  } catch(e) {
+    btn.textContent = '✗ ' + e.message; btn.disabled = false;
+  }
+}
+
+function leadsReconnect() {
+  ['qj_leads_channel_id','qj_leads_channel_name'].forEach(k => localStorage.removeItem(k));
+  clearInterval(_leadsRefreshTimer);
+  renderLeadsPage();
+}
+
+function renderLeadsPage() {
+  const el      = document.getElementById('app-leads');
+  const token   = localStorage.getItem('qj_slack_token');
+  const channel = localStorage.getItem('qj_leads_channel_id');
+  const chName  = localStorage.getItem('qj_leads_channel_name') || channel;
+  const hasToken = !!token;
+
+  if (!channel) {
+    el.innerHTML = `
+    <div class="cb-setup">
+      <h2>🔔 New Leads Setup</h2>
+      <p>Connect the Slack channel where new lead notifications are posted. The bot needs to be invited to that channel first.</p>
+      ${!hasToken ? `<div>
+        <label style="font-size:0.72rem;color:var(--muted);display:block;margin-bottom:6px;">Bot User OAuth Token</label>
+        <input id="leads-token-input" type="password" placeholder="xoxb-…" />
+      </div>` : `<div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--green);padding:0.5rem 0;">✓ Using existing bot token</div>`}
+      <div>
+        <label style="font-size:0.72rem;color:var(--muted);display:block;margin-bottom:6px;">Leads channel name (without #)</label>
+        <input id="leads-channel-input" type="text" placeholder="new-leads" />
+      </div>
+      <button class="primary-btn" id="leads-save-btn" onclick="saveLeadsSetup()">Connect</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="cb-header">
+      <div style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;">new leads · #${chName}</div>
+      <button class="cb-settings-btn" onclick="leadsReconnect()">⚙ Reconnect</button>
+    </div>
+    <div id="leads-list-area"><div class="loading"><div class="spinner"></div>fetching…</div></div>`;
+
+  fetchAndRenderLeads();
+
+  clearInterval(_leadsRefreshTimer);
+  _leadsRefreshTimer = setInterval(() => {
+    if (document.getElementById('page-leads')?.classList.contains('active')) {
+      fetchAndRenderLeads();
+    }
+  }, 90 * 1000);
+}
+
+window.saveLeadsSetup  = saveLeadsSetup;
+window.leadToggleDone  = leadToggleDone;
+window.leadsReconnect  = leadsReconnect;
+
+// ════════════════════════════════════════════════
+// OUR CLIENTS
+// ════════════════════════════════════════════════
+window._clientsData = null;
+
+async function renderClientsPage() {
+  const el = document.getElementById('app-clients');
+  if (window._clientsData) { _renderClientsGrid(window._clientsData); return; }
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>loading clients...</div>';
+  try {
+    const res  = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    const rows = await res.json();
+    window._clientsData = rows;
+    _renderClientsGrid(rows);
+  } catch(e) {
+    _renderClientsFromOverride();
+  }
+}
+
+function _renderClientsFromOverride(filter='') {
+  const all = Object.entries(CLIENT_OVERVIEW_DATA).map(([name, ov]) => ({
+    name, agent:'', status:'Active', businessName:name,
+    liveDate:'', adBudget:'', mrrCollected:'', ufCash:'', timeline:'', overview:'', chatId:'', statsSheet:'',
+    ...ov,
+  }));
+  _buildGrid(document.getElementById('app-clients'), all, filter);
+}
+
+function _renderClientsGrid(rows, filter='') {
+  const el = document.getElementById('app-clients');
+  if (!Array.isArray(rows) || rows.length < 2) { _renderClientsFromOverride(filter); return; }
+  const clients = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const name   = String(r[0]||'').trim();
+    const status = String(r[8]||'').trim();
+    if (!name || status === 'Churned') continue;
+    const ov = _findClientOverride(name);
+    const s = f => String(f||'').trim();
+    const m = (sv, ok) => s(sv) || ov[ok] || '';
+    clients.push({
+      name, agent:s(r[1]), chatId:s(r[2]), statsSheet:s(r[3]), liveDate:s(r[4]),
+      website:m(r[5],'website'), offer:m(r[6],'offer'), overview:m(r[7],'overview'), status,
+      email:m(r[9],'email'), phone:m(r[10],'phone'),
+      businessName:s(r[11])||name, businessAddress:m(r[12],'businessAddress'),
+      timeZone:m(r[13],'timeZone'), serviceArea:m(r[14],'serviceArea'),
+      constructionCategory:m(r[15],'constructionCategory'), serviceName:m(r[16],'serviceName'),
+      idealClientProfile:m(r[17],'idealClientProfile'), agreedOffer:m(r[18],'agreedOffer'),
+      qualification:m(r[19],'qualification'), aimOfCall:m(r[20],'aimOfCall'),
+      timeline:s(r[21]), preferredTimeSlots:m(r[22],'preferredTimeSlots'),
+      adBudget:s(r[23]), mrrCollected:s(r[24]), ufCash:s(r[25]),
+      billingStartDate:s(r[26]), paymentType:s(r[27]), leadSource:s(r[28]),
+    });
+  }
+  _buildGrid(el, clients, filter);
+}
+
+function _buildGrid(el, clients, filter='') {
+  const filtered = filter
+    ? clients.filter(c =>
+        c.name.toLowerCase().includes(filter.toLowerCase()) ||
+        c.agent.toLowerCase().includes(filter.toLowerCase()) ||
+        (c.serviceArea||'').toLowerCase().includes(filter.toLowerCase()))
+    : clients;
+
+  window._agentClients = filtered;
+
+  function fld(label, val, full=false) {
+    const v = val||'';
+    return `<div class="client-field${full?' full':''}">
+      <span class="client-field-lbl">${label}</span>
+      <span class="client-field-val${v?'':' empty'}">${v||'—'}</span></div>`;
+  }
+  function fldP(label, val) {
+    const v = val||'';
+    return `<div class="client-field full">
+      <span class="client-field-lbl">${label}</span>
+      <span class="client-field-val prose${v?'':' empty'}">${v||'—'}</span></div>`;
+  }
+
+  el.innerHTML = `
+    <div class="clients-header">
+      <div>
+        <div class="clients-title">Our Clients</div>
+        <div class="clients-sub">${clients.length} active client${clients.length!==1?'s':''} · click any card to expand full details</div>
+      </div>
+      <div class="clients-search">
+        <input type="text" placeholder="Search by name, agent, city…"
+          oninput="_renderClientsGrid(window._clientsData, this.value)" value="${filter}" />
+        <button class="clients-filter active-filter" onclick="_renderClientsGrid(window._clientsData,'')">All</button>
+        <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Jules')">Jules</button>
+        <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Ayessa')">Ayessa</button>
+        <button class="clients-filter" onclick="window._clientsData=null;renderClientsPage()">↺</button>
+      </div>
+    </div>
+    <div class="clients-grid">
+      ${filtered.map((c,i) => {
+        const ag  = (c.agent||'').toLowerCase();
+        const agCls = ag==='jules'?'jules':ag==='ayessa'?'ayessa':'';
+        const cardId = `cc-${i}`;
+        const ov  = _findClientOverride(c.businessName || c.name);
+        const owner = ov.owner || c.name || '';
+        const bizName = c.businessName || c.name || '—';
+        const statsLink = c.statsSheet ? `<a href="${c.statsSheet}" target="_blank" onclick="event.stopPropagation()">Open Sheet ↗</a>` : '—';
+        const siteLink  = (c.website||ov.website) ? `<a href="${c.website||ov.website}" target="_blank" onclick="event.stopPropagation()">${c.website||ov.website}</a>` : '—';
+        return `<div class="client-card" id="${cardId}" onclick="_toggleClientCard('${cardId}')">
+
+          <!-- HEAD -->
+          <div class="client-card-head">
+            <div class="client-card-head-left">
+              <div class="client-card-business">${bizName}</div>
+              ${owner ? `<div class="client-card-contact">Owner: ${owner}</div>` : ''}
+              <div class="client-card-meta">
+                ${c.agent ? `<span class="client-badge ${agCls}">${c.agent}</span>` : ''}
+                <span class="client-badge active-badge">Active</span>
+                ${c.liveDate ? `<span class="client-badge" style="background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border)">Live ${c.liveDate}</span>` : ''}
+                ${c.paymentType ? `<span class="client-badge" style="background:rgba(255,255,255,0.03);color:var(--muted);border:1px solid var(--border)">${c.paymentType}</span>` : ''}
+              </div>
+            </div>
+            <div class="client-card-head-right">
+              <button class="call-mode-btn" onclick="event.stopPropagation();openCallMode(window._agentClients[${i}])">📞 Call Mode</button>
+            </div>
+          </div>
+
+          <!-- SUMMARY STRIP -->
+          <div class="client-card-summary">
+            <div class="client-summary-item">
+              <span class="client-summary-lbl">Phone</span>
+              <span class="client-summary-val${c.phone?'':' empty'}">${c.phone||'—'}</span>
+            </div>
+            <div class="client-summary-item">
+              <span class="client-summary-lbl">Service Area</span>
+              <span class="client-summary-val${c.serviceArea?'':' empty'}">${c.serviceArea||'—'}</span>
+            </div>
+            <div class="client-summary-item">
+              <span class="client-summary-lbl">Category</span>
+              <span class="client-summary-val${c.constructionCategory?'':' empty'}">${c.constructionCategory||'—'}</span>
+            </div>
+            <div class="client-summary-item">
+              <span class="client-summary-lbl">Email</span>
+              <span class="client-summary-val${c.email?'':' empty'}">${c.email||'—'}</span>
+            </div>
+            <div class="client-summary-item">
+              <span class="client-summary-lbl">Service</span>
+              <span class="client-summary-val${c.serviceName?'':' empty'}">${c.serviceName||'—'}</span>
+            </div>
+            <div class="client-summary-item">
+              <span class="client-summary-lbl">Timeline</span>
+              <span class="client-summary-val${c.timeline?'':' empty'}">${c.timeline||'—'}</span>
+            </div>
+          </div>
+
+          <!-- EXPAND TOGGLE -->
+          <div class="client-expand-toggle">
+            <span class="client-expand-label">View all details</span>
+            <span class="client-expand-arrow">▾</span>
+          </div>
+
+          <!-- EXPANDABLE BODY -->
+          <div class="client-card-expand">
+            <div>
+              <div class="client-card-body">
+
+                <div class="client-section-lbl">Business Details</div>
+                <div class="client-fields">
+                  ${fld('Business Name', bizName)}
+                  ${fld('Owner', owner)}
+                  ${fld('Email', c.email||ov.email)}
+                  ${fld('Phone', c.phone||ov.phone)}
+                  ${fld('Time Zone', c.timeZone||ov.timeZone)}
+                  ${fld('Lead Source', c.leadSource)}
+                  ${fld('Address', c.businessAddress||ov.businessAddress, true)}
+                  <div class="client-field"><span class="client-field-lbl">Website</span><span class="client-field-val">${siteLink}</span></div>
+                </div>
+
+                <div class="client-section-lbl">Calling Details</div>
+                <div class="client-fields">
+                  ${fld('Service Name', c.serviceName, true)}
+                  ${fld('Agreed Offer', c.agreedOffer, true)}
+                  ${fld('Service Area', c.serviceArea, true)}
+                  ${fld('Timeline', c.timeline)}
+                  ${fld('Preferred Time Slots', c.preferredTimeSlots, true)}
+                  ${fldP('Aim of Call', c.aimOfCall)}
+                  ${fldP('Qualification Criteria', c.qualification)}
+                  ${fldP('Ideal Client Profile', c.idealClientProfile)}
+                  ${fldP('Offer Details', c.offer)}
+                  ${fldP('Client Overview', c.overview)}
+                </div>
+
+                <div class="client-section-lbl">Billing & Campaign</div>
+                <div class="client-fields">
+                  ${fld('Ad Budget', c.adBudget)}
+                  ${fld('MRR Collected', c.mrrCollected)}
+                  ${fld('UF Cash', c.ufCash)}
+                  ${fld('Billing Start Date', c.billingStartDate)}
+                  ${fld('Payment Type', c.paymentType)}
+                  ${fld('Live Date', c.liveDate)}
+                </div>
+
+                <div class="client-section-lbl">Integrations</div>
+                <div class="client-fields">
+                  ${fld('Chat ID', c.chatId)}
+                  <div class="client-field"><span class="client-field-lbl">Stats Sheet</span><span class="client-field-val">${statsLink}</span></div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function _toggleClientCard(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.classList.toggle('expanded');
+  const lbl = card.querySelector('.client-expand-label');
+  if (lbl) lbl.textContent = card.classList.contains('expanded') ? 'Collapse' : 'View all details';
+}
+
+// ════════════════════════════════════════════════
+// CALL MODE
+// ════════════════════════════════════════════════
+function openCallMode(c) {
+  const ov = _findClientOverride(c.name);
+  const qual = c.qualification || ov.qualification || '';
+
+  // Extract budget from qualification string
+  const budgetMatch = qual.match(/\$[\d,]+[kK]?\+?/);
+  const budget = budgetMatch ? budgetMatch[0] : 'Confirm during call';
+
+  // Split qualification into bullet points
+  const qualBullets = qual
+    .split(/\.\s+/)
+    .map(s => s.replace(/^\d+\.\s*/,'').trim())
+    .filter(s => s.length > 4 && !/^budget/i.test(s));
+
+  const ag = (c.agent||'').toLowerCase();
+  const agCls = ag==='jules'?'jules':ag==='ayessa'?'ayessa':'';
+  const panel = document.getElementById('callModePanel');
+
+  panel.innerHTML = `
+    <div class="cm-header">
+      <div>
+        <div class="cm-label">📞 Call Mode — Reference Card</div>
+        <div class="cm-client-name">
+          ${c.name}
+          ${c.agent?`<span class="client-badge ${agCls}" style="font-size:0.6rem">${c.agent}</span>`:''}
+        </div>
+      </div>
+      <button class="cm-close" onclick="closeCallMode()">✕</button>
+    </div>
+    <div class="cm-body">
+
+      <div class="cm-two-col">
+        <div class="cm-block highlight">
+          <div class="cm-block-label">🗺️  Service Area — check first</div>
+          <div class="cm-block-value big">${c.serviceArea||'—'}</div>
+        </div>
+        <div class="cm-block highlight">
+          <div class="cm-block-label">💰  Budget Minimum</div>
+          <div class="cm-block-value big">${budget}</div>
+        </div>
+      </div>
+
+      <div class="cm-block">
+        <div class="cm-block-label">🎯  Aim of This Call</div>
+        <div class="cm-block-value prose">${c.aimOfCall||ov.aimOfCall||'—'}</div>
+      </div>
+
+      <div class="cm-block">
+        <div class="cm-block-label">✨  Offer to Mention (what they saw in the ad)</div>
+        <div class="cm-block-value prose">${c.agreedOffer||c.offer||ov.agreedOffer||ov.offer||'—'}</div>
+      </div>
+
+      <div class="cm-two-col">
+        <div class="cm-block">
+          <div class="cm-block-label">⏰  Preferred Booking Times</div>
+          <div class="cm-block-value">${c.preferredTimeSlots||ov.preferredTimeSlots||'—'}</div>
+        </div>
+        <div class="cm-block">
+          <div class="cm-block-label">🌐  Website</div>
+          <div class="cm-block-value">
+            ${(c.website||ov.website)
+              ? `<a href="https://${(c.website||ov.website).replace(/^https?:\/\//,'')}" target="_blank"
+                    style="color:var(--accent);text-decoration:none">${c.website||ov.website}</a>`
+              : '—'}
+          </div>
+        </div>
+      </div>
+
+      ${qualBullets.length ? `
+      <div class="cm-block danger">
+        <div class="cm-block-label">✕  Do NOT book if:</div>
+        <div class="cm-bullets">
+          ${qualBullets.map(b=>`<div class="cm-bullet">${b}</div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="cm-tip">"People don't remember what you say — they remember how you make them feel."</div>
+
+    </div>
+    <div class="cm-footer">
+      <button class="cm-footer-btn" onclick="closeCallMode()">Close Call Mode</button>
+    </div>`;
+
+  document.getElementById('callModeOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCallMode() {
+  document.getElementById('callModeOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('callModeOverlay')) closeCallMode();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCallMode(); });
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+(async () => {
+  await _fetchClientsList(); // update Jules/Ayessa account lists from live Sheets
+  renderClientsPage();       // render the default tab (Our Clients)
+})();
+
+// ════════════════════════════════════════════════
+// INTELLIGENCE TAB
+// ════════════════════════════════════════════════
+const _INTEL_KEY  = 'qj_anthropic_key';
+const _INTEL_HIST = 'qj_intel_history';
+let _intelHistory = [];
+let _intelBusy    = false;
+
+function loadIntelligencePage() {
+  const el = document.getElementById('app-intelligence');
+  if (!el) return;
+  try { _intelHistory = JSON.parse(localStorage.getItem(_INTEL_HIST) || '[]'); } catch(e) { _intelHistory = []; }
+  const hasKey = !!localStorage.getItem(_INTEL_KEY);
+  el.innerHTML = `
+    <div class="intel-wrap">
+      <div class="intel-top">
+        <div>
+          <div class="intel-title">✦ Quality Jobs Intelligence</div>
+          <div class="intel-sub">AI-powered knowledge base — SOPs, clients, calls &amp; appointments</div>
+        </div>
+        <div class="intel-top-btns">
+          <button class="intel-key-btn" onclick="_intelClear()">Clear chat</button>
+          <button class="intel-key-btn" onclick="_intelShowSettings()">⚙ API Key</button>
+        </div>
+      </div>
+      ${!hasKey ? `<div class="intel-no-key">🔑 Add your Anthropic API key to activate the assistant <button onclick="_intelShowSettings()">Add Key</button></div>` : ''}
+      <div class="intel-msgs" id="intel-msgs"></div>
+      <div class="intel-bar">
+        <textarea class="intel-textarea" id="intel-input"
+          placeholder="Ask anything — dispositions, client info, how to handle a call..."
+          rows="1"
+          onkeydown="_intelKeydown(event)"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button class="intel-send" id="intel-send" onclick="_intelSend()" ${!hasKey?'disabled':''}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>`;
+  _intelRenderHistory();
+}
+
+function _intelRenderHistory() {
+  const msgs = document.getElementById('intel-msgs');
+  if (!msgs) return;
+  if (!_intelHistory.length) {
+    msgs.innerHTML = `
+      <div class="intel-welcome">
+        <div class="intel-welcome-icon">✦</div>
+        <h3>Quality Jobs Intelligence</h3>
+        <p>I have full knowledge of your SOPs, all client data, call performance, and appointment metrics. Ask me anything.</p>
+        <div class="intel-chips">
+          <button class="intel-chip" onclick="_intelSend('What are the call disposition rules?')">Call disposition rules</button>
+          <button class="intel-chip" onclick="_intelSend('How do I qualify a lead?')">How to qualify a lead</button>
+          <button class="intel-chip" onclick="_intelSend('Walk me through booking an appointment')">Booking an appointment</button>
+          <button class="intel-chip" onclick="_intelSend('What clients are we currently calling for?')">Active clients</button>
+          <button class="intel-chip" onclick="_intelSend('What do I do if a lead keeps going to voicemail?')">Lead keeps going to voicemail</button>
+          <button class="intel-chip" onclick="_intelSend('How do I navigate Go High Level?')">Navigating GHL</button>
+        </div>
+      </div>`;
+    return;
+  }
+  msgs.innerHTML = _intelHistory.map(m => _intelBubble(m.role, m.content)).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function _intelBubble(role, content) {
+  return `<div class="intel-bubble ${role}">
+    <div class="intel-avatar">${role==='user'?'You':'✦'}</div>
+    <div class="intel-text">${_intelMd(content)}</div>
+  </div>`;
+}
+
+function _intelMd(raw) {
+  let t = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  t = t.replace(/`([^`]+)`/g,'<code>$1</code>');
+  t = t.replace(/^#{1,3} (.+)$/gm,'<strong>$1</strong>');
+  t = t.replace(/^-{3,}$/gm,'<hr>');
+  const blocks = t.split(/\n\n+/);
+  return blocks.map(b => {
+    b = b.trim(); if (!b) return '';
+    if (/^[-•*] /m.test(b)) {
+      const items = b.split('\n').filter(l=>l.trim()).map(l=>`<li>${l.replace(/^[-•*] /,'')}</li>`).join('');
+      return `<ul>${items}</ul>`;
+    }
+    if (/^\d+\. /m.test(b)) {
+      const items = b.split('\n').filter(l=>l.trim()).map(l=>`<li>${l.replace(/^\d+\. /,'')}</li>`).join('');
+      return `<ol>${items}</ol>`;
+    }
+    if (b.startsWith('<hr>') || b.startsWith('<ul>') || b.startsWith('<ol>')) return b;
+    return `<p>${b.replace(/\n/g,'<br>')}</p>`;
+  }).filter(Boolean).join('');
+}
+
+function _intelKeydown(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); _intelSend(); }
+}
+
+async function _intelSend(prefill) {
+  if (_intelBusy) return;
+  const apiKey = localStorage.getItem(_INTEL_KEY);
+  if (!apiKey) { _intelShowSettings(); return; }
+  const input = document.getElementById('intel-input');
+  const text  = (prefill || (input ? input.value : '')).trim();
+  if (!text) return;
+  if (input) { input.value=''; input.style.height='auto'; }
+
+  const msgs = document.getElementById('intel-msgs');
+  const welcome = msgs && msgs.querySelector('.intel-welcome');
+  if (welcome) welcome.remove();
+
+  _intelHistory.push({ role:'user', content:text });
+  msgs && msgs.insertAdjacentHTML('beforeend', _intelBubble('user', text));
+
+  const typId = 'it'+Date.now();
+  msgs && msgs.insertAdjacentHTML('beforeend',`
+    <div class="intel-bubble assistant" id="${typId}">
+      <div class="intel-avatar">✦</div>
+      <div class="intel-text"><div class="intel-typing"><span></span><span></span><span></span></div></div>
+    </div>`);
+  msgs && (msgs.scrollTop = msgs.scrollHeight);
+
+  _intelBusy = true;
+  const btn = document.getElementById('intel-send');
+  if (btn) btn.disabled = true;
+
+  try {
+    const reply = await _intelCallAPI(apiKey);
+    document.getElementById(typId)?.remove();
+    _intelHistory.push({ role:'assistant', content:reply });
+    msgs && msgs.insertAdjacentHTML('beforeend', _intelBubble('assistant', reply));
+    try { localStorage.setItem(_INTEL_HIST, JSON.stringify(_intelHistory.slice(-50))); } catch(e){}
+  } catch(err) {
+    document.getElementById(typId)?.remove();
+    const msg = err.message || 'Something went wrong. Check your API key.';
+    msgs && msgs.insertAdjacentHTML('beforeend', _intelBubble('assistant', `⚠️ ${msg}`));
+  }
+
+  _intelBusy = false;
+  if (btn) btn.disabled = false;
+  msgs && (msgs.scrollTop = msgs.scrollHeight);
+}
+
+async function _intelCallAPI(apiKey) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-ipc':'true'
+    },
+    body: JSON.stringify({
+      model:'claude-3-5-haiku-20241022',
+      max_tokens:1500,
+      system: _intelSystem(),
+      messages: _intelHistory.map(m=>({ role:m.role, content:m.content }))
+    })
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(()=>({}));
+    throw new Error(b.error?.message || `API error ${res.status}`);
+  }
+  const data = await res.json();
+  return data.content?.[0]?.text || 'No response received.';
+}
+
+function _intelSystem() {
+  let s = `You are the Quality Jobs AI Assistant — a smart, practical knowledge base for the Quality Jobs CSR (Customer Service Representative) calling team.
+
+Quality Jobs is an Australian company providing professional calling agents who qualify homeowners and book renovation appointments on behalf of trade and construction clients.
+
+---
+
+## CALL DISPOSITION RULES
+
+1. **No Answer → Click Next**
+   The lead did not pick up. Select the Next disposition. The dialer moves to the next lead automatically and cycles back.
+
+2. **Lead Answers but Does NOT Qualify → Click Disqualify (DQ)**
+   Failed criteria: wrong location, insufficient budget, not a homeowner, or wrong timeframe.
+   Select DQ immediately. Always be respectful. Never re-engage a disqualified lead.
+
+3. **Lead Wants a Callback in 1 Week / 2 Weeks / 3 Weeks / 1 Month**
+   Lead showed interest but wants future contact. Select the matching disposition.
+   Always log key notes in the CRM before moving on.
+
+4. **Lead Wants a Callback Later Today or Tomorrow → Book in Callback Calendar (GHL)**
+   Lead is busy right now and requests a specific callback time.
+   Do NOT select a disposition — open Go High Level and book into the Callback Calendar. Note the exact time requested.
+
+5. **Lead Qualifies → Book in Client's Booking Calendar (GHL)**
+   All criteria passed: correct location, sufficient budget, is a homeowner, right timeframe.
+   Book directly into the client's booking calendar in GHL.
+   Confirm appointment date and time with the lead. Record all details before closing the call.
+
+6. **10+ Voicemails with No Response → Click Disqualify (DQ)**
+   Minimum 10 call attempts required before DQ. Never DQ before 10 attempts.
+   If the lead has replied to SMS or shown any engagement at any point, keep calling.
+
+---
+
+## SOP TRAINING MODULES\n\n`;
+
+  SOP_MODULES.forEach(mod => {
+    s += `### ${mod.title}\n`;
+    mod.videos.forEach(v => {
+      if (!v.title) return;
+      s += `- **${v.title}**`;
+      if (v.description) s += `: ${v.description}`;
+      if (v.docs && v.docs.length) s += ` | Linked documents: ${v.docs.map(d=>d.title).join(', ')}`;
+      s += '\n';
+    });
+    s += '\n';
+  });
+
+  s += `---\n\n## ACTIVE CLIENT LIST\n\n`;
+  if (window._clientsData && window._clientsData.length) {
+    window._clientsData.forEach(c => {
+      if (!c.clientName) return;
+      s += `**${c.clientName}**`;
+      if (c.agent)         s += ` | Agent: ${c.agent}`;
+      if (c.serviceArea)   s += ` | Service Area: ${c.serviceArea}`;
+      if (c.qualification) s += ` | Qualification: ${c.qualification}`;
+      if (c.aimOfCall)     s += ` | Aim of call: ${c.aimOfCall}`;
+      if (c.agreedOffer)   s += ` | Agreed offer: ${c.agreedOffer}`;
+      s += '\n';
+    });
+  } else {
+    s += 'Client data is loading from Google Sheets.\n';
+  }
+
+  s += `\n---\n\n## YOUR ROLE
+- Answer questions from CSR agents about call procedures, SOPs, client requirements, and GHL navigation.
+- Help agents handle specific call situations with clear, actionable guidance.
+- Be direct, practical, and concise. Use bullet points for steps. Bold key terms and actions.
+- If something is not in your knowledge base, say so clearly rather than guessing.`;
+
+  return s;
+}
+
+function _intelClear() {
+  _intelHistory = [];
+  localStorage.removeItem(_INTEL_HIST);
+  _intelRenderHistory();
+}
+
+function _intelShowSettings() {
+  document.getElementById('intel-overlay')?.remove();
+  const k = localStorage.getItem(_INTEL_KEY) || '';
+  document.body.insertAdjacentHTML('beforeend',`
+    <div class="intel-overlay" id="intel-overlay" onclick="if(event.target===this)_intelCloseSettings()">
+      <div class="intel-modal">
+        <h3>🔑 Anthropic API Key</h3>
+        <p>Stored locally in your browser only — never leaves your device.<br>
+        Get your key at <strong>console.anthropic.com</strong> → API Keys.</p>
+        <input type="password" id="intel-key-field" placeholder="sk-ant-api03-..." value="${k}" autocomplete="off"
+          onkeydown="if(event.key==='Enter')_intelSaveKey()"/>
+        <div class="intel-modal-actions">
+          <button class="intel-modal-cancel" onclick="_intelCloseSettings()">Cancel</button>
+          <button class="intel-modal-save" onclick="_intelSaveKey()">Save Key</button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(()=>document.getElementById('intel-key-field')?.focus(),50);
+}
+
+function _intelSaveKey() {
+  const v = (document.getElementById('intel-key-field')?.value||'').trim();
+  if (v) localStorage.setItem(_INTEL_KEY, v);
+  else   localStorage.removeItem(_INTEL_KEY);
+  _intelCloseSettings();
+  loadIntelligencePage();
+}
+
+function _intelCloseSettings() {
+  document.getElementById('intel-overlay')?.remove();
+}
+</script>
+</body>
+</html>
