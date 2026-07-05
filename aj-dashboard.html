@@ -1196,6 +1196,7 @@ function renderDashboard() {
   document.getElementById('clientGrid').innerHTML = clients.map(c => {
     const p = isPaused(c.name);
     const links = [
+      `<a href="https://drive.google.com/drive/search?q=${encodeURIComponent(c.name)}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:#f97316;text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="Open ${c.name} ad creative folder">📂 Ad Drive</a>`,
       c.statsUrl    ? `<a href="${c.statsUrl}"    target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📊 Stats</a>` : '',
       c.overviewUrl ? `<a href="${c.overviewUrl}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📄 Overview</a>` : '',
     ].filter(Boolean).join('<span style="color:var(--border2);margin:0 4px">·</span>');
