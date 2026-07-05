@@ -4679,6 +4679,17 @@ async function sendMessage() {
 
   renderMessages(); showTyping();
 
+  // Save user message immediately so it's not lost if tab closes mid-response
+  if(currentSessionId) {
+    const s = sessions.find(s => s.id === currentSessionId);
+    if(s) {
+      s.messages = [...chatHistory];
+      if(s.title === 'New chat' && chatHistory.length >= 1) s.title = autoName(typeof chatHistory[0].content === 'string' ? chatHistory[0].content : chatHistory[0]._fileDisplay?.name || 'Chat');
+      saveSessions();
+      renderSessions();
+    }
+  }
+
   // Build messages for API — use actual content for the last message
   const apiMessages = chatHistory.slice(0, -1).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : m.content }));
   apiMessages.push({ role: 'user', content: userContent });

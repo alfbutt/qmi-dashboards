@@ -786,7 +786,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
             <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send →</button>
           </div>
         </div>
-        <div class="chat-hint">Powered by Claude · Your API key is stored locally only</div>
+        <div class="chat-hint" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Powered by Claude · History saved in this browser</span>
+          <button onclick="clearAjChatHistory()" style="background:none;border:none;color:var(--muted);font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;opacity:0.6;padding:0;">clear history</button>
+        </div>
       </div>
     </div>
 
@@ -924,8 +927,12 @@ const AJ_OFF_TASKS = [
 
 // ── State ─────────────────────────────────────────────────────────────────
 let syncedData    = null;
-let chatHistory   = [];
+let chatHistory   = JSON.parse(localStorage.getItem('aj_chat_history') || '[]');
 let _ajOffMem     = [];
+
+function saveAjChatHistory() {
+  try { localStorage.setItem('aj_chat_history', JSON.stringify(chatHistory.slice(-100))); } catch(e) {}
+}
 let intakeHistory = JSON.parse(localStorage.getItem('aj_intake_history') || '[]');
 
 // ── PIN Logic ─────────────────────────────────────────────────────────────
@@ -1621,6 +1628,7 @@ async function sendChat() {
     addChatMsg('user', msg);
   }
   chatHistory.push({ role: 'user', content: historyContent });
+  saveAjChatHistory();
 
   const typingEl = addChatMsg('assistant', '…', true);
 
@@ -1647,6 +1655,7 @@ async function sendChat() {
     if (data.error) throw new Error(data.error.message);
     const reply = data.content[0].text;
     chatHistory.push({ role: 'assistant', content: reply });
+    saveAjChatHistory();
     typingEl.querySelector('.msg-bubble').textContent = reply;
     typingEl.querySelector('.msg-time').textContent = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
   } catch(err) {
@@ -1664,6 +1673,28 @@ function addChatMsg(role, text, isTyping = false) {
   wrap.appendChild(div);
   wrap.scrollTop = 999999;
   return div;
+}
+
+function renderAjChatHistory() {
+  const wrap = document.getElementById('chatMessages');
+  if (!wrap || chatHistory.length === 0) return;
+  wrap.innerHTML = '';
+  chatHistory.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'msg ' + m.role;
+    const safe = (m.content || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    div.innerHTML = `<div class="msg-bubble">${safe}</div><div class="msg-time"></div>`;
+    wrap.appendChild(div);
+  });
+  wrap.scrollTop = 999999;
+}
+
+function clearAjChatHistory() {
+  if (!confirm('Clear all AI Assistant chat history?')) return;
+  chatHistory = [];
+  saveAjChatHistory();
+  const wrap = document.getElementById('chatMessages');
+  if (wrap) wrap.innerHTML = '<div class="msg assistant"><div class="msg-bubble">Chat cleared. Ask me anything.</div><div class="msg-time">Now</div></div>';
 }
 
 function chatKeydown(e) {
@@ -1876,6 +1907,7 @@ function showTab(id, btn) {
   if (id === 'offboarding') renderOffboardingTab();
   if (id === 'callcentre') renderCallCentreTab();
   if (id === 'qmi-brain')  renderQMIBrainPage();
+  if (id === 'chat') renderAjChatHistory();
 }
 
 // ── CALL CENTRE ───────────────────────────────────────────────────────────
