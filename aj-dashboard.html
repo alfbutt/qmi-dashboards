@@ -1,0 +1,3174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AJ Command Centre</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:       #f4f3ef;
+  --surface:  #ffffff;
+  --card:     #f4f3ef;
+  --border:   rgba(0,0,0,0.07);
+  --border2:  rgba(0,0,0,0.13);
+  --accent:   #b5870d;
+  --accent2:  #9a7014;
+  --green:    #16a34a;
+  --red:      #dc2626;
+  --amber:    #d97706;
+  --text:     #1a1917;
+  --muted:    #78746a;
+  --sub:      #4b4640;
+  --nav-bg:   #27231f;
+  --nav-text: #f5f2ea;
+  --nav-muted:#9a9280;
+  --sidebar:  220px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+/* ── PIN GATE ── */
+#pinGate {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.pin-card {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 20px;
+  padding: 2.5rem 2rem; width: 340px; text-align: center;
+}
+.pin-logo {
+  width: 60px; height: 60px; background: var(--accent); border-radius: 16px;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+.pin-card h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 0.3rem; }
+.pin-card p  { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.5rem; }
+.pin-dots { display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border2); background: transparent; transition: all 0.15s;
+}
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 0.75rem; }
+.pin-key {
+  padding: 0.9rem; background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer;
+  transition: all 0.12s; color: var(--text); font-family: 'DM Mono', monospace;
+}
+.pin-key:hover { background: var(--border2); border-color: var(--accent); }
+.pin-key.wide { grid-column: span 2; }
+.pin-error { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--red); min-height: 1rem; }
+
+/* ── LAYOUT ── */
+#app { display: flex; height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar); background: var(--nav-bg); border-right: 1px solid rgba(255,255,255,0.05);
+  display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 1.25rem 1rem 1rem;
+  display: flex; align-items: center; gap: 0.65rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sidebar-logo-icon {
+  width: 34px; height: 34px; background: var(--accent); border-radius: 9px;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.85rem;
+  color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sidebar-logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.25; color: var(--nav-text); }
+.sidebar-logo-sub  { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--nav-muted); }
+
+.nav-section { padding: 0.75rem 0.6rem 0.25rem; font-size: 0.58rem; font-family: 'DM Mono', monospace; color: var(--nav-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.nav-item {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem;
+  margin: 0 0.4rem; border-radius: 8px; cursor: pointer; font-size: 0.78rem;
+  font-weight: 500; color: var(--nav-muted); transition: all 0.15s; border: none; background: none; width: calc(100% - 0.8rem); text-align: left;
+}
+.nav-item:hover { background: rgba(255,255,255,0.04); color: var(--nav-text); }
+.nav-item.active { background: rgba(181,135,13,0.15); color: var(--accent); }
+.nav-item .nav-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
+
+.sidebar-bottom {
+  margin-top: auto; padding: 0.75rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.sync-status { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--nav-muted); text-align: center; margin-bottom: 0.5rem; }
+.sync-btn {
+  width: 100%; padding: 0.55rem; background: rgba(181,135,13,0.1);
+  border: 1px solid rgba(181,135,13,0.25); border-radius: 8px;
+  color: var(--accent); font-size: 0.7rem; font-family: 'DM Mono', monospace;
+  cursor: pointer; transition: all 0.15s;
+}
+.sync-btn:hover { background: rgba(181,135,13,0.2); }
+
+.main-content { flex: 1; overflow-y: auto; padding: 2rem 2.5rem; }
+
+/* ── TABS ── */
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── PAGE HEADER ── */
+.page-header { margin-bottom: 2rem; }
+.page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem; margin-bottom: 0.25rem; }
+.page-sub { font-size: 0.78rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+/* ── STAT CARDS ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.1rem 1.25rem;
+}
+.stat-label { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+.stat-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.8rem; line-height: 1; }
+.stat-sub { font-size: 0.65rem; color: var(--muted); margin-top: 0.3rem; font-family: 'DM Mono', monospace; }
+.stat-green { color: var(--green); }
+.stat-red   { color: var(--red); }
+.stat-amber { color: var(--amber); }
+.stat-blue  { color: var(--accent); }
+
+/* ── CLIENT GRID ── */
+.section-heading {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+  margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.client-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 2rem; }
+.client-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem; transition: border-color 0.15s;
+}
+.client-card:hover { border-color: var(--border2); }
+.client-name { font-weight: 600; font-size: 0.82rem; margin-bottom: 0.4rem; }
+.client-meta { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.5rem; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.6rem;
+  font-family: 'DM Mono', monospace; font-weight: 600; margin-right: 4px;
+}
+.badge-active   { background: rgba(34,197,94,0.1);  color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+.badge-paused   { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.badge-churned  { background: rgba(239,68,68,0.1);  color: var(--red);   border: 1px solid rgba(239,68,68,0.2); }
+.badge-onboard  { background: rgba(181,135,13,0.1); color: var(--accent); border: 1px solid rgba(181,135,13,0.25); }
+
+/* ── AGENT CARDS ── */
+.agent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.agent-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;
+}
+.agent-icon { font-size: 1.6rem; }
+.agent-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; }
+.agent-role { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--accent); margin-bottom: 0.25rem; }
+.agent-desc { font-size: 0.75rem; color: var(--sub); line-height: 1.5; flex: 1; }
+.agent-btn {
+  margin-top: 0.75rem; padding: 0.6rem 1rem; background: var(--accent);
+  color: #fff; border: none; border-radius: 9px; font-size: 0.75rem;
+  font-weight: 600; cursor: pointer; transition: opacity 0.15s; width: fit-content;
+}
+.agent-btn:hover { opacity: 0.85; }
+.agent-btn:disabled { background: var(--border2); color: var(--muted); cursor: not-allowed; }
+
+/* ── ONBOARDING ── */
+.ob-client-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  margin-bottom: 0.85rem; overflow: hidden;
+}
+.ob-client-header {
+  padding: 0.9rem 1.1rem; display: flex; align-items: center; gap: 0.75rem;
+  cursor: pointer; user-select: none;
+}
+.ob-client-header:hover { background: rgba(0,0,0,0.02); }
+.ob-chevron { color: var(--muted); font-size: 0.75rem; margin-left: auto; transition: transform 0.2s; }
+.ob-body { border-top: 1px solid var(--border); padding: 1rem 1.1rem; display: none; }
+.ob-steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+.ob-step {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.65rem;
+  background: var(--surface); border-radius: 8px; font-size: 0.72rem;
+}
+.ob-step-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ob-step-dot.done    { background: var(--green); }
+.ob-step-dot.pending { background: var(--border2); }
+
+/* ── SOPs ── */
+.sop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.sop-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem;
+}
+.sop-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+.sop-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.88rem; margin-bottom: 0.35rem; }
+.sop-desc { font-size: 0.73rem; color: var(--sub); line-height: 1.5; margin-bottom: 0.75rem; }
+.sop-link {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--accent); text-decoration: none;
+}
+.sop-link:hover { text-decoration: underline; }
+.sop-expand-body { display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.sop-expand-body.open { display: block; }
+.sop-item { font-size: 0.72rem; color: var(--sub); padding: 0.35rem 0; border-bottom: 1px solid var(--border); display: flex; gap: 0.5rem; }
+.sop-item:last-child { border-bottom: none; }
+.sop-num { font-family: 'DM Mono', monospace; color: var(--accent); flex-shrink: 0; width: 20px; }
+
+/* ── FORM ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-field.full { grid-column: span 2; }
+.form-field label { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+.form-field input, .form-field select, .form-field textarea {
+  background: var(--card); border: 1px solid var(--border2); border-radius: 9px;
+  padding: 0.65rem 0.85rem; color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem; outline: none; transition: border-color 0.15s;
+}
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+  border-color: var(--accent);
+}
+.form-field textarea { resize: vertical; min-height: 80px; }
+.form-submit {
+  padding: 0.75rem 2rem; background: var(--accent); color: #fff; border: none;
+  border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  font-family: 'Syne', sans-serif; margin-top: 0.5rem; transition: opacity 0.15s;
+}
+.form-submit:hover { opacity: 0.85; }
+.form-success { display: none; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); border-radius: 10px; padding: 0.85rem 1rem; font-size: 0.8rem; color: var(--green); margin-top: 0.75rem; }
+
+/* ── CHAT ── */
+#chatWrap { display: flex; flex-direction: column; height: calc(100vh - 180px); }
+.chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding-bottom: 1rem; }
+.msg { max-width: 75%; }
+.msg.user { align-self: flex-end; }
+.msg.assistant { align-self: flex-start; }
+.msg-bubble {
+  padding: 0.85rem 1rem; border-radius: 14px; font-size: 0.82rem; line-height: 1.6;
+}
+.msg.user     .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.msg.assistant .msg-bubble { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+.msg-time { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+.msg.user .msg-time { text-align: right; }
+.chat-input-row { display: flex; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.chat-input {
+  flex: 1; background: var(--card); border: 1px solid var(--border2); border-radius: 12px;
+  padding: 0.75rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.83rem;
+  outline: none; resize: none; min-height: 46px; max-height: 120px;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-send {
+  padding: 0.75rem 1.25rem; background: var(--accent); color: #fff; border: none;
+  border-radius: 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+.chat-send:hover { opacity: 0.88; }
+.chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-hint { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 0.4rem; }
+
+/* ── QMI BRAIN ── */
+.brain-wrap { display: flex; height: calc(100vh - 165px); }
+.brain-sidebar { width: 280px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 0; overflow-y: auto; flex-shrink: 0; padding: 1.25rem; }
+.brain-sidebar-title { font-size: 0.85rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; margin-bottom: 0.75rem; }
+.brain-kb-stats { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); background: rgba(181,135,13,0.06); border: 1px solid rgba(181,135,13,0.2); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1.25rem; line-height: 1.7; }
+.brain-sidebar-section { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+.brain-sidebar-label { font-size: 0.72rem; font-weight: 700; color: var(--text); }
+.brain-sidebar-sub { font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted); line-height: 1.5; }
+.brain-sop-textarea { width: 100%; min-height: 180px; background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 0.6rem 0.75rem; resize: vertical; outline: none; line-height: 1.6; box-sizing: border-box; }
+.brain-sop-textarea:focus { border-color: var(--accent); }
+.brain-sop-save { padding: 0.45rem 0.9rem; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 0.7rem; font-weight: 600; cursor: pointer; align-self: flex-start; }
+.brain-sop-status { font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--accent); min-height: 1rem; }
+.brain-chat-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.brain-orb-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; }
+.brain-orb { width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(181,135,13,0.6), rgba(181,135,13,0.15)); border: 1px solid rgba(181,135,13,0.35); box-shadow: 0 0 40px rgba(181,135,13,0.15); }
+.brain-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 480px; }
+.brain-chip { padding: 0.4rem 0.85rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); cursor: pointer; background: var(--card); transition: all 0.15s; }
+.brain-chip:hover { border-color: var(--accent); color: var(--accent); }
+.brain-input-wrap { display: flex; flex-direction:column; gap: 0; padding: 1rem; border-top: 1px solid var(--border); }
+.brain-attach-btn { display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;background:var(--card);border:1px solid var(--border);cursor:pointer;font-size:1.1rem;transition:all 0.2s;flex-shrink:0; }
+.brain-attach-btn:hover { border-color:var(--accent); }
+.brain-image-preview-inner { display:flex;align-items:center;gap:0.75rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.75rem;margin-bottom:0.5rem; }
+.suggested-replies-wrap { display:flex;flex-direction:column;gap:0.6rem;padding-top:0.25rem; }
+.suggested-reply-card { background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;display:flex;flex-direction:column;gap:0.5rem; }
+.suggested-reply-label { font-size:0.63rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.06em;text-transform:uppercase; }
+.suggested-reply-text { font-size:0.82rem;line-height:1.6;color:var(--text);white-space:pre-wrap; }
+.suggested-reply-copy { align-self:flex-end;background:none;border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.75rem;color:var(--muted);font-size:0.68rem;cursor:pointer;transition:all 0.15s;font-family:'DM Mono',monospace; }
+.suggested-reply-copy:hover { border-color:var(--accent);color:var(--accent); }
+.brain-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem; }
+.msg-wrap { display: flex; flex-direction: column; gap: 0.3rem; max-width: 75%; }
+.msg-wrap.msg-user { align-self: flex-end; align-items: flex-end; }
+.msg-label { font-size: 0.58rem; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.msg-wrap .msg-bubble { padding: 0.85rem 1rem; border-radius: 14px; font-size: 0.82rem; line-height: 1.6; background: var(--card); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+.msg-wrap.msg-user .msg-bubble { background: var(--accent); color: #fff; border: none; border-bottom-right-radius: 4px; border-bottom-left-radius: 14px; }
+
+/* ── SETTINGS ── */
+.settings-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
+.settings-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.88rem; margin-bottom: 0.85rem; }
+.settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.settings-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.settings-field label { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+.settings-field input {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 8px;
+  padding: 0.55rem 0.75rem; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.8rem; outline: none;
+}
+.settings-field input:focus { border-color: var(--accent); }
+.settings-btn {
+  margin-top: 0.75rem; padding: 0.6rem 1.25rem; background: rgba(181,135,13,0.08);
+  border: 1px solid rgba(181,135,13,0.25); border-radius: 8px; color: var(--accent);
+  font-size: 0.75rem; font-family: 'DM Mono', monospace; cursor: pointer; transition: all 0.15s;
+}
+.settings-btn:hover { background: rgba(181,135,13,0.16); }
+.settings-msg { font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--green); margin-top: 0.5rem; min-height: 1rem; }
+
+/* ── ACTIVITY FEED ── */
+.activity-feed { display: flex; flex-direction: column; gap: 0.5rem; }
+.activity-item { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.65rem 0.85rem; background: var(--card); border-radius: 9px; border: 1px solid var(--border); }
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.activity-text { font-size: 0.75rem; line-height: 1.4; }
+.activity-time { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 2px; }
+
+/* ── TWO COL ── */
+.two-col { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; }
+.panel-title { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── OFFBOARDING ── */
+.ob-selector { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.ob-selector select { background: var(--card); border: 1px solid var(--border2); border-radius: 9px; padding: 0.6rem 0.85rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; outline: none; }
+.ob-selector button { padding: 0.6rem 1rem; background: var(--accent); color: #fff; border: none; border-radius: 9px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+.offboard-card {
+  background: var(--card); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px;
+  padding: 1.1rem; margin-bottom: 0.75rem;
+}
+.offboard-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 0.35rem; }
+.offboard-steps { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.offboard-step { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; cursor: pointer; }
+.offboard-step input[type=checkbox] { accent-color: var(--red); width: 14px; height: 14px; cursor: pointer; }
+
+/* ── MONTHLY ACTIVITY ── */
+.monthly-panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+}
+.monthly-nav {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.1rem;
+}
+.monthly-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; }
+.monthly-nav-btns { display: flex; gap: 0.4rem; }
+.monthly-nav-btn {
+  background: var(--card); border: 1px solid var(--border2); border-radius: 8px;
+  padding: 4px 12px; font-size: 0.72rem; color: var(--muted); cursor: pointer;
+  font-family: 'DM Mono', monospace; transition: all 0.12s;
+}
+.monthly-nav-btn:hover { color: var(--text); border-color: var(--accent); }
+.monthly-nav-btn.accent { color: var(--accent); border-color: rgba(181,135,13,0.35); }
+.monthly-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.monthly-counts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; margin-bottom: 1.1rem; }
+.monthly-count-card {
+  border-radius: 11px; padding: 0.85rem 1rem;
+}
+.monthly-count-card.green { background: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.18); }
+.monthly-count-card.red   { background: rgba(220,38,38,0.07);  border: 1px solid rgba(220,38,38,0.15); }
+.monthly-count-label { font-size: 0.6rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+.monthly-count-card.green .monthly-count-label { color: var(--green); }
+.monthly-count-card.red   .monthly-count-label { color: var(--red); }
+.monthly-count-val { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--text); }
+.monthly-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.monthly-list-title { font-size: 0.58rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+.monthly-list-title.green { color: var(--green); }
+.monthly-list-title.red   { color: var(--red); }
+.monthly-event-row {
+  display: flex; align-items: center; gap: 0.55rem; padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border); font-size: 0.76rem;
+}
+.monthly-event-row:last-child { border-bottom: none; }
+.monthly-event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.monthly-event-dot.green { background: var(--green); }
+.monthly-event-dot.red   { background: var(--red); }
+.monthly-event-agent { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-left: auto; }
+.monthly-empty { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); padding: 0.5rem 0; }
+
+/* ── TASKS ── */
+.task-add-row { display: flex; gap: 0.65rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.task-add-row input { background: var(--card); border: 1px solid var(--border2); border-radius: 9px; padding: 0.6rem 0.85rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; outline: none; flex: 1; min-width: 160px; transition: border-color 0.15s; }
+.task-add-row input:focus { border-color: var(--accent); }
+.task-add-btn { padding: 0.6rem 1.1rem; background: var(--accent); color: #fff; border: none; border-radius: 9px; font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.task-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.5rem; transition: border-color 0.15s; }
+.task-item.overdue { border-color: rgba(220,38,38,0.3); }
+.task-check { width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--border2); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: #fff; transition: all 0.15s; }
+.task-check.done { background: var(--green); border-color: var(--green); }
+.task-label { flex: 1; font-size: 0.82rem; font-weight: 500; line-height: 1.4; }
+.task-label.done { text-decoration: line-through; color: var(--muted); font-weight: 400; }
+.task-date-tag { font-size: 0.65rem; font-family: 'DM Mono', monospace; padding: 2px 8px; border-radius: 6px; background: rgba(181,135,13,0.1); color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.task-date-tag.overdue { background: rgba(220,38,38,0.1); color: var(--red); }
+.task-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; opacity: 0.3; padding: 2px 6px; flex-shrink: 0; transition: all 0.15s; }
+.task-del:hover { opacity: 1; color: var(--red); }
+.pm-proj-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.75rem; overflow: hidden; }
+.pm-proj-head { padding: 0.9rem 1.1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; gap: 0.75rem; }
+.pm-proj-head:hover { background: rgba(0,0,0,0.02); }
+.pm-proj-name { font-weight: 700; font-size: 0.85rem; }
+.pm-proj-meta { font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 2px; }
+.pm-proj-prog { font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.pm-proj-body { border-top: 1px solid var(--border); padding: 0.75rem 1.1rem; display: none; flex-direction: column; gap: 0; }
+.pm-proj-body.open { display: flex; }
+.pm-task-row { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+.pm-task-row:last-child { border-bottom: none; }
+.pm-task-chk { width: 18px; height: 18px; border-radius: 4px; border: 2px solid var(--border2); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff; transition: all 0.15s; }
+.pm-task-chk.done { background: var(--accent); border-color: var(--accent); }
+.pm-task-lbl { font-size: 0.79rem; }
+.pm-task-lbl.done { text-decoration: line-through; color: var(--muted); }
+.tasks-status { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.5rem; min-height: 1rem; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+/* ── CALL CENTRE ───────────────────────────────────────────────────────── */
+.cc-sub-tabs { display:flex; gap:4px; margin-bottom:1.75rem; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:4px; }
+.cc-sub-tab { flex:1; padding:0.5rem; border-radius:7px; font-size:0.73rem; font-family:'DM Mono',monospace; cursor:pointer; color:var(--muted); border:none; background:none; transition:all 0.2s; text-align:center; }
+.cc-sub-tab.active { background:var(--surface); color:var(--accent); border:1px solid var(--border); font-weight:600; }
+.cc-last-updated { font-size:0.65rem; font-family:'DM Mono',monospace; color:var(--muted); text-align:right; margin-bottom:1.5rem; }
+.cc-today-banner { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem; }
+.cc-agent-card { border-radius:14px; padding:1.5rem; border:1px solid var(--border); background:var(--surface); position:relative; overflow:hidden; }
+.cc-agent-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.cc-agent-card.jules::before { background:var(--accent); }
+.cc-agent-card.ayessa::before { background:var(--amber); }
+.cc-agent-name { font-family:'Syne',sans-serif; font-weight:700; font-size:0.85rem; margin-bottom:0.5rem; }
+.cc-agent-card.jules .cc-agent-name { color:var(--accent); }
+.cc-agent-card.ayessa .cc-agent-name { color:var(--amber); }
+.cc-agent-count { font-family:'Syne',sans-serif; font-weight:800; font-size:3rem; line-height:1; letter-spacing:-0.04em; margin-bottom:0.25rem; }
+.cc-agent-card.jules .cc-agent-count { color:var(--accent); }
+.cc-agent-card.ayessa .cc-agent-count { color:var(--amber); }
+.cc-agent-sub { font-size:0.75rem; color:var(--muted); }
+.cc-agent-clients { font-size:0.72rem; font-family:'DM Mono',monospace; color:var(--muted); margin-top:0.75rem; line-height:1.7; }
+.cc-metrics-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
+.cc-metric { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem 1.1rem; }
+.cc-metric-label { font-size:0.62rem; font-family:'DM Mono',monospace; color:var(--muted); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem; }
+.cc-metric-value { font-family:'Syne',sans-serif; font-weight:800; font-size:1.7rem; line-height:1; margin-bottom:0.25rem; }
+.cc-metric-sub { font-size:0.63rem; font-family:'DM Mono',monospace; color:var(--muted); }
+.cc-chart-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.5rem; margin-bottom:2rem; }
+.cc-section-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.8rem; letter-spacing:0.03em; }
+.cc-view-tabs { display:flex; gap:4px; background:var(--bg); border-radius:8px; padding:3px; border:1px solid var(--border); }
+.cc-view-tab { padding:5px 14px; border-radius:6px; font-size:0.73rem; font-family:'DM Mono',monospace; cursor:pointer; color:var(--muted); border:none; background:none; transition:all 0.2s; }
+.cc-view-tab.active { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+.cc-table-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; overflow-x:auto; }
+.cc-table { width:100%; border-collapse:collapse; font-size:0.78rem; }
+.cc-table th { font-size:0.62rem; font-family:'DM Mono',monospace; color:var(--muted); text-transform:uppercase; letter-spacing:0.07em; padding:0.6rem 0.75rem; border-bottom:1px solid var(--border); font-weight:400; text-align:center; white-space:nowrap; }
+.cc-table th:first-child { text-align:left; }
+.cc-table td { padding:0.6rem 0.75rem; border-bottom:1px solid var(--border); text-align:center; font-family:'DM Mono',monospace; color:var(--muted); }
+.cc-table td:first-child { text-align:left; color:var(--text); }
+.cc-table tr:last-child td { border-bottom:none; }
+.cc-table .cc-total-row td { font-weight:700; color:var(--text); background:rgba(0,0,0,0.02); }
+.cc-appt-hero { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
+.cc-appt-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem; }
+.cc-appt-label { font-size:0.6rem; font-family:'DM Mono',monospace; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.5rem; }
+.cc-appt-value { font-family:'Syne',sans-serif; font-weight:800; font-size:2rem; letter-spacing:-0.03em; }
+.cc-appt-sub { font-size:0.68rem; color:var(--muted); margin-top:4px; }
+.cc-kpi-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; }
+.cc-kpi-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.cc-kpi-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.82rem; }
+.cc-client-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem; }
+.cc-client-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.cc-client-header { padding:0.75rem 1rem; font-size:0.72rem; font-weight:700; font-family:'DM Mono',monospace; letter-spacing:0.05em; text-transform:uppercase; border-bottom:1px solid var(--border); }
+.cc-client-header.jules { color:var(--accent); }
+.cc-client-header.ayessa { color:var(--amber); }
+.cc-client-row { display:flex; align-items:center; gap:0.75rem; padding:0.55rem 1rem; border-bottom:1px solid var(--border); }
+.cc-client-row:last-child { border-bottom:none; }
+.cc-client-name { font-size:0.75rem; width:160px; flex-shrink:0; }
+.cc-client-bar-wrap { flex:1; height:4px; background:var(--border); border-radius:2px; }
+.cc-client-bar { height:100%; border-radius:2px; }
+.cc-client-count { font-size:0.72rem; font-family:'DM Mono',monospace; color:var(--muted); width:36px; text-align:right; flex-shrink:0; }
+.cc-ov-grid { display:flex; flex-direction:column; gap:0.5rem; margin-bottom:2rem; }
+.cc-ov-row { display:grid; grid-template-columns:180px 70px 70px 60px 80px 60px 60px 85px 90px 90px; gap:0.4rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem; align-items:center; font-size:0.78rem; overflow-x:auto; }
+.cc-ov-row.header { background:transparent; border:none; font-size:0.6rem; font-family:'DM Mono',monospace; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; padding:0 1rem; }
+.cc-ov-client-name { font-weight:600; font-size:0.8rem; }
+.cc-ov-val { font-family:'DM Mono',monospace; color:var(--muted); text-align:center; font-size:0.77rem; }
+.cc-days-live { font-size:0.58rem; font-family:'DM Mono',monospace; color:var(--muted); opacity:0.6; margin-left:4px; display:inline-block; line-height:1.5; vertical-align:middle; }
+.cc-kpi-pill { font-size:0.58rem; font-family:'DM Mono',monospace; padding:2px 6px; border-radius:99px; display:inline-block; white-space:nowrap; }
+.cc-kpi-pill.green { background:rgba(22,163,74,0.1); color:var(--green); border:1px solid rgba(22,163,74,0.25); }
+.cc-kpi-pill.amber { background:rgba(217,119,6,0.1); color:var(--amber); border:1px solid rgba(217,119,6,0.25); }
+.cc-kpi-pill.red   { background:rgba(220,38,38,0.1); color:var(--red);   border:1px solid rgba(220,38,38,0.25); }
+.cc-kpi-pill.neutral { background:rgba(0,0,0,0.04); color:var(--muted); border:1px solid var(--border); }
+.cc-period-select { background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:4px 8px; font-size:0.72rem; font-family:'DM Mono',monospace; cursor:pointer; outline:none; }
+.cc-client-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:border-color 0.2s; }
+.cc-client-card:hover { border-color:var(--border2,rgba(0,0,0,0.13)); }
+.cc-client-card-head { padding:1.1rem 1.25rem 0.9rem; border-bottom:1px solid var(--border); }
+.cc-client-card-name { font-size:0.95rem; font-weight:700; letter-spacing:-0.01em; margin-bottom:4px; }
+.cc-client-card-meta { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; margin-top:6px; }
+.cc-client-badge { font-size:0.6rem; font-family:'DM Mono',monospace; letter-spacing:0.07em; text-transform:uppercase; padding:2px 8px; border-radius:100px; border:1px solid transparent; }
+.cc-client-badge.jules   { background:rgba(181,135,13,0.12); color:var(--accent); border-color:rgba(181,135,13,0.25); }
+.cc-client-badge.ayessa  { background:rgba(217,119,6,0.12);  color:var(--amber);  border-color:rgba(217,119,6,0.25);  }
+.cc-client-badge.active  { background:rgba(22,163,74,0.1);   color:var(--green);  border-color:rgba(22,163,74,0.2);   }
+.cc-client-badge.live    { background:rgba(0,0,0,0.04); color:var(--muted); }
+.cc-client-badge.link    { background:rgba(0,0,0,0.04); color:var(--muted); cursor:pointer; }
+.cc-client-badge.link:hover { color:var(--text); }
+.cc-client-card-body { padding:1rem 1.25rem; }
+.cc-client-section-lbl { font-size:0.58rem; font-family:'DM Mono',monospace; color:var(--accent); letter-spacing:0.1em; text-transform:uppercase; margin:0.8rem 0 0.4rem; }
+.cc-client-section-lbl:first-child { margin-top:0; }
+.cc-client-fields { display:grid; grid-template-columns:1fr 1fr; gap:0.35rem 0.9rem; }
+.cc-client-field { display:flex; flex-direction:column; gap:2px; }
+.cc-client-field-lbl { font-size:0.58rem; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; }
+.cc-client-field-val { font-size:0.76rem; font-family:'DM Mono',monospace; color:var(--text); line-height:1.4; }
+.cc-client-field-val.empty { color:var(--muted); opacity:0.4; font-style:italic; }
+.cc-client-field.full { grid-column:1/-1; }
+.cc-client-field-val.prose { font-family:'DM Sans',sans-serif; font-size:0.78rem; color:var(--muted); line-height:1.5; white-space:pre-wrap; }
+.cc-clients-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:1.25rem; }
+.cc-clients-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem; }
+.cc-clients-search { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+.cc-clients-search input { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 12px; font-size:0.75rem; color:var(--text); outline:none; font-family:'DM Mono',monospace; width:200px; }
+.cc-clients-search input:focus { border-color:var(--accent); }
+.cc-clients-filter { background:none; border:1px solid var(--border); border-radius:8px; padding:5px 12px; font-size:0.67rem; font-family:'DM Mono',monospace; color:var(--muted); cursor:pointer; transition:all 0.15s; }
+.cc-clients-filter:hover { color:var(--text); }
+.cc-loading { font-size:0.8rem; color:var(--muted); font-family:'DM Mono',monospace; padding:2rem 0; text-align:center; }
+</style>
+</head>
+<body>
+
+<!-- ── PIN GATE ── -->
+<div id="pinGate">
+  <div class="pin-card">
+    <div class="pin-logo">AJ</div>
+    <h2 style="font-family:'Syne',sans-serif">AJ Command Centre</h2>
+    <p>Enter your PIN to continue</p>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-keypad" id="pinKeypad"></div>
+    <div id="pinError" class="pin-error"></div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app" style="display:none">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">AJ</div>
+      <div>
+        <div class="sidebar-logo-text">AJ Command Centre</div>
+        <div class="sidebar-logo-sub">Media Buyer · Systems</div>
+      </div>
+    </div>
+
+    <div style="padding: 0.5rem 0; flex:1">
+      <div class="nav-section">Overview</div>
+      <button class="nav-item active" onclick="showTab('dashboard', this)">
+        <span class="nav-icon">🏠</span> Dashboard
+      </button>
+
+      <div class="nav-section">Tools</div>
+      <button class="nav-item" onclick="showTab('agents', this)">
+        <span class="nav-icon">🤖</span> Agents
+      </button>
+      <button class="nav-item" onclick="showTab('chat', this)">
+        <span class="nav-icon">💬</span> AI Assistant
+      </button>
+      <button class="nav-item" onclick="showTab('qmi-brain', this)">
+        <span class="nav-icon">🧠</span> QMI Brain
+      </button>
+
+      <div class="nav-section">Client Ops</div>
+      <button class="nav-item" onclick="showTab('onboarding', this)">
+        <span class="nav-icon">🚀</span> New Client Onboarding
+      </button>
+      <button class="nav-item" onclick="showTab('offboarding', this)">
+        <span class="nav-icon">🔴</span> Client Offboarding
+      </button>
+
+      <div class="nav-section">Work</div>
+      <button class="nav-item" onclick="showTab('tasks', this)">
+        <span class="nav-icon">✅</span> My Tasks
+      </button>
+      <button class="nav-item" onclick="showTab('callcentre', this)">
+        <span class="nav-icon">📞</span> Call Centre
+      </button>
+
+      <div class="nav-section">Resources</div>
+      <button class="nav-item" onclick="showTab('sops', this)">
+        <span class="nav-icon">📚</span> SOPs & Fulfilment
+      </button>
+
+      <div class="nav-section">System</div>
+      <button class="nav-item" onclick="showTab('settings', this)">
+        <span class="nav-icon">⚙️</span> Settings
+      </button>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="sync-status" id="syncStatus">Last synced: never</div>
+      <button class="sync-btn" onclick="pullSync()">🔄 Refresh Data</button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab-pane active">
+      <div class="page-header">
+        <div class="page-title">Welcome, AJ! 👑</div>
+        <div class="page-sub" id="dashDate"></div>
+      </div>
+      <div class="stats-row" id="statsRow"></div>
+      <div id="monthlyActivity"></div>
+      <div class="section-heading">Active Clients</div>
+      <div class="client-grid" id="clientGrid"></div>
+    </div>
+
+    <!-- AGENTS -->
+    <div id="tab-agents" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">🤖 Your Agents</div>
+        <div class="page-sub">AI tools built for your workflow</div>
+      </div>
+      <div class="agent-grid" id="agentGrid"></div>
+    </div>
+
+    <!-- ONBOARDING -->
+    <div id="tab-onboarding" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">🚀 New Client Onboarding</div>
+        <div class="page-sub">AJ's task checklist for every new client — live from Google Sheets</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div class="tasks-status" id="onboardTabStatus"></div>
+        <button onclick="renderOnboardingTab()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 14px;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer">↺ Refresh</button>
+      </div>
+      <div id="onboardingList"></div>
+    </div>
+
+    <!-- OFFBOARDING -->
+    <div id="tab-offboarding" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">🔴 Client Offboarding</div>
+        <div class="page-sub">Mark clients as churned and track all wrap-up tasks — synced to Google Sheets</div>
+      </div>
+
+      <!-- Churn a client -->
+      <div style="background:var(--card);border:1px solid rgba(239,68,68,0.25);border-radius:14px;padding:1.25rem 1.4rem;margin-bottom:1.5rem">
+        <div style="font-size:0.78rem;font-weight:700;margin-bottom:0.9rem;color:var(--text)">Mark Client as Churned</div>
+        <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:center">
+          <select id="ajChurnSelect" style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:0.55rem 0.85rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none">
+            <option value="">— Select a client —</option>
+          </select>
+          <button onclick="ajChurnClient()" style="padding:0.55rem 1.1rem;background:#ef4444;color:#fff;border:none;border-radius:9px;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap">Mark as Churned</button>
+        </div>
+        <div id="ajChurnStatus" style="font-size:0.72rem;font-family:'DM Mono',monospace;margin-top:0.65rem;min-height:1em"></div>
+      </div>
+
+      <!-- Offboarding projects -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div class="tasks-status" id="offboardTabStatus"></div>
+        <button onclick="renderOffboardingTab()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 14px;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer">↺ Refresh</button>
+      </div>
+      <div id="offboardList"></div>
+    </div>
+
+    <!-- SOPs -->
+    <div id="tab-sops" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">📚 SOPs & Client Fulfilment</div>
+        <div class="page-sub">Your process playbook for every client situation</div>
+      </div>
+      <div class="sop-grid" id="sopGrid"></div>
+    </div>
+
+    <!-- TASKS -->
+    <div id="tab-tasks" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">✅ My Tasks</div>
+        <div class="page-sub">One-off tasks & client onboarding checklists — synced to Google Sheets</div>
+      </div>
+      <div class="tasks-status" id="tasksStatus">Loading…</div>
+
+      <div class="section-heading">One-off Tasks</div>
+      <div class="task-add-row">
+        <input type="text" id="taskInput" placeholder="Add a task…" onkeydown="if(event.key==='Enter') ajTaskAdd()">
+        <input type="date" id="taskDate" style="flex:0;min-width:130px">
+        <button class="task-add-btn" onclick="ajTaskAdd()">Add</button>
+      </div>
+      <div id="tasksList"></div>
+
+      <div class="section-heading" style="margin-top:2rem">Client Onboarding Checklists</div>
+      <div id="pmProjectsList"></div>
+
+      <div class="section-heading" style="margin-top:2rem">Client Offboarding Tasks</div>
+      <div id="offProjectsListTasks"></div>
+    </div>
+
+    <!-- CALL CENTRE -->
+    <div id="tab-callcentre" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">📞 Call Centre</div>
+        <div class="page-sub">Live calls & appointments — synced from the main Command Centre</div>
+      </div>
+      <div class="cc-sub-tabs" id="ccSubTabs">
+        <button class="cc-sub-tab active" onclick="switchCCTab('calls')">Calls</button>
+        <button class="cc-sub-tab" onclick="switchCCTab('appointments')">Appointments</button>
+        <button class="cc-sub-tab" onclick="switchCCTab('overview')">Overview</button>
+        <button class="cc-sub-tab" onclick="switchCCTab('clients')">Our Clients</button>
+      </div>
+      <div id="cc-pane-calls"><div class="cc-loading">Loading call data…</div></div>
+      <div id="cc-pane-appointments" style="display:none"><div class="cc-loading">Loading appointments…</div></div>
+      <div id="cc-pane-overview" style="display:none"><div class="cc-loading">Loading overview…</div></div>
+      <div id="cc-pane-clients" style="display:none"><div class="cc-loading">Loading clients…</div></div>
+    </div>
+
+
+    <!-- CHAT -->
+    <div id="tab-chat" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">💬 AI Assistant</div>
+        <div class="page-sub">Ask anything about clients, processes, or campaign strategy</div>
+      </div>
+      <div id="chatWrap">
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg assistant">
+            <div class="msg-bubble">Hey Alfie 👋 I'm your AI assistant. I have full context on all your active clients, onboarding statuses, and company SOPs. Ask me anything — client status, what to do next for a specific client, campaign ideas, or how to handle a situation.</div>
+            <div class="msg-time">Now</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chatInput" placeholder="Ask about a client, process, or anything else…" rows="1" onkeydown="chatKeydown(event)"></textarea>
+          <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send →</button>
+        </div>
+        <div class="chat-hint">Powered by Claude · Your API key is stored locally only</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="tab-pane">
+      <div class="page-header">
+        <div class="page-title">⚙️ Settings</div>
+        <div class="page-sub">Sync, AI, and access configuration</div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">🔄 Data Source</div>
+        <p style="font-size:0.75rem;color:var(--muted);line-height:1.5">Client data is pulled live from the same Google Sheet as the main Command Centre — no setup required. Updates automatically every 60 seconds.</p>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">🤖 AI Assistant API Key</div>
+        <p style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;line-height:1.5">Your Anthropic API key for the AI chatbot. Stored in your browser only.</p>
+        <div class="settings-row">
+          <div class="settings-field" style="grid-column:span 2">
+            <label>Anthropic API Key</label>
+            <input type="password" id="s_apiKey" placeholder="sk-ant-...">
+          </div>
+        </div>
+        <button class="settings-btn" onclick="saveApiKey()">Save API Key</button>
+        <div class="settings-msg" id="apiKeyMsg"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">🔐 Change PIN</div>
+        <div class="settings-row">
+          <div class="settings-field">
+            <label>New PIN (4 digits)</label>
+            <input type="password" id="s_newPin" maxlength="4" placeholder="••••">
+          </div>
+          <div class="settings-field">
+            <label>Confirm PIN</label>
+            <input type="password" id="s_confirmPin" maxlength="4" placeholder="••••">
+          </div>
+        </div>
+        <button class="settings-btn" onclick="changePin()">Update PIN</button>
+        <div class="settings-msg" id="pinMsg"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">🔒 Lock Dashboard</div>
+        <button class="settings-btn" onclick="lockDashboard()" style="border-color:rgba(239,68,68,0.3);color:var(--red);background:rgba(239,68,68,0.08)">Lock & Return to PIN Screen</button>
+      </div>
+    </div>
+
+    <!-- QMI BRAIN -->
+    <div id="tab-qmi-brain" class="tab-pane">
+      <div class="brain-wrap">
+        <div class="brain-sidebar">
+          <div class="brain-sidebar-title">📚 Knowledge Base</div>
+          <div class="brain-kb-stats" id="brain-kb-stats">Loading…</div>
+          <div class="brain-sidebar-section">
+            <button class="brain-sop-save" onclick="clearBrainHistory()" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25);color:#f87171;width:100%;">New Chat ✕</button>
+          </div>
+          <div class="brain-sidebar-section" style="margin-top:auto">
+            <div class="brain-sidebar-sub" style="opacity:0.4;font-size:0.6rem;">All WhatsApp history + your SOP is sent as context with every message.</div>
+          </div>
+        </div>
+        <div class="brain-chat-wrap">
+          <div class="brain-orb-section" id="brain-orb-section">
+            <div class="brain-orb"></div>
+            <div class="brain-chips">
+              <div class="brain-chip" onclick="useBrainChip(this)">Draft a client update message</div>
+              <div class="brain-chip" onclick="useBrainChip(this)">How should I respond to this client?</div>
+              <div class="brain-chip" onclick="useBrainChip(this)">What's the history with this client?</div>
+              <div class="brain-chip" onclick="useBrainChip(this)">Write a results summary message</div>
+            </div>
+          </div>
+          <div class="brain-messages" id="brain-messages" style="display:none"></div>
+          <div class="brain-input-wrap">
+            <div id="brain-image-preview"></div>
+            <div style="display:flex;align-items:flex-end;gap:0.75rem;width:100%">
+              <label class="brain-attach-btn" title="Upload a screenshot of a client message">
+                📷
+                <input type="file" accept="image/*" onchange="attachBrainImage(this)" style="display:none">
+              </label>
+              <textarea class="chat-input" id="brain-input" placeholder="Ask about a client, or upload a screenshot for 3 suggested replies…" rows="1" onkeydown="brainKeydown(event)" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea>
+              <button class="chat-send" id="brain-send" onclick="sendBrainMessage()">send ↑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────────────────
+const DEFAULT_PIN     = '1234';
+const STORAGE_PIN_KEY = 'aj_pin_hash';
+const STORAGE_API_KEY = 'aj_anthropic_key';
+
+// Same proxy + sheet as the main Command Centre — no credentials needed
+const PROXY_URL        = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const CLIENTS_SHEET_ID = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
+
+const JULES_FALLBACK  = ["PrimeBuild Solutions","Quality Custom Homes","Quality Custom Homes PTY LTD","Spa Space","Streamline Building Projects","Imperial Renovations","Imperial Bathrooms","Favourite Home","Kogalo Renovations"];
+const AYESSA_FALLBACK = ["Buildavate","Allspec Homes","Silk Touch Joinery","Barco Build","Renovate Right Homes","Rapid Bathroom Specialist"];
+
+const ONBOARD_STEPS = [
+  'Access to FB Ad Account', 'Access to FB Page', 'Access to Instagram',
+  'CRM Setup', 'Lead form created', 'Pixel installed',
+  'Campaign live', 'First report sent', 'Kick-off call done', 'Signed contract received'
+];
+
+const AJ_OFF_TASKS = [
+  { id: 'off-aj-1', label: 'Turn the ads off',                           desc: 'Log into the ad account and pause or turn off all active campaigns for this client immediately.' },
+  { id: 'off-aj-2', label: 'Remove from the Fulfilment Sheet (Windsor)',  desc: 'Open the Windsor fulfilment sheet and remove the client\'s row so they stop appearing in reporting.' },
+  { id: 'off-aj-3', label: 'Remove the number from Go High Level',        desc: 'Go into the client\'s GHL sub-account settings, disconnect any active automations, and remove the phone number from all workflows.' },
+  { id: 'off-aj-7', label: 'Delete the phone number in Go High Level',    desc: 'Go into GHL → Settings → Phone Numbers, find the leased number for this client\'s sub-account, and delete/release it to stop incoming calls and avoid ongoing charges.' },
+  { id: 'off-aj-4', label: 'Move Client Overview Doc to Churned folder',  desc: 'Find the client\'s Overview Document in Google Drive and drag it into the Churned Clients folder.' },
+  { id: 'off-aj-5', label: 'Move Stat Sheet to Churned folder',           desc: 'Find the client\'s Stats Sheet in Google Drive and drag it into the Churned Clients folder.' },
+  { id: 'off-aj-6', label: 'Move Google Drive folder to Churned folder',  desc: 'Move the entire client Google Drive folder into the Churned Clients directory to keep things organised.' },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────
+let syncedData    = null;
+let chatHistory   = [];
+let _ajOffMem     = [];
+let intakeHistory = JSON.parse(localStorage.getItem('aj_intake_history') || '[]');
+
+// ── PIN Logic ─────────────────────────────────────────────────────────────
+let pinEntry = '';
+
+function hashPin(p) { return btoa(p + '_aj_cc_2025'); }
+function storedPin() { return localStorage.getItem(STORAGE_PIN_KEY) || hashPin(DEFAULT_PIN); }
+
+function buildKeypad() {
+  const kp = document.getElementById('pinKeypad');
+  [1,2,3,4,5,6,7,8,9].forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'pin-key'; b.textContent = n;
+    b.onclick = () => pinPress(String(n));
+    kp.appendChild(b);
+  });
+  const del = document.createElement('button');
+  del.className = 'pin-key'; del.textContent = '⌫'; del.onclick = pinBack;
+  kp.appendChild(del);
+  const z = document.createElement('button');
+  z.className = 'pin-key'; z.textContent = '0'; z.onclick = () => pinPress('0');
+  kp.appendChild(z);
+  const ok = document.createElement('button');
+  ok.className = 'pin-key'; ok.textContent = '↵'; ok.onclick = pinSubmit;
+  kp.appendChild(ok);
+}
+
+function pinPress(digit) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === 4) setTimeout(pinSubmit, 120);
+}
+function pinBack() { pinEntry = pinEntry.slice(0, -1); updatePinDots(); }
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < pinEntry.length);
+  }
+}
+function pinSubmit() {
+  if (hashPin(pinEntry) === storedPin()) {
+    sessionStorage.setItem('aj_unlocked', '1');
+    document.getElementById('pinGate').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initApp();
+  } else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN — try again';
+    pinEntry = ''; updatePinDots();
+    setTimeout(() => { document.getElementById('pinError').textContent = ''; }, 2000);
+  }
+}
+function lockDashboard() {
+  sessionStorage.removeItem('aj_unlocked');
+  location.reload();
+}
+function changePin() {
+  const np = document.getElementById('s_newPin').value;
+  const cp = document.getElementById('s_confirmPin').value;
+  const msg = document.getElementById('pinMsg');
+  if (!/^\d{4}$/.test(np)) { msg.textContent = '⚠ PIN must be exactly 4 digits'; msg.style.color = 'var(--red)'; return; }
+  if (np !== cp) { msg.textContent = '⚠ PINs do not match'; msg.style.color = 'var(--red)'; return; }
+  localStorage.setItem(STORAGE_PIN_KEY, hashPin(np));
+  msg.textContent = '✓ PIN updated'; msg.style.color = 'var(--green)';
+  document.getElementById('s_newPin').value = '';
+  document.getElementById('s_confirmPin').value = '';
+}
+
+// ── App Init ──────────────────────────────────────────────────────────────
+async function initApp() {
+  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  await pullSync();
+  renderDashboard();
+  renderAgents();
+  renderSOPs();
+  loadSettings();
+  // Auto-refresh from Google Sheet every 60 seconds
+  setInterval(pullSync, 60 * 1000);
+}
+
+// ── Live data fetch — same Google Sheets proxy as main Command Centre ─────
+async function pullSync() {
+  const statusEl = document.getElementById('syncStatus');
+  if (statusEl) statusEl.textContent = 'Loading…';
+
+  try {
+    const res  = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    const rows = await res.json();
+
+    const jules = [], ayessa = [];
+    const allClients = []; // includes churned, for activity tracking
+    const NON_CC = ['urbanriseproperty', 'l2homes', 'generationalbathrooms'];
+
+    if (Array.isArray(rows) && rows.length > 1) {
+      for (let i = 1; i < rows.length; i++) {
+        const name         = String(rows[i][0]  || '').trim();
+        const agent        = String(rows[i][1]  || '').trim();
+        const statsUrl     = String(rows[i][3]  || '').trim();
+        const liveDate     = String(rows[i][4]  || '').trim();
+        const ovField      = String(rows[i][7]  || '').trim();
+        const status       = String(rows[i][8]  || '').trim();
+        const billingStart = String(rows[i][26] || '').trim();
+        const churnDate    = String(rows[i][29] || '').trim();
+        if (!name) continue;
+        const slug = name.toLowerCase().replace(/\s+/g, '');
+        if (NON_CC.includes(slug)) continue;
+        const signDate   = billingStart || liveDate;
+        const overviewUrl = ovField.includes('docs.google.com') ? ovField : (CLIENT_OVERVIEW_DOCS[name] || '');
+        allClients.push({ name, agent, status, signDate, churnDate, statsUrl, overviewUrl });
+        if (status === 'Churned') continue;
+        if (agent === 'Jules')  jules.push(name);
+        if (agent === 'Ayessa') ayessa.push(name);
+      }
+    }
+
+    syncedData = {
+      jules_accounts:  jules.length  ? jules  : JULES_FALLBACK,
+      ayessa_accounts: ayessa.length ? ayessa : AYESSA_FALLBACK,
+      all_clients:     allClients,
+    };
+
+    const ts = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+    if (statusEl) statusEl.textContent = `Live · updated ${ts}`;
+  } catch(e) {
+    syncedData = { jules_accounts: JULES_FALLBACK, ayessa_accounts: AYESSA_FALLBACK, all_clients: [] };
+    if (statusEl) statusEl.textContent = 'Sheet offline — using fallback';
+  }
+
+  if (document.getElementById('app').style.display !== 'none') {
+    renderDashboard();
+  }
+}
+
+function getAllClients() {
+  const allFromSheet = (syncedData?.all_clients || []).filter(c => c.status !== 'Churned');
+  if (allFromSheet.length) return allFromSheet;
+  // Fallback to name-only lists if sheet hasn't loaded yet
+  return [
+    ...(JULES_FALLBACK.map(n  => ({ name: n, agent: 'Jules',  statsUrl: '', overviewUrl: '' }))),
+    ...(AYESSA_FALLBACK.map(n => ({ name: n, agent: 'Ayessa', statsUrl: '', overviewUrl: '' }))),
+  ];
+}
+
+function isPaused(name) {
+  try {
+    const list = JSON.parse(localStorage.getItem('qj_paused_clients') || '[]');
+    const n = name.toLowerCase().replace(/\s+/g,'');
+    return list.some(x => (x.name || x).toLowerCase().replace(/\s+/g,'') === n);
+  } catch(e) { return false; }
+}
+
+// ── Monthly activity navigator ────────────────────────────────────────────
+let _monthOffset = 0;
+
+function _parseDate(str) {
+  if (!str) return null;
+  // Handle DD/MM/YYYY, YYYY-MM-DD, and other common formats
+  const s = str.trim();
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmy) {
+    const y = dmy[3].length === 2 ? '20' + dmy[3] : dmy[3];
+    return new Date(+y, +dmy[2] - 1, +dmy[1]);
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function _inMonth(dateStr, yr, mo) {
+  const d = _parseDate(dateStr);
+  if (!d) return false;
+  return d.getFullYear() === yr && d.getMonth() === mo;
+}
+
+function renderMonthlyActivity(offset) {
+  _monthOffset = offset;
+  const ref = new Date();
+  ref.setDate(1);
+  ref.setMonth(ref.getMonth() + offset);
+  const yr = ref.getFullYear();
+  const mo = ref.getMonth();
+  const isNow = offset === 0;
+  const monthLabel = ref.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+
+  const all = syncedData?.all_clients || [];
+  const signed  = all.filter(c => _inMonth(c.signDate,  yr, mo));
+  const churned = all.filter(c => _inMonth(c.churnDate, yr, mo));
+
+  const signedRows  = signed.map(c  => `<div class="monthly-event-row"><div class="monthly-event-dot green"></div><span>${c.name}</span><span class="monthly-event-agent">${c.agent || ''}</span></div>`).join('');
+  const churnedRows = churned.map(c => `<div class="monthly-event-row"><div class="monthly-event-dot red"></div><span>${c.name}</span><span class="monthly-event-agent">${c.agent || ''}</span></div>`).join('');
+
+  document.getElementById('monthlyActivity').innerHTML = `
+    <div class="monthly-panel">
+      <div class="monthly-nav">
+        <div class="monthly-title">${monthLabel} — Client Activity</div>
+        <div class="monthly-nav-btns">
+          <button class="monthly-nav-btn" onclick="renderMonthlyActivity(${offset - 1})">← Prev</button>
+          ${!isNow ? `<button class="monthly-nav-btn accent" onclick="renderMonthlyActivity(0)">This Month</button>` : ''}
+          <button class="monthly-nav-btn" onclick="renderMonthlyActivity(${offset + 1})" ${isNow ? 'disabled' : ''}>Next →</button>
+        </div>
+      </div>
+      <div class="monthly-counts">
+        <div class="monthly-count-card green">
+          <div class="monthly-count-label">Signed</div>
+          <div class="monthly-count-val">${signed.length}</div>
+        </div>
+        <div class="monthly-count-card red">
+          <div class="monthly-count-label">Churned</div>
+          <div class="monthly-count-val">${churned.length}</div>
+        </div>
+      </div>
+      ${signed.length || churned.length ? `
+      <div class="monthly-lists">
+        <div>
+          <div class="monthly-list-title green">▲ Signed this month</div>
+          ${signedRows || '<div class="monthly-empty">None</div>'}
+        </div>
+        <div>
+          <div class="monthly-list-title red">▼ Churned this month</div>
+          ${churnedRows || '<div class="monthly-empty">None</div>'}
+        </div>
+      </div>` : `<div class="monthly-empty">No sign or churn activity recorded for this month.</div>`}
+    </div>`;
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const clients = getAllClients();
+  const paused  = clients.filter(c => isPaused(c.name));
+  const active  = clients.filter(c => !isPaused(c.name));
+
+  // Use sheet data for this-month counts
+  const all = syncedData?.all_clients || [];
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth();
+  const signedThisMonth  = all.filter(c => _inMonth(c.signDate,  yr, mo)).length;
+  const churnedThisMonth = all.filter(c => _inMonth(c.churnDate, yr, mo)).length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Active Clients</div>
+      <div class="stat-value stat-green">${active.length}</div>
+      <div class="stat-sub">running campaigns</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Paused</div>
+      <div class="stat-value stat-amber">${paused.length}</div>
+      <div class="stat-sub">temporarily on hold</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Signed This Month</div>
+      <div class="stat-value stat-green">${signedThisMonth}</div>
+      <div class="stat-sub">new clients</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Churned This Month</div>
+      <div class="stat-value stat-red">${churnedThisMonth}</div>
+      <div class="stat-sub">lost this month</div>
+    </div>`;
+
+  renderMonthlyActivity(_monthOffset);
+
+  document.getElementById('clientGrid').innerHTML = clients.map(c => {
+    const p = isPaused(c.name);
+    const links = [
+      c.statsUrl    ? `<a href="${c.statsUrl}"    target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📊 Stats</a>` : '',
+      c.overviewUrl ? `<a href="${c.overviewUrl}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📄 Overview</a>` : '',
+    ].filter(Boolean).join('<span style="color:var(--border2);margin:0 4px">·</span>');
+    return `<div class="client-card">
+      <div class="client-name">${c.name}</div>
+      <div class="client-meta" style="margin-bottom:0.55rem">Agent: ${c.agent}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.35rem">
+        <span class="badge ${p ? 'badge-paused' : 'badge-active'}">${p ? '⏸ Paused' : '● Active'}</span>
+        ${links ? `<div style="display:flex;align-items:center;gap:2px">${links}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:0.8rem;padding:1rem 0">No active clients found.</div>';
+}
+
+// ── Agents ────────────────────────────────────────────────────────────────
+function renderAgents() {
+  const agents = [
+    { icon:'✨', name:'Social Post Agent', role:'Organic Content Creation', desc:'Upload client photos and logos — AI generates branded social media posts with captions, hashtags and Stories copy. Download as PNG or batch ZIP.', url: 'https://your-social-agent.netlify.app', active: true },
+    { icon:'📊', name:'Ad Performance Analyser', role:'Paid Media', desc:'Paste your Facebook Ads results and get an AI breakdown of what\'s working, what\'s not, and exactly what to change.', url: null, active: false },
+    { icon:'✍️', name:'Ad Copy Generator', role:'Creative Strategy', desc:'Generate high-converting ad copy for renovation clients — headlines, primary text, and CTAs tailored to the Australian market.', url: null, active: false },
+    { icon:'📩', name:'Client Report Writer', role:'Communication', desc:'Input campaign data and get a professional client-ready report with plain-English results, insights, and recommendations.', url: null, active: false },
+    { icon:'🎯', name:'Audience Builder', role:'Targeting Strategy', desc:'Answer a few questions about a client and get detailed custom audience suggestions, lookalike strategies, and interest targeting ideas.', url: null, active: false },
+    { icon:'📞', name:'Client Communication Assistant', role:'Relationship Management', desc:'Draft professional client emails, Slack messages, and update summaries in seconds based on your campaign data.', url: null, active: false },
+  ];
+  document.getElementById('agentGrid').innerHTML = agents.map(a => `
+    <div class="agent-card">
+      <div class="agent-icon">${a.icon}</div>
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-role">${a.role}</div>
+      <div class="agent-desc">${a.desc}</div>
+      <button class="agent-btn" ${!a.active ? 'disabled' : `onclick="window.open('${a.url}','_blank')"`}>
+        ${a.active ? 'Launch →' : 'Coming Soon'}
+      </button>
+    </div>`).join('');
+}
+
+// ── New Client Onboarding tab ─────────────────────────────────────────────
+async function renderOnboardingTab() {
+  const status = document.getElementById('onboardTabStatus');
+  if (status) status.textContent = 'Syncing…';
+  if (!_ajPMMem.length) {
+    try {
+      const r = await fetch(PROXY_URL + '?service=pm_projects');
+      if (r.ok) { const p = await r.json(); if (Array.isArray(p)) _ajPMMem = p; }
+    } catch(_) {}
+  }
+  if (status) {
+    status.textContent = _ajPMMem.length
+      ? 'Live · ' + new Date().toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit'})
+      : 'Could not reach Google Sheets';
+  }
+  _renderPMProjectsInto(document.getElementById('onboardingList'), 'ob');
+}
+
+// ── Offboarding ───────────────────────────────────────────────────────────
+async function renderOffboardingTab() {
+  const status = document.getElementById('offboardTabStatus');
+  if (status) status.textContent = 'Syncing…';
+  _populateChurnSelect();
+  if (!_ajOffMem.length) {
+    try {
+      const r = await fetch(PROXY_URL + '?service=off_projects');
+      if (r.ok) { const d = await r.json(); if (Array.isArray(d)) _ajOffMem = d; }
+    } catch(_) {}
+    // fallback: migrate legacy localStorage data
+    if (!_ajOffMem.length) {
+      try {
+        const legacy = JSON.parse(localStorage.getItem('aj_offboard_data') || '{}');
+        _ajOffMem = Object.entries(legacy).map(([client, data]) => ({
+          client, created: data.startedAt || new Date().toISOString(), done: []
+        }));
+      } catch(_) {}
+    }
+  }
+  if (status) {
+    status.textContent = _ajOffMem.length
+      ? 'Live · ' + new Date().toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit'})
+      : 'No active offboarding projects';
+  }
+  _renderOffProjectsInto(document.getElementById('offboardList'), 'ob');
+  _renderOffProjectsInto(document.getElementById('offProjectsListTasks'), 'tsk');
+}
+
+function _populateChurnSelect() {
+  const sel = document.getElementById('ajChurnSelect');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Select a client —</option>';
+  getAllClients().forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.name; opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+}
+
+async function ajChurnClient() {
+  const sel  = document.getElementById('ajChurnSelect');
+  const name = sel?.value?.trim();
+  const statusEl = document.getElementById('ajChurnStatus');
+  if (!name) { if (statusEl) { statusEl.textContent = 'Select a client first.'; statusEl.style.color = 'var(--red)'; } return; }
+  if (!confirm(`Mark "${name}" as churned?\n\nThis will update the Clients sheet and start the offboarding checklist.`)) return;
+  if (statusEl) { statusEl.textContent = 'Updating…'; statusEl.style.color = 'var(--muted)'; }
+  try {
+    // 1. Mark churned in Clients sheet
+    const res  = await fetch(PROXY_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({ action:'churnClient', clientName: name }) });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Sheet update failed');
+    // 2. Mark in Payment Log (non-fatal)
+    fetch(PROXY_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({ action:'churnPaymentLog', clientName: name }) }).catch(()=>{});
+    // 3. Update churned list in localStorage
+    try { const c = JSON.parse(localStorage.getItem('qj_churned_clients')||'[]'); if (!c.includes(name)) { c.push(name); localStorage.setItem('qj_churned_clients', JSON.stringify(c)); } } catch(_){}
+    // 4. Create offboarding project and save to Sheets
+    if (!_ajOffMem.find(p => p.client === name)) {
+      _ajOffMem.unshift({ client: name, created: new Date().toISOString(), done: [] });
+      await _ajSaveOffToSheets();
+    }
+    if (statusEl) { statusEl.textContent = `✓ ${name} marked as churned. Offboarding checklist created.`; statusEl.style.color = 'var(--green)'; }
+    if (sel) sel.value = '';
+    _renderOffProjectsInto(document.getElementById('offboardList'), 'ob');
+    _renderOffProjectsInto(document.getElementById('offProjectsListTasks'), 'tsk');
+    // Re-pull client list so churned client disappears from selectors
+    await pullSync();
+    _populateChurnSelect();
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = 'Error: ' + e.message; statusEl.style.color = 'var(--red)'; }
+  }
+}
+
+function _renderOffProjectsInto(el, pfx) {
+  if (!el) return;
+  if (!_ajOffMem.length) {
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0;font-family:\'DM Mono\',monospace">No active offboarding projects — mark a client as churned above to start one.</div>';
+    return;
+  }
+  el.innerHTML = _ajOffMem.map((proj, idx) => {
+    const doneSet = new Set(proj.done || []);
+    const doneN   = AJ_OFF_TASKS.filter(t => doneSet.has(t.id)).length;
+    const pct     = Math.round(doneN / AJ_OFF_TASKS.length * 100);
+    const created = proj.created ? new Date(proj.created).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    const taskRows = AJ_OFF_TASKS.map(t => {
+      const done = doneSet.has(t.id);
+      return `<div class="pm-task-row">
+        <button class="pm-task-chk${done?' done':''}" onclick="ajOffTaskToggle(${idx},'${t.id}')">${done?'✓':''}</button>
+        <div style="flex:1;min-width:0">
+          <span class="pm-task-lbl${done?' done':''}">${t.label}</span>
+          ${t.desc&&!done?`<div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px;line-height:1.45">${t.desc}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="pm-proj-card" style="border-color:rgba(239,68,68,0.2)">
+      <div class="pm-proj-head" onclick="ajOffToggleCard(${idx})">
+        <div>
+          <div class="pm-proj-name">🔴 ${proj.client}</div>
+          <div class="pm-proj-meta">Churned${created ? ' · ' + created : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <div style="width:60px;height:3px;background:var(--border2);border-radius:2px;flex-shrink:0">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'#ef4444'};border-radius:2px;transition:width 0.3s"></div>
+          </div>
+          <span class="pm-proj-prog" style="color:${pct===100?'var(--green)':'#ef4444'}">${doneN}/${AJ_OFF_TASKS.length}</span>
+          <button onclick="event.stopPropagation();ajOffRemove(${idx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0 4px" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="pm-proj-body" id="${pfx}-off-proj-${idx}">${taskRows}</div>
+    </div>`;
+  }).join('');
+}
+
+function ajOffToggleCard(idx) {
+  ['ob', 'tsk'].forEach(pfx => {
+    const el = document.getElementById(`${pfx}-off-proj-${idx}`);
+    if (el) el.classList.toggle('open');
+  });
+}
+
+async function ajOffTaskToggle(idx, taskId) {
+  const proj = _ajOffMem[idx];
+  if (!proj) return;
+  const done = new Set(proj.done || []);
+  if (done.has(taskId)) done.delete(taskId); else done.add(taskId);
+  proj.done = [...done];
+  _renderOffProjectsInto(document.getElementById('offboardList'), 'ob');
+  _renderOffProjectsInto(document.getElementById('offProjectsListTasks'), 'tsk');
+  ['ob', 'tsk'].forEach(pfx => document.getElementById(`${pfx}-off-proj-${idx}`)?.classList.add('open'));
+  await _ajSaveOffToSheets();
+}
+
+function ajOffRemove(idx) {
+  const proj = _ajOffMem[idx];
+  if (!proj || !confirm(`Remove offboarding project for "${proj.client}"?`)) return;
+  _ajOffMem.splice(idx, 1);
+  _renderOffProjectsInto(document.getElementById('offboardList'), 'ob');
+  _renderOffProjectsInto(document.getElementById('offProjectsListTasks'), 'tsk');
+  _ajSaveOffToSheets();
+}
+
+async function _ajSaveOffToSheets() {
+  try {
+    await fetch(PROXY_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({ action:'saveOffProjects', projects: _ajOffMem }) });
+  } catch(_) {}
+  // Mirror to localStorage as backup
+  try { localStorage.setItem('aj_off_projects', JSON.stringify(_ajOffMem)); } catch(_) {}
+}
+
+// ── SOPs ──────────────────────────────────────────────────────────────────
+function renderSOPs() {
+  const sops = [
+    {
+      icon: '🚀', title: 'New Client Onboarding SOP',
+      desc: 'Step-by-step checklist for getting a new client fully set up and campaigns live.',
+      steps: ['Send welcome email within 24 hours of signing', 'Request all access (FB, IG, Ad Account, CRM)', 'Complete onboarding form in the Intake Form tab', 'Build audience research doc', 'Set up ad account structure (campaigns, ad sets)', 'Create initial ad creatives (3 minimum)', 'Send kick-off call invite', 'Run kick-off call and record it', 'Launch campaigns after sign-off', 'Send day-1 launch confirmation to client']
+    },
+    {
+      icon: '📈', title: 'Weekly Client Reporting SOP',
+      desc: 'What to check, prepare, and send to clients every week.',
+      steps: ['Pull results from Facebook Ads Manager (Mon morning)', 'Screenshot key metrics: ROAS, CPC, CPL, spend', 'Write 3-5 sentence plain-English summary', 'Note top performing ad and why it worked', 'Flag any issues or budget concerns', 'Include next 7-day plan', 'Send report by Tuesday 10am', 'Log report sent in client notes']
+    },
+    {
+      icon: '🔄', title: 'Campaign Optimisation SOP',
+      desc: 'How and when to make changes to underperforming campaigns.',
+      steps: ['Check results after 3 days of spend (minimum)', 'Do not make changes in the first 48 hours (learning phase)', 'If CPL > 2x target: pause bottom 20% of ad sets', 'If CTR < 1%: refresh creative immediately', 'Test 1 variable at a time (audience OR creative, not both)', 'Document every change in the client log', 'Wait 72 hours before evaluating change impact', 'Escalate to QJ if budget exceeded by >20%']
+    },
+    {
+      icon: '💬', title: 'Client Communication SOP',
+      desc: 'How to communicate with clients — tone, frequency, and escalation.',
+      steps: ['Respond to all client messages within 4 business hours', 'Use professional but warm, conversational tone', 'Never promise results — say "we aim to" or "our goal is"', 'For complaints: acknowledge → apologise → action plan', 'Weekly check-in message every Friday', 'Major changes require client sign-off before live', 'Escalate unhappy clients to QJ immediately', 'Document all key conversations in the CRM']
+    },
+    {
+      icon: '🔴', title: 'Client Offboarding SOP',
+      desc: 'How to professionally wrap up a client relationship.',
+      steps: ['Confirm offboarding date in writing', 'Pause all active campaigns', 'Export all campaign data and creative assets', 'Compile final performance report (full tenure)', 'Remove agency access from all accounts', 'Send final invoice if outstanding', 'Request a Google/Facebook review', 'Send off with a positive farewell — doors open to return']
+    },
+    {
+      icon: '📋', title: 'Client Onboarding Deck',
+      desc: 'The presentation deck we send to every new client at kick-off.',
+      link: 'https://docs.google.com/presentation/d/your-deck-link',
+      linkText: 'Open Onboarding Deck ↗',
+      steps: []
+    }
+  ];
+
+  document.getElementById('sopGrid').innerHTML = sops.map((s, i) => `
+    <div class="sop-card">
+      <div class="sop-icon">${s.icon}</div>
+      <div class="sop-title">${s.title}</div>
+      <div class="sop-desc">${s.desc}</div>
+      ${s.link ? `<a href="${s.link}" target="_blank" class="sop-link">${s.linkText}</a>` : ''}
+      ${s.steps.length ? `
+      <button onclick="toggleSOP(${i})" style="background:none;border:none;color:var(--accent);font-size:0.7rem;font-family:'DM Mono',monospace;cursor:pointer;padding:0;margin-top:0.25rem">
+        ▼ View Steps
+      </button>
+      <div class="sop-expand-body" id="sop-${i}">
+        ${s.steps.map((st, n) => `<div class="sop-item"><span class="sop-num">${n+1}.</span><span>${st}</span></div>`).join('')}
+      </div>` : ''}
+    </div>`).join('');
+}
+
+function toggleSOP(i) {
+  const el = document.getElementById('sop-' + i);
+  const open = el.classList.toggle('open');
+  el.previousElementSibling.textContent = (open ? '▲' : '▼') + ' View Steps';
+}
+
+// ── Intake Form ───────────────────────────────────────────────────────────
+function submitIntakeForm() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { alert('Client name is required'); return; }
+  const intake = {
+    name, contact: document.getElementById('f_contact').value.trim(),
+    phone: document.getElementById('f_phone').value.trim(),
+    email: document.getElementById('f_email').value.trim(),
+    website: document.getElementById('f_website').value.trim(),
+    niche: document.getElementById('f_niche').value.trim(),
+    location: document.getElementById('f_location').value.trim(),
+    plan: document.getElementById('f_plan').value,
+    notes: document.getElementById('f_notes').value.trim(),
+    fb: document.getElementById('f_fb').value.trim(),
+    ig: document.getElementById('f_ig').value.trim(),
+    google: document.getElementById('f_google').value.trim(),
+    adAccount: document.getElementById('f_adaccount').value.trim(),
+    access: {
+      fb: document.getElementById('f_acc_fb').checked,
+      pages: document.getElementById('f_acc_pages').checked,
+      ig: document.getElementById('f_acc_ig').checked,
+      ga: document.getElementById('f_acc_ga').checked,
+      gads: document.getElementById('f_acc_gads').checked,
+      crm: document.getElementById('f_acc_crm').checked
+    },
+    startDate: document.getElementById('f_startdate').value,
+    submittedAt: new Date().toISOString(), submittedBy: 'Alfie'
+  };
+  intakeHistory.unshift(intake);
+  localStorage.setItem('aj_intake_history', JSON.stringify(intakeHistory));
+  // Also write to qj_manual_clients so the CEO dashboard can see it
+  try {
+    const manual = JSON.parse(localStorage.getItem('qj_manual_clients') || '[]');
+    const exists = manual.find(x => x.name.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      manual.push({ name, agent: 'Alfie', status: 'Active', addedAt: new Date().toISOString(), source: 'Alfie Intake Form', ...intake });
+      localStorage.setItem('qj_manual_clients', JSON.stringify(manual));
+    }
+  } catch(e) {}
+  document.getElementById('formSuccess').style.display = 'block';
+  setTimeout(() => { document.getElementById('formSuccess').style.display = 'none'; }, 3500);
+  clearIntakeForm();
+  // Create AJ's onboarding task checklist for the new client if it doesn't exist yet
+  const alreadyInPM = _ajPMMem.find(p => p.client.toLowerCase() === name.toLowerCase() && p.trigger === 'New Client Onboarded');
+  if (!alreadyInPM) {
+    _ajPMMem.unshift({ client: name, trigger: 'New Client Onboarded', tmplIdx: 0, created: new Date().toISOString(), done: [] });
+    _renderPMProjects();
+    _renderPMProjectsOb();
+    _ajSavePMToSheets();
+  }
+}
+function clearIntakeForm() {
+  ['f_name','f_contact','f_phone','f_email','f_website','f_niche','f_location','f_notes','f_fb','f_ig','f_google','f_adaccount','f_startdate'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('f_plan').value = '';
+  ['f_acc_fb','f_acc_pages','f_acc_ig','f_acc_ga','f_acc_gads','f_acc_crm'].forEach(id => { document.getElementById(id).checked = false; });
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────
+function buildChatContext() {
+  const clients = getAllClients();
+  const paused  = clients.filter(c => isPaused(c.name));
+  const churnEvents = (() => { try { return JSON.parse(localStorage.getItem('qj_churn_events') || '[]'); } catch(e) { return []; } })();
+  const recentChurns = churnEvents.filter(e => Date.now() - new Date(e.date||e.ts||0).getTime() < 30*24*60*60*1000);
+  const intakes = intakeHistory.slice(0,10);
+
+  return `You are Alfie's personal AI assistant inside his QJ Command Centre. You are an expert in Facebook & Instagram advertising for renovation and construction businesses in Australia.
+
+You have full context on the business:
+
+ACTIVE CLIENTS (${clients.length} total):
+${clients.map(c => `- ${c.name} [${c.agent}]${isPaused(c.name) ? ' — PAUSED' : ''}`).join('\n')}
+
+PAUSED CLIENTS: ${paused.map(c=>c.name).join(', ') || 'None'}
+CHURNED IN LAST 30 DAYS: ${recentChurns.map(e=>e.name||'Unknown').join(', ') || 'None'}
+
+RECENT INTAKE FORMS:
+${intakes.map(i=>`- ${i.name} (${i.niche || 'renovation'}, ${i.location || 'AU'})`).join('\n') || 'None yet'}
+
+Your job is to help AJ:
+- Answer questions about client status, onboarding progress, and what to do next
+- Give specific campaign advice for renovation/construction businesses
+- Help draft client communications
+- Suggest optimisation strategies based on industry best practices
+- Explain SOPs and processes clearly
+
+Always be direct, practical, and specific. Alfie is a media buyer who wants actionable answers, not vague advice.`;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg   = input.value.trim();
+  if (!msg) return;
+
+  const apiKey = localStorage.getItem(STORAGE_API_KEY);
+  if (!apiKey) {
+    addChatMsg('assistant', '⚠️ Please add your Anthropic API key in Settings first.');
+    return;
+  }
+
+  addChatMsg('user', msg);
+  input.value = '';
+  chatHistory.push({ role: 'user', content: msg });
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true; btn.textContent = '…';
+
+  const typingEl = addChatMsg('assistant', '…', true);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-8',
+        max_tokens: 1000,
+        system: buildChatContext(),
+        messages: chatHistory.slice(-10)
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content[0].text;
+    chatHistory.push({ role: 'assistant', content: reply });
+    typingEl.querySelector('.msg-bubble').textContent = reply;
+    typingEl.querySelector('.msg-time').textContent = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+  } catch(err) {
+    typingEl.querySelector('.msg-bubble').textContent = '⚠️ ' + (err.message || 'Something went wrong');
+  }
+  btn.disabled = false; btn.textContent = 'Send →';
+  document.getElementById('chatMessages').scrollTop = 999999;
+}
+
+function addChatMsg(role, text, isTyping = false) {
+  const wrap = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">${isTyping ? '' : new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = 999999;
+  return div;
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────
+function loadSettings() {
+  const apiKey = localStorage.getItem(STORAGE_API_KEY);
+  if (apiKey) document.getElementById('s_apiKey').value = '••••••••••••••••';
+}
+function saveApiKey() {
+  const key = document.getElementById('s_apiKey').value.trim();
+  if (!key || key.startsWith('•')) return;
+  localStorage.setItem(STORAGE_API_KEY, key);
+  document.getElementById('s_apiKey').value = '••••••••••••••••';
+  document.getElementById('apiKeyMsg').textContent = '✓ API key saved';
+  setTimeout(() => { document.getElementById('apiKeyMsg').textContent = ''; }, 2000);
+}
+
+// ── Tab Navigation ────────────────────────────────────────────────────────
+// ── Tasks tab ─────────────────────────────────────────────────────────────
+const AJ_PM_TEMPLATE = {
+  'New Client Onboarded': [
+    { id: 'aj-1', label: 'GHL Data Entry' },
+    { id: 'aj-2', label: 'Client Creative' },
+    { id: 'aj-3', label: 'Client Value Pack' },
+    { id: 'aj-4', label: 'Campaign Setup' },
+    { id: 'aj-5', label: 'Copy Iteration' },
+    { id: 'aj-6', label: 'ICP (Ideal Client Profile)' },
+    { id: 'aj-7', label: 'Best Practices Review' },
+    { id: 'aj-8', label: 'Add Client to Fulfilment Sheet (Windsor)' },
+  ],
+  'Weekly Review': [
+    { id: 'media-w1', label: 'Pull weekly ad spend & ROAS report' },
+    { id: 'media-w2', label: 'Review CPL vs target for each client' },
+    { id: 'media-w3', label: 'Pause underperforming ad sets' },
+    { id: 'media-w4', label: 'Scale budget on winning ads' },
+    { id: 'media-w5', label: 'Refresh creatives for fatigued ads' },
+  ]
+};
+
+let _ajTasksMem    = [];
+let _ajPMMem       = [];
+let _tasksLoading  = false;
+
+async function renderTasksTab() {
+  if (_tasksLoading) return;
+  _tasksLoading = true;
+  const status = document.getElementById('tasksStatus');
+  if (status) status.textContent = 'Syncing with Google Sheets…';
+  try {
+    const [tasksRes, pmRes, offRes] = await Promise.all([
+      fetch(PROXY_URL + '?service=aj_tasks'),
+      fetch(PROXY_URL + '?service=pm_projects'),
+      fetch(PROXY_URL + '?service=off_projects')
+    ]);
+    if (tasksRes.ok) { const t = await tasksRes.json(); if (Array.isArray(t)) _ajTasksMem = t; }
+    if (pmRes.ok)    { const p = await pmRes.json();    if (Array.isArray(p)) _ajPMMem    = p; }
+    if (offRes.ok)   { const o = await offRes.json();   if (Array.isArray(o)) _ajOffMem   = o; }
+    if (status) { status.textContent = 'Live · ' + new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit' }); }
+  } catch(_) {
+    if (status) status.textContent = 'Could not reach Google Sheets';
+  } finally {
+    _tasksLoading = false;
+  }
+  _renderOneOffTasks();
+  _renderPMProjects();
+  _renderOffProjectsInto(document.getElementById('offProjectsListTasks'), 'tsk');
+}
+
+function _renderOneOffTasks() {
+  const el = document.getElementById('tasksList');
+  if (!el) return;
+  if (!_ajTasksMem.length) {
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0;font-family:\'DM Mono\',monospace">No tasks yet — add one above.</div>';
+    return;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  el.innerHTML = _ajTasksMem.map((t, i) => {
+    const due      = t.date ? new Date(t.date + 'T00:00:00') : null;
+    const overdue  = due && due < today && !t.done;
+    const dateTag  = due ? `<span class="task-date-tag${overdue?' overdue':''}">${overdue?'⚠ ':''}${due.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})}</span>` : '';
+    return `<div class="task-item${overdue?' overdue':''}${t.done?' opacity-55':''}">
+      <button class="task-check${t.done?' done':''}" onclick="ajTaskToggle('${t.id}')">${t.done ? '✓' : ''}</button>
+      <span class="task-label${t.done?' done':''}">${t.label}</span>
+      ${dateTag}
+      <button class="task-del" onclick="ajTaskDelete('${t.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function _renderPMProjectsInto(el, pfx) {
+  if (!el) return;
+  if (!_ajPMMem.length) {
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0;font-family:\'DM Mono\',monospace">No onboarding checklists yet — they appear here when a client is onboarded via the QJ Command Centre.</div>';
+    return;
+  }
+  el.innerHTML = _ajPMMem.map((proj, idx) => {
+    const tasks   = AJ_PM_TEMPLATE[proj.trigger] || [];
+    const doneSet = new Set(proj.done || []);
+    const doneN   = tasks.filter(t => doneSet.has(t.id)).length;
+    const pct     = tasks.length ? Math.round(doneN / tasks.length * 100) : 0;
+    const created = proj.created ? new Date(proj.created).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    const taskRows = tasks.map(t => {
+      const done = doneSet.has(t.id);
+      return `<div class="pm-task-row">
+        <button class="pm-task-chk${done?' done':''}" onclick="ajPMTaskToggle(${idx},'${t.id}')">${done?'✓':''}</button>
+        <span class="pm-task-lbl${done?' done':''}">${t.label}</span>
+      </div>`;
+    }).join('');
+    return `<div class="pm-proj-card">
+      <div class="pm-proj-head" onclick="ajPMToggleCard(${idx})">
+        <div>
+          <div class="pm-proj-name">${proj.client}</div>
+          <div class="pm-proj-meta">${proj.trigger}${created ? ' · ' + created : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <div style="width:60px;height:3px;background:var(--border2);border-radius:2px;flex-shrink:0">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:2px;transition:width 0.3s"></div>
+          </div>
+          <span class="pm-proj-prog">${doneN}/${tasks.length}</span>
+        </div>
+      </div>
+      <div class="pm-proj-body" id="${pfx}-pm-proj-${idx}">${taskRows}</div>
+    </div>`;
+  }).join('');
+}
+
+function _renderPMProjects() {
+  _renderPMProjectsInto(document.getElementById('pmProjectsList'), 'aj');
+}
+
+function _renderPMProjectsOb() {
+  _renderPMProjectsInto(document.getElementById('onboardingList'), 'ob');
+}
+
+function ajPMToggleCard(idx) {
+  ['aj', 'ob'].forEach(pfx => {
+    const el = document.getElementById(`${pfx}-pm-proj-${idx}`);
+    if (el) el.classList.toggle('open');
+  });
+}
+
+async function ajTaskAdd() {
+  const inp  = document.getElementById('taskInput');
+  const dateInp = document.getElementById('taskDate');
+  const label = (inp?.value || '').trim();
+  if (!label) { inp?.focus(); return; }
+  const task = { id: Date.now().toString(), label, date: dateInp?.value || '', done: false, created: new Date().toISOString() };
+  _ajTasksMem.unshift(task);
+  if (inp) inp.value = '';
+  if (dateInp) dateInp.value = '';
+  _renderOneOffTasks();
+  await _ajSaveTasksToSheets();
+}
+
+async function ajTaskToggle(id) {
+  const t = _ajTasksMem.find(t => t.id === id);
+  if (t) t.done = !t.done;
+  _renderOneOffTasks();
+  await _ajSaveTasksToSheets();
+}
+
+async function ajTaskDelete(id) {
+  _ajTasksMem = _ajTasksMem.filter(t => t.id !== id);
+  _renderOneOffTasks();
+  await _ajSaveTasksToSheets();
+}
+
+async function ajPMTaskToggle(idx, taskId) {
+  const proj = _ajPMMem[idx];
+  if (!proj) return;
+  const done = new Set(proj.done || []);
+  if (done.has(taskId)) done.delete(taskId); else done.add(taskId);
+  proj.done = [...done];
+  _renderPMProjects();
+  _renderPMProjectsOb();
+  ['aj', 'ob'].forEach(pfx => document.getElementById(`${pfx}-pm-proj-${idx}`)?.classList.add('open'));
+  await _ajSavePMToSheets();
+}
+
+async function _ajSaveTasksToSheets() {
+  try {
+    await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveAJTasks', tasks: _ajTasksMem })
+    });
+  } catch(_) {}
+}
+
+async function _ajSavePMToSheets() {
+  try {
+    await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'savePMProjects', projects: _ajPMMem })
+    });
+  } catch(_) {}
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'tasks') renderTasksTab();
+  if (id === 'onboarding') renderOnboardingTab();
+  if (id === 'offboarding') renderOffboardingTab();
+  if (id === 'callcentre') renderCallCentreTab();
+  if (id === 'qmi-brain')  renderQMIBrainPage();
+}
+
+// ── CALL CENTRE ───────────────────────────────────────────────────────────
+const CC_CALLS_SHEET_ID = '1XaiWFoSDvlfAwMBZOUOV37xKks2I4ZdeFeh1CuuEFCo';
+const CC_APPT_SHEET_ID  = '1ymNqgTm5XaL9Hxj4P_UgO81AHiEYaktFowYy_1MQsgo';
+const CC_ADS_SHEET_ID   = '1VB_sgg-DvvG7AVKwXrq5wTfnuDWpuc1Vygl7_OcSSkg';
+
+const CC_TARGET_MONTHS = new Set(["March","April","May","June","July","August","September","October","November","December"]);
+const CC_MONTH_ORDER = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
+
+// Same exclusion rules as QJ Command Centre
+const CC_NON_CC_CLIENTS  = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms"];
+const CC_PAUSED_HARDCODED = ["Kogalo Trades - Renovations & Maintenance"];
+const CC_AGENT_OVERRIDES  = { "Woodstock Building Services (VIC)": "Ayessa" };
+const CC_CLIENT_ALIASES   = { 'urban rise property group': 'Urban Rise Property', 'slbp': 'Streamline Building Projects' };
+const CC_JULES_FALLBACK   = ["PrimeBuild Solutions","Quality Custom Homes","Quality Custom Homes PTY LTD","Spa Space","Streamline Building Projects","Imperial Renovations","Imperial Bathrooms","Favourite Home","Boss Carpentry Group"];
+const CC_AYESSA_FALLBACK  = ["Silk Touch Joinery","Barco Build","Renovate Right Homes","Rapid Bathroom Specialist"];
+const CC_JULES_PERMANENT  = ["Boss Carpentry Group"];
+
+const CC_CLIENT_OVERVIEW_DATA = {
+  'Favourite Home': {
+    website: 'favouritehome.com.au',
+    email: 'arminriazifar68@gmail.com',
+    businessAddress: 'Sydney, NSW',
+    timeZone: 'AEST/AEDT (UTC+10)',
+    serviceArea: '50km of Sydney CBD',
+    constructionCategory: 'Renovations',
+    serviceName: 'Bathroom Renovation',
+    offer: '3 week completion guarantee, 3 year extended warranty, fixed quote — no hidden costs.',
+    idealClientProfile: 'Homeowners with a budget of at least $18k, serious about renovating, within 50km of Sydney CBD. Renters need written landlord/strata permission.',
+    agreedOffer: '3 week completion guarantee for all bathrooms + 3 year extended warranty + fixed quote, no hidden costs',
+    qualification: 'Budget $18k+. Within 50km of Sydney. Homeowner (or renter with written permission). Ready to proceed to detailed quote within 30–60 days. No scope mismatch (small adjustments only).',
+    aimOfCall: 'Qualify the lead, confirm seriousness & budget, then book an onsite consultation with Armin.',
+    preferredTimeSlots: 'TBC',
+  },
+  'PrimeBuild Solutions': {
+    website: 'primebuildsolutions.com.au',
+    email: 'info@primebuildsolutions.com.au',
+    businessAddress: '22 Bronson Cct, Cranbourne North VIC 3977',
+    timeZone: 'AEST/AEDT (UTC+10)',
+    serviceArea: 'Melbourne Metro',
+    constructionCategory: 'Renovations',
+    serviceName: 'Bathroom / Kitchen / Laundry Renovation',
+    offer: 'Finish within 4 weeks for every bathroom renovation project. Quote accurate to final invoice.',
+    idealClientProfile: 'Homeowners in Melbourne Metro willing to pay $18–20k+ for a bathroom, kitchen, or laundry renovation. Renters need written landlord/strata permission.',
+    agreedOffer: '4 week completion guarantee + quote accurate to final invoice',
+    qualification: 'Budget $18–20k+. Melbourne Metro. Homeowner. Ready to proceed to quote within 30–60 days. Full renovations, no minor adjustments.',
+    aimOfCall: 'Book the homeowner directly into the client\'s calendar for an on-site quote. Have a proper conversation, find out why they enquired and where their head is at.',
+    preferredTimeSlots: 'Any day without a blocked slot, preferably evenings',
+  },
+  'Quality Custom Homes': {
+    website: 'qualitycustomhomes.com.au',
+    email: 'sean@qualitycustomhomes.com.au',
+    businessAddress: 'South Burnett Region, QLD',
+    timeZone: 'AEST (UTC+10)',
+    serviceArea: 'South Burnett Region, QLD',
+    constructionCategory: 'New Builds & Renovations',
+    serviceName: 'Bathroom Renovation',
+    offer: 'On-time finish guarantee, fixed quote with no invoice run-overs, extended warranty.',
+    idealClientProfile: 'Homeowners in the South Burnett Region with budgets of $22k+ for a bathroom renovation. Renters need written permission.',
+    agreedOffer: 'On-time finish guarantee + fixed quote (no invoice run-overs) + extended warranty',
+    qualification: 'Budget $22k+. South Burnett Region. Homeowner. Ready to proceed to quote within 30–60 days.',
+    aimOfCall: 'Book the homeowner in for an on-site quote with Sean.',
+    preferredTimeSlots: 'TBC',
+  },
+  'Spa Space': {
+    website: 'spaspace.au',
+    email: 'elijah@spaspace.au',
+    businessAddress: 'Kangaroo Point QLD 4169',
+    timeZone: 'AEST (UTC+10)',
+    serviceArea: 'Brisbane, QLD',
+    constructionCategory: 'Renovations',
+    serviceName: 'Bathroom Renovation',
+    offer: 'Fixed price quote + 1 year extended warranty for all bathrooms. Family-run company, stress-free process. QBCC Licensed #151 363 29.',
+    idealClientProfile: 'Homeowners in Brisbane genuinely interested in a bathroom renovation with a budget of $20k+, ideally $30k+. No renters without permission.',
+    agreedOffer: 'Fixed price quote + 1 year extended warranty',
+    qualification: 'Budget $20k+ (ideally $30k+). Brisbane area. Homeowner. Genuinely interested, not just looking for a ballpark. Ready to proceed within 30–60 days.',
+    aimOfCall: 'Qualify the homeowner on budget, motivation, and location — then book them directly for an on-site quote with Elijah.',
+    preferredTimeSlots: '4pm onwards & weekends',
+  },
+  'Streamline Building Projects': {
+    website: 'slbp.com.au',
+    email: '',
+    businessAddress: 'Canberra, ACT',
+    timeZone: 'AEST/AEDT (UTC+10)',
+    serviceArea: 'Canberra Metro',
+    constructionCategory: 'Renovations & Extensions',
+    serviceName: 'Kitchen, Bathroom & Laundry Renovation',
+    offer: 'On-time guarantee (or $2,000 cashback) + free consultation. Fixed-scope pricing. Has a network of contractors for a wide variety of work.',
+    idealClientProfile: 'Homeowners in Canberra Metro looking for kitchen, bathroom, laundry or extension work with a budget of $17k+.',
+    agreedOffer: 'Guarantee to finish on time or $2,000 cashback + free consultation',
+    qualification: 'Budget $17k+. Canberra Metro. Homeowner. Ready to proceed to quote within 30–60 days. Realistic budget and timeframe.',
+    aimOfCall: 'Book the prospect for an ON-SITE CONSULTATION with Vish. Establish job type, scope, urgency, and motivation. Disqualify timewasters early.',
+    preferredTimeSlots: 'Any day without a blocked slot',
+  },
+  'Silk Touch Joinery': {
+    website: 'silktouchjoinery.com.au',
+    email: 'info@silktouchjoinery.com.au',
+    businessAddress: 'Camberwell, VIC (team operates across Melbourne)',
+    timeZone: 'AEST/AEDT (UTC+10)',
+    serviceArea: 'Melbourne Metro',
+    constructionCategory: 'Renovations',
+    serviceName: 'Kitchen Renovation',
+    offer: 'Guaranteed 2-week finish, quote accurate to final invoice, free consultation, and custom 3D render of the new kitchen.',
+    idealClientProfile: 'Homeowners in Melbourne Metro looking to renovate their kitchen with a budget of $18–20k+. No showroom — we bring material samples and catalogues to the home.',
+    agreedOffer: 'Guaranteed 2-week finish + quote accurate to final invoice + free consultation + custom 3D kitchen render',
+    qualification: 'Budget $18–20k+. Melbourne Metro. Homeowner. Ready to proceed within 30–60 days. Full kitchen renovations — for small jobs (benchtop only, refacing, flatpacks), ask them to send photos first.',
+    aimOfCall: 'Book the homeowner directly into Rez\'s calendar for a kitchen renovation quote. Have a proper conversation — find out why they enquired, what their timeline is, and whether they qualify.',
+    preferredTimeSlots: 'Any day without a blocked slot',
+  },
+  'Barco Build': {
+    website: '',
+    email: 'ryan.paul.seaman@gmail.com',
+    businessAddress: 'Adelaide, SA',
+    timeZone: 'ACST/ACDT (UTC+9:30)',
+    serviceArea: 'Adelaide, SA',
+    constructionCategory: 'Renovations',
+    serviceName: 'Bathroom Renovation',
+    offer: 'Quote accurate to final invoice, bathroom finished in 4 weeks. New company able to do all types of home service work.',
+    idealClientProfile: 'Homeowners in Adelaide with realistic budgets of $17k+ for a bathroom renovation, motivated to start work within 3 months.',
+    agreedOffer: 'Quote accurate to final invoice + 4 week completion guarantee',
+    qualification: 'Budget $17k+. Adelaide area. Homeowner. Motivated to start work within 3 months. Not just looking for a ballpark.',
+    aimOfCall: 'Qualify the lead and book the client in for an on-site consultation with Ryan.',
+    preferredTimeSlots: 'After 4pm weekdays',
+  },
+  'Renovate Right Homes': {
+    website: 'renovaterighthomes.com.au',
+    email: 'derek@renovaterighthomes.com.au',
+    phone: '0410 345 980',
+    businessAddress: '41 Doolan St, Ormeau QLD 4208',
+    timeZone: 'AEST (UTC+10)',
+    serviceArea: 'Brisbane, Ipswich & Gold Coast, QLD',
+    constructionCategory: 'Renovations',
+    serviceName: 'Bathroom, Kitchen, Laundry & Outdoor Renovation',
+    offer: 'On-time completion guarantee, fixed quote, post-renovation cleaning, bundle discount. QBCC Licensed #15519269. 16+ years experience.',
+    idealClientProfile: 'Homeowners in SEQ (Brisbane–Gold Coast corridor) looking to spend $20k+ on a renovation and serious about starting in a reasonable timeframe.',
+    agreedOffer: 'On-time completion guarantee + fixed quote + post-renovation cleaning + bundle discount',
+    qualification: 'Budget $20k+. Between Brisbane and Gold Coast. Homeowner. Serious about starting within a reasonable timeframe. Not renters without permission.',
+    aimOfCall: 'Ask the correct qualifying questions to gauge interest and budget, then book the client in for a consultation with Derek.',
+    preferredTimeSlots: 'TBC',
+  },
+  'Imperial Bathrooms': {
+    website: 'imperialbathrooms.com',
+    email: 'infoimpereno@gmail.com',
+    phone: '+61 433 864 050',
+    businessAddress: 'Brisbane, QLD',
+    timeZone: 'AEST (UTC+10)',
+    serviceArea: 'Brisbane & surrounds — North Brisbane, South Brisbane, Logan, Ipswich, Redlands (30+ suburbs)',
+    constructionCategory: 'Renovations',
+    serviceName: 'Full Bathroom Renovation',
+    offer: '4 week finish guarantee, final invoice matches fixed quote, extended workmanship warranty. 10+ years experience, 250+ bathrooms renovated.',
+    idealClientProfile: 'Homeowners in Brisbane needing a full bathroom renovation with a budget of $18k+. Full renovations only — no minor adjustments or small scope jobs.',
+    agreedOffer: '4 week finish guarantee + fixed quote (no run-overs) + extended workmanship warranty',
+    qualification: 'Budget $18k+. Brisbane area. Full bathroom renovation only (no minor adjustments). Homeowner. Serious about starting.',
+    aimOfCall: 'Confirm serious interest in a full bathroom renovation. Gauge budget. Book the client in for a consultation with Mani.',
+    preferredTimeSlots: 'TBC',
+  },
+  'Kogalo Renovations': {
+    website: 'instagram.com/kogalo_trades/',
+    email: 'kogalotms@gmail.com',
+    businessAddress: 'Berwick VIC 3806',
+    timeZone: 'AEST/AEDT (UTC+10)',
+    serviceArea: '50km around Berwick, VIC',
+    constructionCategory: 'Renovations & Maintenance',
+    serviceName: 'Bathroom / Kitchen / Laundry Renovation',
+    offer: 'Extended warranty, 4 week completion guarantee, quote accurate to final invoice, post-renovation clean.',
+    idealClientProfile: 'Homeowners within 50km of Berwick, VIC. Any renovation work is welcome — preferably full home renovations, but maintenance jobs are also accepted.',
+    agreedOffer: 'Extended warranty + 4 week completion guarantee + fixed quote + post-renovation clean',
+    qualification: 'Within 50km of Berwick. Homeowner. Willing to proceed. Qualification is loose — maintenance jobs also accepted in the right area.',
+    aimOfCall: 'Have a genuine conversation, qualify the lead, gauge their interest, and book them in for an on-site consultation with Rob.',
+    preferredTimeSlots: 'TBC',
+  },
+  'Rapid Bathroom Specialist': {
+    website: 'https://drive.google.com/drive/folders/1DebQdls9aJsCReV8yVgprJ16B5UBIx7O',
+    email: 'info@rapidsolutions.net.au',
+    businessAddress: 'Windsor, NSW',
+    timeZone: 'AEST/AEDT (UTC+10)',
+    serviceArea: 'Within 60 mins / 30km of Windsor NSW',
+    constructionCategory: 'Bathroom Renovation',
+    serviceName: 'Bathroom Renovation',
+    offer: '4-week guarantee — the price quoted is the price they pay, accurate to the final invoice.',
+    agreedOffer: '4-week price guarantee — quote accurate to final invoice',
+    idealClientProfile: 'Homeowners within 60 mins / 30km of Windsor NSW who are serious about a bathroom renovation and have the budget to invest. Must be ready to proceed within 30–60 days.',
+    aimOfCall: 'Qualify the lead and pass the details through to Scott via the lead form. Do NOT book into the calendar.',
+    qualification: '✓ Within 60 mins / 30km of Windsor NSW\n✓ Homeowner serious about starting within 30–60 days\n✓ Has budget to invest in bathroom renovation\n\nDisqualify if:\n✗ Outside 30km service area\n✗ Renting without written landlord/strata permission\n✗ "Just want a ballpark" — not ready to proceed\n✗ Scope mismatch (small adjustments only)',
+    preferredTimeSlots: 'TBC',
+  },
+};
+
+function _ccFindClientOverride(name) {
+  if (!name) return {};
+  const exact = CC_CLIENT_OVERVIEW_DATA[name];
+  if (exact) return exact;
+  const nameLower = name.toLowerCase().replace(/\s+/g,'');
+  const found = Object.entries(CC_CLIENT_OVERVIEW_DATA).find(([k]) =>
+    k.toLowerCase().replace(/\s+/g,'') === nameLower ||
+    nameLower.includes(k.toLowerCase().replace(/\s+/g,'').slice(0,8)) ||
+    k.toLowerCase().replace(/\s+/g,'').includes(nameLower.slice(0,8))
+  );
+  return found ? found[1] : {};
+}
+
+function _ccIsNonCC(name) {
+  const n = (name||'').toLowerCase().replace(/\s+/g,'');
+  return CC_NON_CC_CLIENTS.some(x => {
+    const xn = x.toLowerCase().replace(/\s+/g,'');
+    return xn === n || n.includes(xn.slice(0,8)) || xn.includes(n.slice(0,8));
+  });
+}
+function _ccIsHardPaused(name) {
+  return CC_PAUSED_HARDCODED.some(p => p.toLowerCase() === (name||'').toLowerCase());
+}
+function _ccChurnedLocally(name) {
+  try {
+    const list = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
+    const n = (name||'').toLowerCase().replace(/\s+/g,'');
+    return list.some(x => x.toLowerCase().replace(/\s+/g,'') === n);
+  } catch(_) { return false; }
+}
+
+// Dynamic agent lists — populated from Clients sheet, fallback to hardcoded
+let _ccJulesAcc  = [...CC_JULES_FALLBACK];
+let _ccAyessaAcc = [...CC_AYESSA_FALLBACK];
+
+let _ccCallsData    = null;
+let _ccApptsData    = null;
+let _ccConfigData   = null;
+let _ccAdsData      = null;
+let _ccClientsData  = null;
+let _ccCurrentView  = 'weekly';
+let _ccCurrentTab   = 'calls';
+let _ccOvPeriod     = 30;
+let _ccChart        = null;
+let _ccLoading      = false;
+let _ccRefreshTimer = null;
+
+function ccFmt(n) { return (n || 0).toLocaleString('en-AU'); }
+function ccFmtCurrency(n) { if (!n) return '—'; return '$' + Math.round(n).toLocaleString('en-AU'); }
+
+function ccKpiClass(val, daysLive) {
+  if (val === null || val === undefined || typeof val !== 'number') return 'neutral';
+  const days = Math.min(Math.max(daysLive || 30, 1), 30);
+  const scale = days / 30;
+  if (val >= Math.ceil(8 * scale)) return 'green';
+  if (val >= Math.ceil(4 * scale)) return 'amber';
+  return 'red';
+}
+
+function ccKpiDot(cls) {
+  return `<span class="cc-kpi-pill ${cls}">● ${cls.toUpperCase()}</span>`;
+}
+
+function ccDaysLiveLabel(daysLive, liveDate) {
+  if (daysLive === undefined || daysLive === null) return '';
+  const liveText = daysLive === 0 ? 'went live today'
+    : daysLive === 1 ? '1 day ago'
+    : daysLive < 30  ? `${daysLive}d ago`
+    : daysLive < 60  ? `${Math.floor(daysLive/7)}wks`
+    : `${Math.floor(daysLive/30)}mo`;
+  return `<span class="cc-days-live">· ${liveText}</span>`;
+}
+
+function ccGetConfig(name) {
+  if (!_ccConfigData) return { daysLive: 30, target: 10 };
+  const exact = _ccConfigData[name];
+  if (exact) return exact;
+  const fuzzy = Object.keys(_ccConfigData).find(k =>
+    k.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,'')
+    || name.toLowerCase().includes(k.toLowerCase().slice(0,6))
+  );
+  return fuzzy ? _ccConfigData[fuzzy] : { daysLive: 30, target: 10 };
+}
+
+function ccGetAds(name) {
+  if (!_ccAdsData) return null;
+  const exact = _ccAdsData[name];
+  if (exact) return exact;
+  const key = Object.keys(_ccAdsData).find(k =>
+    k.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,'')
+    || name.toLowerCase().includes(k.toLowerCase().slice(0,6))
+    || k.toLowerCase().includes(name.toLowerCase().slice(0,6))
+  );
+  return key ? _ccAdsData[key] : null;
+}
+
+function ccParseDateStr(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmy) { const y = dmy[3].length === 2 ? '20' + dmy[3] : dmy[3]; return new Date(+y, +dmy[2]-1, +dmy[1]); }
+  const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (ymd) return new Date(+ymd[1], +ymd[2]-1, +ymd[3]);
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function ccGetWeekKey(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay() + 1);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function ccGetAgent(subaccount) {
+  const n = (subaccount || '').trim().toLowerCase();
+  if (!n) return null;
+  if (_ccJulesAcc.some(a  => a.toLowerCase() === n)) return 'Jules';
+  if (_ccAyessaAcc.some(a => a.toLowerCase() === n)) return 'Ayessa';
+  // Normalise & ↔ and (GHL name variants)
+  const withAnd = n.replace(/\s*&\s*/g,' and ').replace(/\s+/g,' ').trim();
+  const withAmp = n.replace(/\band\b/g,'&').replace(/\s+/g,' ').trim();
+  for (const alt of [withAnd, withAmp]) {
+    if (_ccJulesAcc.some(a  => a.toLowerCase() === alt)) return 'Jules';
+    if (_ccAyessaAcc.some(a => a.toLowerCase() === alt)) return 'Ayessa';
+  }
+  // Check aliases
+  const aliased = (CC_CLIENT_ALIASES[n] || '').toLowerCase();
+  if (aliased) {
+    if (_ccJulesAcc.some(a  => a.toLowerCase() === aliased)) return 'Jules';
+    if (_ccAyessaAcc.some(a => a.toLowerCase() === aliased)) return 'Ayessa';
+  }
+  return null;
+}
+
+async function ccFetchCallsData() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${CC_CALLS_SHEET_ID}&sheet=Raw%20Data`);
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return null;
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const agentDay={}, agentWeek={}, agentMonth={}, subMonth={}, subDay={};
+    const todayJules={total:0,clients:[]}, todayAyessa={total:0,clients:[]};
+    const allDates=new Set(), allWeeks=new Set();
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const monthName = String(row[0]||'').trim();
+      const subRaw    = String(row[5]||'').trim();
+      const dateRaw   = String(row[1]||'').trim();
+      if (!monthName || !subRaw) continue;
+      if (!CC_TARGET_MONTHS.has(monthName)) continue;
+      const agent = ccGetAgent(subRaw);
+      if (!agent) continue;
+      const dateObj = ccParseDateStr(dateRaw);
+      if (!dateObj) continue;
+      const year = dateObj.getFullYear();
+      if (year === 2025 && CC_MONTH_ORDER[monthName] >= 10) continue;
+
+      const dStr = `${year}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')}`;
+      const wKey = ccGetWeekKey(dateObj);
+      allDates.add(dStr); allWeeks.add(wKey);
+
+      if (!agentDay[agent])   agentDay[agent]   = {};
+      if (!agentWeek[agent])  agentWeek[agent]  = {};
+      if (!agentMonth[agent]) agentMonth[agent] = {};
+      agentDay[agent][dStr]        = (agentDay[agent][dStr]       || 0) + 1;
+      agentWeek[agent][wKey]       = (agentWeek[agent][wKey]      || 0) + 1;
+      agentMonth[agent][monthName] = (agentMonth[agent][monthName]|| 0) + 1;
+
+      if (!subMonth[subRaw]) subMonth[subRaw] = {};
+      subMonth[subRaw][monthName] = (subMonth[subRaw][monthName] || 0) + 1;
+      if (!subDay[subRaw]) subDay[subRaw] = {};
+      subDay[subRaw][dStr] = (subDay[subRaw][dStr] || 0) + 1;
+
+      if (dStr === todayStr) {
+        const bucket = agent === 'Jules' ? todayJules : todayAyessa;
+        bucket.total++;
+        const ex = bucket.clients.findIndex(c => c.startsWith(subRaw + ':'));
+        if (ex >= 0) { const n = parseInt(bucket.clients[ex].split(': ')[1]) + 1; bucket.clients[ex] = `${subRaw}: ${n}`; }
+        else bucket.clients.push(`${subRaw}: 1`);
+      }
+    }
+
+    const sortedDates = [...allDates].sort();
+    const sortedWeeks = [...allWeeks].sort((a, b) => {
+      const [da,ma,ya] = a.split('/'), [db,mb,yb] = b.split('/');
+      return new Date(+ya,+ma-1,+da) - new Date(+yb,+mb-1,+db);
+    });
+    const sortedMonths = ["March","April","May","June","July","August","September","October","November","December"];
+    const julesClients = {}, ayessaClients = {};
+    for (const acc of _ccJulesAcc)  if (subMonth[acc]) julesClients[acc]  = subMonth[acc];
+    for (const acc of _ccAyessaAcc) if (subMonth[acc]) ayessaClients[acc] = subMonth[acc];
+
+    return {
+      today: { jules: todayJules, ayessa: todayAyessa },
+      daily:   { dates: sortedDates, jules: sortedDates.map(d=>(agentDay['Jules']||{})[d]||0),   ayessa: sortedDates.map(d=>(agentDay['Ayessa']||{})[d]||0) },
+      weekly:  { weeks: sortedWeeks, jules: sortedWeeks.map(w=>(agentWeek['Jules']||{})[w]||0),  ayessa: sortedWeeks.map(w=>(agentWeek['Ayessa']||{})[w]||0) },
+      monthly: { months: sortedMonths, jules: sortedMonths.map(m=>(agentMonth['Jules']||{})[m]||0), ayessa: sortedMonths.map(m=>(agentMonth['Ayessa']||{})[m]||0) },
+      julesClients, ayessaClients, subMonth, subDay,
+    };
+  } catch(e) { console.warn('CC Calls fetch failed:', e); return null; }
+}
+
+async function ccFetchApptsData() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${CC_APPT_SHEET_ID}&sheet=Summary`);
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return null;
+
+    const clients = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row   = rows[i];
+      const name  = String(row[0]||'').trim();
+      const agent = String(row[1]||'').trim();
+      if (!name || !agent) continue;
+      if (name.includes('▶') || name.toUpperCase().includes('TOTAL') || name.toUpperCase().includes('GRAND')) continue;
+      if (agent !== 'Jules' && agent !== 'Ayessa' && agent !== 'Ayesa') continue;
+      clients.push({ name, agent: agent === 'Ayesa' ? 'Ayessa' : agent,
+        last7: parseInt(row[3])||0, last14: parseInt(row[4])||0,
+        last30: parseInt(row[5])||0, allTime: parseInt(row[6])||0 });
+    }
+
+    const julesClients  = clients.filter(c => c.agent === 'Jules');
+    const ayessaClients = clients.filter(c => c.agent === 'Ayessa');
+    const jT = {last7:0,last14:0,last30:0,allTime:0};
+    const aT = {last7:0,last14:0,last30:0,allTime:0};
+    julesClients.forEach(c  => { jT.last7+=c.last7; jT.last14+=c.last14; jT.last30+=c.last30; jT.allTime+=c.allTime; });
+    ayessaClients.forEach(c => { aT.last7+=c.last7; aT.last14+=c.last14; aT.last30+=c.last30; aT.allTime+=c.allTime; });
+    return { clients, julesClients, ayessaClients, jTotals: jT, aTotals: aT };
+  } catch(e) { console.warn('CC Appts fetch failed:', e); return null; }
+}
+
+async function ccFetchClientConfig() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${CC_APPT_SHEET_ID}&sheet=Client%20Config`);
+    if (!res.ok) return {};
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return {};
+    const config = {};
+    const today = new Date(); today.setHours(0,0,0,0);
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const name    = String(row[0]||'').trim();
+      const dateRaw = String(row[1]||'').trim();
+      const target  = parseInt(row[2]) || 10;
+      if (!name || !dateRaw) continue;
+      const liveDate = ccParseDateStr(dateRaw);
+      if (!liveDate) continue;
+      const daysLive = Math.max(0, Math.floor((today - liveDate) / (1000*60*60*24)));
+      config[name] = { liveDate, daysLive, target };
+    }
+    return config;
+  } catch(e) { console.warn('CC Client config fetch failed:', e); return {}; }
+}
+
+async function ccFetchAdsData() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${CC_ADS_SHEET_ID}&sheet=STATS%20DASHBOARD`);
+    if (!res.ok) return {};
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return {};
+    const data = {};
+    for (let i = 1; i < rows.length; i++) {
+      const row  = rows[i];
+      const name  = String(row[1]||'').trim();
+      const spent = parseFloat(String(row[5]).replace(/[^0-9.]/g,'')) || 0;
+      const leads = parseInt(row[6]) || 0;
+      const cpl   = parseFloat(String(row[7]).replace(/[^0-9.]/g,'')) || 0;
+      if (!name) continue;
+      data[name] = { spent, leads, cpl };
+    }
+    return data;
+  } catch(e) { console.warn('CC Ads fetch failed:', e); return {}; }
+}
+
+async function ccFetchClientsData() {
+  try {
+    const res = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return rows;
+    // Rebuild dynamic agent lists — exact same logic as QJ Command Centre
+    const jules = [], ayessa = [];
+    for (let i = 1; i < rows.length; i++) {
+      const name   = String(rows[i][0] || '').trim();
+      const agent  = String(rows[i][1] || '').trim();
+      const status = String(rows[i][8] || '').trim();
+      if (!name || status === 'Churned' || _ccChurnedLocally(name) || _ccIsNonCC(name) || _ccIsHardPaused(name)) continue;
+      const effectiveAgent = CC_AGENT_OVERRIDES[name] || agent;
+      if (effectiveAgent === 'Jules')  jules.push(name);
+      if (effectiveAgent === 'Ayessa') ayessa.push(name);
+    }
+    if (jules.length > 0 || ayessa.length > 0) {
+      _ccJulesAcc  = jules;
+      _ccAyessaAcc = ayessa;
+    }
+    // Always merge permanently-pinned clients
+    for (const p of CC_JULES_PERMANENT) {
+      if (!_ccJulesAcc.some(a => a.toLowerCase() === p.toLowerCase())) _ccJulesAcc.push(p);
+    }
+    return rows;
+  } catch(e) { console.warn('CC Clients fetch failed:', e); return null; }
+}
+
+function ccDrawChart(data) {
+  if (_ccChart) { _ccChart.destroy(); _ccChart = null; }
+  const canvas = document.getElementById('ccMainChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  let labels, julesData, ayessaData;
+  if (_ccCurrentView === 'daily')        { labels = data.daily.dates.map(d=>d.slice(5));         julesData = data.daily.jules;   ayessaData = data.daily.ayessa; }
+  else if (_ccCurrentView === 'weekly')  { labels = data.weekly.weeks.map(w=>w.slice(0,5));       julesData = data.weekly.jules;  ayessaData = data.weekly.ayessa; }
+  else                                   { labels = data.monthly.months.map(m=>m.slice(0,3));     julesData = data.monthly.jules; ayessaData = data.monthly.ayessa; }
+  _ccChart = new Chart(canvas, {
+    type: _ccCurrentView === 'monthly' ? 'bar' : 'line',
+    data: { labels, datasets: [
+      { label:'Jules',  data:julesData,  borderColor:'#b5870d', backgroundColor:'rgba(181,135,13,0.1)', borderWidth:2, pointRadius:_ccCurrentView==='daily'?0:4, fill:true, tension:0.4 },
+      { label:'Ayessa', data:ayessaData, borderColor:'#d97706', backgroundColor:'rgba(217,119,6,0.08)', borderWidth:2, pointRadius:_ccCurrentView==='daily'?0:4, fill:true, tension:0.4 }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{ legend:{display:true,labels:{color:'#78746a',font:{size:11}}},
+        tooltip:{backgroundColor:'#fff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#78746a',bodyColor:'#1a1917',padding:12} },
+      scales:{ x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#78746a',font:{size:10},maxRotation:45,autoSkip:_ccCurrentView==='daily'}},
+               y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#78746a',font:{size:11}}} } }
+  });
+}
+
+function switchCCTab(tab) {
+  _ccCurrentTab = tab;
+  document.querySelectorAll('.cc-sub-tab').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.cc-sub-tab[onclick="switchCCTab('${tab}')"]`);
+  if (btn) btn.classList.add('active');
+  ['calls','appointments','overview','clients'].forEach(t => {
+    const el = document.getElementById('cc-pane-' + t);
+    if (el) el.style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'calls'        && _ccCallsData)                                  ccRenderCalls(_ccCallsData);
+  if (tab === 'appointments' && _ccApptsData)                                  ccRenderAppts(_ccApptsData);
+  if (tab === 'overview'     && _ccCallsData && _ccApptsData)                  ccRenderOverview(_ccCallsData, _ccApptsData);
+  if (tab === 'clients'      && _ccClientsData)                                ccRenderClients(_ccClientsData);
+}
+
+function switchCCOvPeriod(days) {
+  _ccOvPeriod = days;
+  if (_ccCallsData && _ccApptsData) ccRenderOverview(_ccCallsData, _ccApptsData);
+}
+
+function switchCCView(view) {
+  _ccCurrentView = view;
+  if (_ccCallsData) ccRenderCalls(_ccCallsData);
+}
+
+function ccRenderCalls(data) {
+  const el = document.getElementById('cc-pane-calls');
+  if (!el) return;
+
+  const totalJ  = data.monthly.jules.reduce((a,b)=>a+b,0);
+  const totalA  = data.monthly.ayessa.reduce((a,b)=>a+b,0);
+  const grand   = totalJ + totalA;
+  const wkJ     = data.weekly.jules[data.weekly.jules.length-1]   || 0;
+  const wkA     = data.weekly.ayessa[data.weekly.ayessa.length-1] || 0;
+  const leader  = data.today.jules.total > data.today.ayessa.total ? 'Jules' : data.today.ayessa.total > data.today.jules.total ? 'Ayessa' : null;
+  const diff    = Math.abs(data.today.jules.total - data.today.ayessa.total);
+
+  const leaderTag = (agent) => leader === agent
+    ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:99px;background:${agent==='Jules'?'rgba(181,135,13,0.15)':'rgba(217,119,6,0.15)'};color:${agent==='Jules'?'var(--accent)':'var(--amber)'};margin-left:6px;vertical-align:middle">leading</span>` : '';
+
+  const clientBars = (agent, clients) => {
+    const rows = Object.entries(clients)
+      .map(([name,vals]) => ({ name, total: Object.values(vals).reduce((a,b)=>a+b,0) }))
+      .sort((a,b) => b.total - a.total);
+    const max   = rows[0]?.total || 1;
+    const color = agent === 'jules' ? 'var(--accent)' : 'var(--amber)';
+    return `<div class="cc-client-section">
+      <div class="cc-client-header ${agent}">${agent === 'jules' ? 'Jules' : 'Ayessa'} · call volume by client</div>
+      ${rows.map(r=>`<div class="cc-client-row">
+        <div class="cc-client-name">${r.name}</div>
+        <div class="cc-client-bar-wrap"><div class="cc-client-bar" style="width:${Math.round(r.total/max*100)}%;background:${color};opacity:0.7"></div></div>
+        <div class="cc-client-count">${ccFmt(r.total)}</div>
+      </div>`).join('')}
+    </div>`;
+  };
+
+  el.innerHTML = `
+    <div class="cc-last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
+    <div class="cc-today-banner">
+      <div class="cc-agent-card jules">
+        <div class="cc-agent-name">Jules ${leaderTag('Jules')}</div>
+        <div class="cc-agent-count">${ccFmt(data.today.jules.total)}</div>
+        <div class="cc-agent-sub">calls today</div>
+        <div class="cc-agent-clients">${data.today.jules.clients.length ? data.today.jules.clients.join('<br>') : '<span style="opacity:0.5;font-style:italic">no calls yet today</span>'}</div>
+      </div>
+      <div class="cc-agent-card ayessa">
+        <div class="cc-agent-name">Ayessa ${leaderTag('Ayessa')}</div>
+        <div class="cc-agent-count">${ccFmt(data.today.ayessa.total)}</div>
+        <div class="cc-agent-sub">calls today</div>
+        <div class="cc-agent-clients">${data.today.ayessa.clients.length ? data.today.ayessa.clients.join('<br>') : '<span style="opacity:0.5;font-style:italic">no calls yet today</span>'}</div>
+      </div>
+    </div>
+    ${leader ? `<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:2rem;">🏆 ${leader} leads today by ${diff} call${diff!==1?'s':''}</div>` : ''}
+    <div class="cc-metrics-strip">
+      <div class="cc-metric"><div class="cc-metric-label">Total Calls (All Time)</div><div class="cc-metric-value">${ccFmt(grand)}</div><div class="cc-metric-sub">across both agents</div></div>
+      <div class="cc-metric"><div class="cc-metric-label">Calls This Week</div><div class="cc-metric-value">${ccFmt(wkJ+wkA)}</div><div class="cc-metric-sub">Jules ${ccFmt(wkJ)} · Ayessa ${ccFmt(wkA)}</div></div>
+      <div class="cc-metric"><div class="cc-metric-label">Jules Total</div><div class="cc-metric-value" style="color:var(--accent)">${ccFmt(totalJ)}</div><div class="cc-metric-sub">${grand?Math.round(totalJ/grand*100):0}% of all calls</div></div>
+      <div class="cc-metric"><div class="cc-metric-label">Ayessa Total</div><div class="cc-metric-value" style="color:var(--amber)">${ccFmt(totalA)}</div><div class="cc-metric-sub">${grand?Math.round(totalA/grand*100):0}% of all calls</div></div>
+    </div>
+    <div class="cc-chart-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div class="cc-section-title">calls over time</div>
+        <div class="cc-view-tabs">
+          <button class="cc-view-tab ${_ccCurrentView==='daily'?'active':''}"   onclick="switchCCView('daily')">daily</button>
+          <button class="cc-view-tab ${_ccCurrentView==='weekly'?'active':''}"  onclick="switchCCView('weekly')">weekly</button>
+          <button class="cc-view-tab ${_ccCurrentView==='monthly'?'active':''}" onclick="switchCCView('monthly')">monthly</button>
+        </div>
+      </div>
+      <div style="position:relative;width:100%;height:260px"><canvas id="ccMainChart"></canvas></div>
+    </div>
+    <div class="cc-table-section">
+      <div class="cc-section-title" style="margin-bottom:1rem">weekly breakdown</div>
+      <div style="overflow-x:auto"><table class="cc-table">
+        <thead><tr><th>week starting</th>${data.weekly.weeks.map(w=>`<th>${w.slice(0,5)}</th>`).join('')}</tr></thead>
+        <tbody>
+          <tr><td style="color:var(--accent)">Jules</td>  ${data.weekly.jules.map(v=>`<td>${ccFmt(v)}</td>`).join('')}</tr>
+          <tr><td style="color:var(--amber)">Ayessa</td>  ${data.weekly.ayessa.map(v=>`<td>${ccFmt(v)}</td>`).join('')}</tr>
+          <tr class="cc-total-row"><td>Total</td>${data.weekly.jules.map((j,i)=>`<td>${ccFmt(j+data.weekly.ayessa[i])}</td>`).join('')}</tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="cc-table-section" style="margin-bottom:2rem">
+      <div class="cc-section-title" style="margin-bottom:1rem">monthly summary</div>
+      <table class="cc-table">
+        <thead><tr><th>month</th>${data.monthly.months.map(m=>`<th>${m.slice(0,3)}</th>`).join('')}</tr></thead>
+        <tbody>
+          <tr><td style="color:var(--accent)">Jules</td>  ${data.monthly.jules.map(v=>`<td>${ccFmt(v)}</td>`).join('')}</tr>
+          <tr><td style="color:var(--amber)">Ayessa</td>  ${data.monthly.ayessa.map(v=>`<td>${ccFmt(v)}</td>`).join('')}</tr>
+          <tr class="cc-total-row"><td>Total</td>${data.monthly.months.map((_,i)=>`<td>${ccFmt(data.monthly.jules[i]+data.monthly.ayessa[i])}</td>`).join('')}</tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cc-client-grid">
+      ${clientBars('jules', data.julesClients)}
+      ${clientBars('ayessa', data.ayessaClients)}
+    </div>`;
+
+  setTimeout(() => ccDrawChart(data), 50);
+}
+
+function ccRenderAppts(data) {
+  const el = document.getElementById('cc-pane-appointments');
+  if (!el) return;
+
+  const clientRows = (clients) => clients.map(c => `<tr>
+    <td>${c.name}</td>
+    <td>${ccFmt(c.last7)}</td><td>${ccFmt(c.last14)}</td><td>${ccFmt(c.last30)}</td>
+    <td style="color:var(--muted)">${ccFmt(c.allTime)}</td>
+  </tr>`).join('');
+
+  const g7=data.jTotals.last7+data.aTotals.last7, g14=data.jTotals.last14+data.aTotals.last14;
+  const g30=data.jTotals.last30+data.aTotals.last30, gAll=data.jTotals.allTime+data.aTotals.allTime;
+
+  el.innerHTML = `
+    <div class="cc-last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
+    <div class="cc-appt-hero">
+      <div class="cc-appt-card"><div class="cc-appt-label">Last 7 Days · Total</div><div class="cc-appt-value">${ccFmt(g7)}</div><div class="cc-appt-sub">Jules ${ccFmt(data.jTotals.last7)} · Ayessa ${ccFmt(data.aTotals.last7)}</div></div>
+      <div class="cc-appt-card"><div class="cc-appt-label">Last 14 Days · Total</div><div class="cc-appt-value">${ccFmt(g14)}</div><div class="cc-appt-sub">Jules ${ccFmt(data.jTotals.last14)} · Ayessa ${ccFmt(data.aTotals.last14)}</div></div>
+      <div class="cc-appt-card"><div class="cc-appt-label">Last 30 Days · Total</div><div class="cc-appt-value">${ccFmt(g30)}</div><div class="cc-appt-sub">Jules ${ccFmt(data.jTotals.last30)} · Ayessa ${ccFmt(data.aTotals.last30)}</div></div>
+      <div class="cc-appt-card"><div class="cc-appt-label">All Time · Total</div><div class="cc-appt-value">${ccFmt(gAll)}</div><div class="cc-appt-sub">Jules ${ccFmt(data.jTotals.allTime)} · Ayessa ${ccFmt(data.aTotals.allTime)}</div></div>
+    </div>
+    <div class="cc-kpi-section">
+      <div class="cc-kpi-header"><div class="cc-kpi-title" style="color:var(--accent)">Jules · Appointments by Client</div></div>
+      <table class="cc-table"><thead><tr><th>Client</th><th>Last 7d</th><th>Last 14d</th><th>Last 30d</th><th>All Time</th></tr></thead>
+      <tbody>${clientRows(data.julesClients)}
+        <tr class="cc-total-row"><td>Jules Total</td><td>${ccFmt(data.jTotals.last7)}</td><td>${ccFmt(data.jTotals.last14)}</td><td>${ccFmt(data.jTotals.last30)}</td><td>${ccFmt(data.jTotals.allTime)}</td></tr>
+      </tbody></table>
+    </div>
+    <div class="cc-kpi-section">
+      <div class="cc-kpi-header"><div class="cc-kpi-title" style="color:var(--amber)">Ayessa · Appointments by Client</div></div>
+      <table class="cc-table"><thead><tr><th>Client</th><th>Last 7d</th><th>Last 14d</th><th>Last 30d</th><th>All Time</th></tr></thead>
+      <tbody>${clientRows(data.ayessaClients)}
+        <tr class="cc-total-row"><td>Ayessa Total</td><td>${ccFmt(data.aTotals.last7)}</td><td>${ccFmt(data.aTotals.last14)}</td><td>${ccFmt(data.aTotals.last30)}</td><td>${ccFmt(data.aTotals.allTime)}</td></tr>
+      </tbody></table>
+    </div>`;
+}
+
+function ccRenderOverview(callsData, apptsData) {
+  const el = document.getElementById('cc-pane-overview');
+  if (!el) return;
+
+  function clientCallsInPeriod(name, days) {
+    const cutoff = new Date(); cutoff.setHours(0,0,0,0); cutoff.setDate(cutoff.getDate() - days);
+    let total = 0;
+    for (const [ds, count] of Object.entries((callsData.subDay||{})[name]||{})) {
+      if (new Date(ds) >= cutoff) total += count;
+    }
+    return total;
+  }
+
+  function buildRows(names, agent) {
+    const color = agent === 'Jules' ? 'var(--accent)' : 'var(--amber)';
+    const apptList = agent === 'Jules' ? apptsData.julesClients : apptsData.ayessaClients;
+    return names.map(name => {
+      const calls = clientCallsInPeriod(name, _ccOvPeriod);
+      const match = apptList.find(c => c.name.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,''))
+                 || apptList.find(c => name.toLowerCase().includes(c.name.toLowerCase().slice(0,6)));
+      const appts = match ? match.last30 : null;
+      const ratio = (appts && appts > 0) ? (calls / appts).toFixed(1) + ':1' : '—';
+      const cfg   = ccGetConfig(match?.name || name);
+      const cls   = (typeof appts === 'number') ? ccKpiClass(appts, cfg.daysLive) : 'neutral';
+      const ads   = ccGetAds(name);
+      const spent = ads ? ccFmtCurrency(ads.spent) : '—';
+      const leads = ads ? ccFmt(ads.leads) : '—';
+      const cpl   = ads ? ccFmtCurrency(ads.cpl) : '—';
+      const leadBook = (ads && ads.leads > 0 && appts !== null) ? Math.round((appts / ads.leads) * 100) + '%' : '—';
+      const costBook = (ads && ads.spent > 0 && appts) ? ccFmtCurrency(ads.spent / appts) : '—';
+      return `<div class="cc-ov-row">
+        <div><div class="cc-ov-client-name">${name}${ccDaysLiveLabel(cfg.daysLive, cfg.liveDate)}</div><div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:${color}">${agent}</div></div>
+        <div class="cc-ov-val" style="color:${color}">${ccFmt(calls)}</div>
+        <div class="cc-ov-val">${appts !== null ? ccFmt(appts) : '—'}</div>
+        <div class="cc-ov-val">${ratio}</div>
+        <div class="cc-ov-val" style="color:var(--amber)">${spent}</div>
+        <div class="cc-ov-val">${leads}</div>
+        <div class="cc-ov-val">${cpl}</div>
+        <div class="cc-ov-val">${leadBook}</div>
+        <div class="cc-ov-val" style="color:var(--green)">${costBook}</div>
+        <div class="cc-ov-val">${ccKpiDot(cls)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML = `
+    <div class="cc-last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.5rem;">
+      <div style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;">client overview</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.73rem;font-family:'DM Mono',monospace;color:var(--muted);">
+        period
+        <select class="cc-period-select" onchange="switchCCOvPeriod(parseInt(this.value))">
+          <option value="30" ${_ccOvPeriod===30?'selected':''}>Last 30 days</option>
+          <option value="60" ${_ccOvPeriod===60?'selected':''}>Last 60 days</option>
+          <option value="90" ${_ccOvPeriod===90?'selected':''}>Last 90 days</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <div class="cc-ov-row header" style="margin-bottom:0.25rem;min-width:900px">
+        <div>Client</div>
+        <div style="text-align:center">Calls (${_ccOvPeriod}d)</div>
+        <div style="text-align:center">Appts (30d)</div>
+        <div style="text-align:center">Ratio</div>
+        <div style="text-align:center;color:var(--amber)">Ad Spend</div>
+        <div style="text-align:center">Leads</div>
+        <div style="text-align:center">CPL</div>
+        <div style="text-align:center">Lead→Book%</div>
+        <div style="text-align:center;color:var(--green)">Cost/Booking</div>
+        <div style="text-align:center">KPI</div>
+      </div>
+      <div style="margin:0.75rem 0 0.25rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:0.4rem">● Jules</div>
+      <div class="cc-ov-grid" style="min-width:900px">${buildRows(_ccJulesAcc, 'Jules')}</div>
+      <div style="margin:1rem 0 0.25rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--amber);border-bottom:1px solid var(--border);padding-bottom:0.4rem">● Ayessa</div>
+      <div class="cc-ov-grid" style="min-width:900px">${buildRows(_ccAyessaAcc, 'Ayessa')}</div>
+    </div>
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);">
+      ${ccKpiDot('green')} at or above target &nbsp;&nbsp;
+      ${ccKpiDot('amber')} within 50% of target &nbsp;&nbsp;
+      ${ccKpiDot('red')} below target
+    </div>`;
+}
+
+function ccRenderClients(rows) {
+  const el = document.getElementById('cc-pane-clients');
+  if (!el) return;
+  if (!Array.isArray(rows) || rows.length < 2) { el.innerHTML = '<div class="cc-loading">No client data found.</div>'; return; }
+  _ccRenderClientsGrid(rows, '');
+}
+
+function _ccRenderClientsGrid(rows, filter) {
+  const el = document.getElementById('cc-pane-clients');
+  const CHURN_KEY = 'qj_churned_clients';
+  const churned = (() => { try { return JSON.parse(localStorage.getItem(CHURN_KEY)||'[]'); } catch(_){return[];} })();
+  const clients = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r      = rows[i];
+    const name   = String(r[0]||'').trim();
+    const agent  = String(r[1]||'').trim();
+    const status = String(r[8]||'').trim();
+    if (!name || status === 'Churned' || churned.some(c=>c.toLowerCase()===name.toLowerCase())) continue;
+    const s = f => String(f||'').trim();
+    const ov = _ccFindClientOverride(name);
+    const m = (sheetVal, ovKey) => s(sheetVal) || ov[ovKey] || '';
+    clients.push({
+      name, agent, status,
+      liveDate:             s(r[4]),
+      website:              m(r[5], 'website'),
+      offer:                m(r[6], 'offer'),
+      overview:             s(r[7]).includes('docs.google.com') ? (ov.overview||ov.idealClientProfile||'') : (s(r[7]) || ov.overview || ov.idealClientProfile || ''),
+      email:                m(r[9],  'email'),
+      phone:                m(r[10], 'phone'),
+      businessName:         s(r[11]) || name,
+      businessAddress:      m(r[12], 'businessAddress'),
+      timeZone:             m(r[13], 'timeZone'),
+      serviceArea:          m(r[14], 'serviceArea'),
+      constructionCategory: m(r[15], 'constructionCategory'),
+      agreedOffer:          m(r[18], 'agreedOffer'),
+      qualification:        m(r[19], 'qualification'),
+      aimOfCall:            m(r[20], 'aimOfCall'),
+      preferredTimeSlots:   m(r[22], 'preferredTimeSlots'),
+      adBudget:             s(r[23]),
+    });
+  }
+
+  const filtered = filter
+    ? clients.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()) || c.agent.toLowerCase().includes(filter.toLowerCase()))
+    : clients;
+
+  function fld(label, val, full) {
+    return `<div class="cc-client-field${full?' full':''}">
+      <span class="cc-client-field-lbl">${label}</span>
+      <span class="cc-client-field-val${val?'':' empty'}">${val||'—'}</span>
+    </div>`;
+  }
+  function fldProse(label, val) {
+    return `<div class="cc-client-field full">
+      ${label?`<span class="cc-client-field-lbl">${label}</span>`:''}
+      <span class="cc-client-field-val prose${val?'':' empty'}">${val||'—'}</span>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="cc-last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
+    <div class="cc-clients-header">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem">About Our Clients</div>
+        <div style="font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:3px">${clients.length} active client${clients.length!==1?'s':''} · sourced from Clients sheet</div>
+      </div>
+      <div class="cc-clients-search">
+        <input type="text" placeholder="Search clients…" value="${filter||''}" oninput="_ccRenderClientsGrid(window._ccClientsData, this.value)">
+        <button class="cc-clients-filter" onclick="_ccRenderClientsGrid(window._ccClientsData,'')">All</button>
+        <button class="cc-clients-filter" onclick="_ccRenderClientsGrid(window._ccClientsData,'Jules')" style="color:var(--accent)">Jules</button>
+        <button class="cc-clients-filter" onclick="_ccRenderClientsGrid(window._ccClientsData,'Ayessa')" style="color:var(--amber)">Ayessa</button>
+        <button class="cc-clients-filter" onclick="window._ccClientsData=null;renderCallCentreTab()">↺ Refresh</button>
+      </div>
+    </div>
+    <div class="cc-clients-grid">
+      ${filtered.map(c => {
+        const agCls = c.agent.toLowerCase()==='jules'?'jules':'ayessa';
+        return `<div class="cc-client-card">
+          <div class="cc-client-card-head">
+            <div class="cc-client-card-name">${c.name}</div>
+            ${c.businessName && c.businessName !== c.name ? `<div style="font-size:0.7rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">${c.businessName}</div>` : ''}
+            <div class="cc-client-card-meta">
+              <span class="cc-client-badge ${agCls}">${c.agent}</span>
+              <span class="cc-client-badge active">Active</span>
+              ${c.liveDate ? `<span class="cc-client-badge live">Live ${c.liveDate}</span>` : ''}
+              ${c.website ? `<span class="cc-client-badge link" onclick="window.open('${c.website.startsWith('http')?c.website:'https://'+c.website}','_blank')">📁 Drive</span>` : ''}
+            </div>
+          </div>
+          <div class="cc-client-card-body">
+            ${c.overview ? `<div class="cc-client-section-lbl">About</div><div class="cc-client-fields">${fldProse('',c.overview)}</div>` : ''}
+            ${(c.email||c.phone||c.businessAddress||c.timeZone) ? `
+            <div class="cc-client-section-lbl">Contact</div>
+            <div class="cc-client-fields">
+              ${c.email           ? fld('Email',     c.email)           : ''}
+              ${c.phone           ? fld('Phone',     c.phone)           : ''}
+              ${c.businessAddress ? fld('City',      c.businessAddress) : ''}
+              ${c.timeZone        ? fld('Time Zone', c.timeZone)        : ''}
+            </div>` : ''}
+            ${(c.constructionCategory||c.serviceArea||c.agreedOffer||c.offer) ? `
+            <div class="cc-client-section-lbl">Services &amp; Offer</div>
+            <div class="cc-client-fields">
+              ${c.constructionCategory ? fld('Category',     c.constructionCategory)     : ''}
+              ${c.serviceArea          ? fld('Service Area', c.serviceArea)              : ''}
+              ${c.agreedOffer          ? fld('Agreed Offer', c.agreedOffer, true)        : ''}
+              ${c.offer                ? fldProse('Offer Details', c.offer)              : ''}
+            </div>` : ''}
+            ${(c.aimOfCall||c.qualification||c.preferredTimeSlots) ? `
+            <div class="cc-client-section-lbl">Campaign</div>
+            <div class="cc-client-fields">
+              ${c.aimOfCall          ? fldProse('Aim of Call',   c.aimOfCall)          : ''}
+              ${c.qualification      ? fldProse('Qualification', c.qualification)      : ''}
+              ${c.preferredTimeSlots ? fld('Preferred Times',   c.preferredTimeSlots, true) : ''}
+            </div>` : ''}
+            ${(c.liveDate||c.adBudget) ? `
+            <div class="cc-client-section-lbl">Billing</div>
+            <div class="cc-client-fields">
+              ${c.liveDate  ? fld('Live Date', c.liveDate) : ''}
+              ${c.adBudget  ? fld('Ad Budget', c.adBudget) : ''}
+            </div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function renderCallCentreTab() {
+  if (_ccLoading) return;
+  _ccLoading = true;
+  document.getElementById('cc-pane-calls').innerHTML        = '<div class="cc-loading">Loading call data…</div>';
+  document.getElementById('cc-pane-appointments').innerHTML = '<div class="cc-loading">Loading appointments…</div>';
+  document.getElementById('cc-pane-overview').innerHTML     = '<div class="cc-loading">Loading overview…</div>';
+  document.getElementById('cc-pane-clients').innerHTML      = '<div class="cc-loading">Loading clients…</div>';
+
+  const [callsData, apptsData, configData, adsData, clientsData] = await Promise.all([
+    ccFetchCallsData(),
+    ccFetchApptsData(),
+    ccFetchClientConfig(),
+    ccFetchAdsData(),
+    ccFetchClientsData(),
+  ]);
+  if (callsData)   _ccCallsData   = callsData;
+  if (apptsData)   _ccApptsData   = apptsData;
+  if (configData)  _ccConfigData  = configData;
+  if (adsData)     _ccAdsData     = adsData;
+  if (clientsData) { _ccClientsData = clientsData; window._ccClientsData = clientsData; }
+  _ccLoading = false;
+
+  if (_ccCurrentTab === 'calls')        ccRenderCalls(_ccCallsData);
+  if (_ccCurrentTab === 'appointments') ccRenderAppts(_ccApptsData);
+  if (_ccCurrentTab === 'overview')     ccRenderOverview(_ccCallsData, _ccApptsData);
+  if (_ccCurrentTab === 'clients')      ccRenderClients(_ccClientsData);
+
+  clearInterval(_ccRefreshTimer);
+  _ccRefreshTimer = setInterval(async () => {
+    const [cd, ad, cfg, ads] = await Promise.all([ccFetchCallsData(), ccFetchApptsData(), ccFetchClientConfig(), ccFetchAdsData()]);
+    if (cd)  _ccCallsData  = cd;
+    if (ad)  _ccApptsData  = ad;
+    if (cfg) _ccConfigData = cfg;
+    if (ads) _ccAdsData    = ads;
+    if (_ccCurrentTab === 'calls'        && _ccCallsData) ccRenderCalls(_ccCallsData);
+    if (_ccCurrentTab === 'appointments' && _ccApptsData) ccRenderAppts(_ccApptsData);
+    if (_ccCurrentTab === 'overview'     && _ccCallsData && _ccApptsData) ccRenderOverview(_ccCallsData, _ccApptsData);
+  }, 2 * 60 * 1000);
+}
+
+// ── Data seeds (mirrors main Command Centre) ──────────────────────────────
+(function() {
+  try {
+    let churnedList = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
+    churnedList = churnedList.filter(n => n !== 'Favourite Home');
+    ['L2 Homes', 'Elegance Tiles & Bath', 'Elegance Tiles and Bath', 'Buildavate', 'Allspec Homes'].forEach(n => {
+      if (!churnedList.includes(n)) churnedList.push(n);
+    });
+    localStorage.setItem('qj_churned_clients', JSON.stringify(churnedList));
+  } catch(_) {}
+  try {
+    const signups = JSON.parse(localStorage.getItem('qj_signup_events') || '[]');
+    const rpg = { name: 'Rapid Bathroom Specialist', date: new Date('2026-06-01').toISOString(), mrr: 2420, contracted: 7260, cash: 2420 };
+    const idx = signups.findIndex(e => e.name === 'Rapid Bathroom Specialist');
+    if (idx === -1) signups.push(rpg); else signups[idx] = rpg;
+    localStorage.setItem('qj_signup_events', JSON.stringify(signups));
+  } catch(_) {}
+})();
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+buildKeypad();
+if (sessionStorage.getItem('aj_unlocked') === '1') {
+  document.getElementById('pinGate').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  initApp();
+}
+
+// ── QMI BRAIN ─────────────────────────────────────────────────────────────
+const WA_SHEET_ID_BRAIN = '1ibvhwNmD0IwcK0LR3LJ77BEdshpXa0-uSjb2adkl7uo';
+const QMI_COMMS_SOP = `QUALITY JOBS — CLIENT COMMUNICATION SOP
+(NOTE: The WhatsApp conversation history is the primary reference for tone and style. Use these templates as a starting point, always adapting to match Alfie's actual writing style from the message history.)
+
+COMMUNICATION PRINCIPLES:
+- Clients are busy building/renovation business owners who are on-site or with tradies most of the day
+- Keep WhatsApp messages short and direct
+- Prefer phone calls over video links — ask for a phone call and let them pick the time
+- Minimum 2 touchpoints per month per client (phone call or detailed Loom video)
+- At least 1 WhatsApp message per week (quick update or small win)
+
+TYPES OF COMMUNICATION:
+1. Basic questions — respond directly or route to the right person (AJ for ads, Jules/Ayessa for bookings)
+2. Complex questions — send a Loom video walkthrough
+3. Concerns (no leads, want to cancel, want refund) — call immediately; if unreachable, send Loom asking for callback time
+
+--- MESSAGE TEMPLATES ---
+
+CLIENT DOESN'T SHOW TO MEETING (5 mins later):
+Hey [NAME], you still good for now?
+[2 mins later] I've been on the line 5 mins — everything okay? You're usually pretty punctual for our calls.
+[If still nothing] Hey [NAME], I'll jump off for now — give me a shout when you get this and we'll find another time.
+
+WHEN ADS LAUNCH:
+Hey [NAME], our team's finished the build-out and your ads are going live shortly. A few things worth knowing:
+- If there's ever something you want us to change, just tell us straight in WhatsApp — we'd rather know early.
+- We'll check in with you by phone every couple of weeks to go through ad performance, lead quality, and quote conversion.
+- It's important the stats sheet gets updated regularly so our team can see how leads are progressing. Without that, we're working blind.
+- Straight talk: if you've got a concern or something's not sitting right — say so. The clients who do best with us are the ones who tell us the good and the bad as it happens, not just at the end of the month.
+
+REQUESTING A CALL:
+Hey [NAME], when you've got a few minutes free, can we jump on a quick phone call? Let me know what time suits and I'll call you.
+
+HASN'T HAD A CALL IN 2+ WEEKS:
+Hey [NAME], it's been a little while since we last spoke — I've got a few updates I want to run past you. Have you got 10 minutes for a call this week? Or if it's easier, I can send a short video update instead.
+
+PAYMENT DECLINED:
+Hey [NAME], our media team picked up that your card declined on the ad spend over the last few days, which is why lead flow has slowed down. Have you got a different card we should use? The sooner this is sorted, the sooner we can get the ads back live — every time ads get switched off we lose momentum and have to rebuild it.
+
+NOT FILLING STATS SHEET:
+Hey [NAME], we just went to review the numbers and noticed we're missing data — show rate, close rate, notes on who signed and who didn't. We need this to know how the ads and leads are actually performing. Can you get it updated by end of day?
+
+LOW SHOW RATE:
+Show rate's still sitting below our 80% target. A few things worth trying:
+1. Get someone to text homeowners from a personal mobile the night before to confirm they know how to find the site.
+2. Shorten the booking window to within 7 days.
+3. Send a short personal video to each new booking.
+
+PERFORMANCE BEHIND (existing client):
+Hey [NAME], we've noticed things have slowed down and wanted to flag we've already looked into it. [MAIN CONSTRAINT] looks like the main bottleneck, so here's what we're doing first:
+1. [SOLUTION]
+2. [SOLUTION]
+3. [SOLUTION]
+This kind of dip is normal — ads naturally slow down over time and need refreshing, which is exactly what we're doing. I'll keep you posted.
+
+LEADS NOT CLOSING:
+When leads aren't converting, it usually comes down to: sales process (about 80% of the time) or lead qualification on the front end (about 20% of the time). In our experience it's the sales side most of the time — usually the process not being followed consistently or needing to sharpen the approach.
+
+SAYS LEADS ARE LOW QUALITY:
+Hey [NAME], when leads aren't converting it usually comes down to one of two things: sales process (about 80% of the time) or lead qualification on the front end (about 20% of the time). Worth figuring out which one is actually driving it — if over the last 30 days we've had more than 5 people who expected a different scope than what's realistic for their budget, that points to front-end qualification. Otherwise it's usually the sales process itself.
+
+CLIENT WANTS TO CANCEL:
+I want to understand what's driving this before we turn anything off — on our end things are moving in the right direction, so I'd rather talk it through first. Can we get 15 minutes on the phone? What time suits you?
+
+CONFIRMED CANCEL:
+All the best, [NAME] — genuinely hope things go well from here. Last step on our end is a quick offboarding form. Be as honest as you like on it — it helps us improve. I'll send through next steps and any assets you need once that's done. Thanks.
+
+PAYMENT DISPUTE / CHARGEBACK:
+Hey [NAME], I got a notification that a chargeback was filed on your last payment. Wanted to reach out directly — that payment covers this month's marketing service, which we've delivered and are continuing to deliver. Happy to talk through any concerns or make adjustments if something's off. Just to flag — because of the chargeback, we've had to pause marketing and lead communication for now.
+
+BILLING ERROR (wrong date or double charge):
+Hey [NAME], that one's on us — we had a billing system issue and it affected your account by mistake. Two options: refund the charge and rebill on [DATE], or extend the current cycle by the difference to make up for it. Sorry for the mix-up — that one's fully on us.
+
+REACTIVATION CAMPAIGN:
+Hi [NAME], it's [Name] from [Company]. [Owner] asked me to reach out — we're running a short-term offer on [project type] projects. If you book a free measure and quote before it wraps up, we'll also include [bonus] at no cost. Reply and I'll organise a time to call you.
+
+REVIEW REQUEST:
+Hey [NAME], hope things are going well. Since we're on the right track at the moment, would you be up for leaving a quick Google review — just a couple of lines on how the communication and results have been? Totally your call, but it does make a difference for businesses like ours.
+
+REFERRAL REQUEST:
+Hey [NAME], just a reminder we've got a referral program — [FEE] for every building or renovation business you send our way that signs on. Anyone come to mind?
+
+FACEBOOK SAYS RESULTS COULD BE OPTIMISED:
+Hey [NAME], I wouldn't put too much weight on that — we've looked into Facebook's guidance and it's often just a nudge to get you spending more on ads, rather than genuinely useful advice.
+
+CLIENT MULTIPLE NO-SHOWS:
+Hey [NAME], the last few calls I've called at the time we agreed but haven't been able to reach you. I get that things come up, but I need to be able to count on the times we lock in, since it takes time to prep on our end. If it's easier, I'm happy to send video updates instead and we can chat over WhatsApp when something needs a decision.
+
+LOTS OF LAST-MINUTE CANCELLATIONS:
+Worth noting — when you mark a lead as cancelled, our team follows up to try and get them rebooked. We've got a process for bringing them back into the follow-up list. Also worth considering bringing a deposit back in — it may slightly reduce booking volume, but if cancellations are the main issue right now, it's likely worth the trade-off.`;
+
+const CLIENT_OVERVIEW_DOCS = {
+  'L2 Homes':                                      'https://docs.google.com/document/d/1YPaG-vYr_BRuFP0Duk0uXkegjH82jMt5NN6MeZVv560/edit',
+  'Streamline Building Projects':                  'https://docs.google.com/document/d/14t0X1_J6OzUtMEON6YxDN8BOeB_gMnwm8ttWCSDxlB4/edit',
+  'Silk Touch Joinery':                            'https://docs.google.com/document/d/1X0R7BEA8yUnFZOWgNZ65Js67GD2dhFBJoRCaBSDOOws/edit',
+  'Allspec Homes':                                 'https://docs.google.com/document/d/17tlLH7aYYLcYSOwCdtq_6-9FzgaE9oVxH1XwxsdDuwE/edit',
+  'Spa Space':                                     'https://docs.google.com/document/d/1E0K0oxy9l7TDuYk36qX4c-jxx4eYFEo5MJ219BfBAWU/edit',
+  'UrbanRise Property Group':                      'https://docs.google.com/document/d/1b8nismjg08ZLXUZ0GAIJfoDe3_T4XGrEVNsS6v8WBuE/edit',
+  'Generational Bathrooms':                        'https://docs.google.com/document/d/1FJCl19cM-IDIUWQ6itHJkzFRnPebTfKLIvxC1rGLrwk/edit',
+  'Favourite Home':                                'https://docs.google.com/document/d/1GuuiH18PaJ7mR7gu4vPmaJc1g0lz3sscpOxysdBJkVE/edit',
+  'Quality Custom Homes':                          'https://docs.google.com/document/d/1XuCc6cYp4ISA7-DWyUWahS_ECD-3SQDc-nmaTUeBgfI/edit',
+  'Barco Build':                                   'https://docs.google.com/document/d/1t6eBEJgBFvR_1It6-RqGVIfOC1VxgYLoQgfezNMyfNE/edit',
+  'Renovate Right Homes':                          'https://docs.google.com/document/d/13g47Z4CcsTLpJpC3p4wbYWtHhoU7jB1fcwmOK0S8TGc/edit',
+  'Imperial Renovations':                          'https://docs.google.com/document/d/1_xPlJJtO6Y0JXqdsk3X1FsTSmjS6tYkS1s8SL_Sli6c/edit',
+  'Elegance Tiles and Bath':                       'https://docs.google.com/document/d/1-xSkqFpNIQH99muINlWMJxAfPRH0XPGrOHo9YR38NiE/edit',
+  'Kogalo Trades - Renovations & Maintenance':     'https://docs.google.com/document/d/1oXIK2jMWDaL1EDGjCDWlVyYC2U5YA9rVfidiUyOSEXM/edit',
+  'Rapid Bathroom Specialists':                    '',
+  'The CK Team':                                   'https://docs.google.com/document/d/1VNq7e9ePK2D35NzdFpK9Iuboc72Oflta5y97A1ebN7U/edit',
+  'Woodstock Building Services (VIC)':             'https://docs.google.com/document/d/1QWNCUKeE-3kkixyL2-2gDI2z8ZazRuZguGhTChqRM-M/edit',
+  'Bisdaq Build':                                  'https://docs.google.com/document/d/1KKwuYvI4k0S-9jRrClHquFwgtfNzXsZGXLqMB6nCHmU/edit',
+  'KBG Renovations':                               'https://docs.google.com/document/d/1DE5ROOw2aLW-GgTYYC6u_UMeGVlec4i2L4Lw8gI81II/edit',
+  'PrimeBuild Solutions':                          'https://docs.google.com/document/d/10jMam2QHD8xc8x_BYHkwlN39ZxycfrKcQZ3kPxaDqow/edit',
+  'Buildavate':                                    'https://docs.google.com/document/d/1aST_7GZzUpFucmgUTDl9HlvcpOk1jyHR0V1cStn5JHY/edit',
+  'Rapid Plumbing Group':                          'https://docs.google.com/document/d/1RQqgJraAa-qGd03YYoz5NnzTB--XfG5N91TyMejwD00/edit',
+  'Cassars On The Move':                           'https://docs.google.com/document/d/184KJ04yv_jT5dlaXRX18QqaFOnQqhnMUjcC3vo-iu7g/edit',
+};
+
+async function fetchAllOverviewDocs() {
+  const CACHE_KEY = 'qmi_overview_docs_cache';
+  const CACHE_TS  = 'qmi_overview_docs_ts';
+  const cached    = localStorage.getItem(CACHE_KEY);
+  const ts        = parseInt(localStorage.getItem(CACHE_TS) || '0');
+  if (cached && (Date.now() - ts) < 24 * 60 * 60 * 1000) {
+    try { return JSON.parse(cached); } catch(e) {}
+  }
+  const entries = Object.entries(CLIENT_OVERVIEW_DOCS).filter(([,url]) => url);
+  const results = await Promise.all(entries.map(async ([name, url]) => {
+    const docId = (url.match(/\/d\/([^/]+)/) || [])[1];
+    if (!docId) return [name, ''];
+    try {
+      const res  = await fetch(`${PROXY_URL}?driveDoc=${docId}`);
+      const data = await res.json();
+      return [name, data.content || ''];
+    } catch(e) { return [name, '']; }
+  }));
+  const map = {};
+  for (const [name, content] of results) if (content) map[name] = content;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(map));
+  localStorage.setItem(CACHE_TS, String(Date.now()));
+  return map;
+}
+
+let _ajBrainHistory = [];
+let _brainAttachedImage = null;
+
+function attachBrainImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    _brainAttachedImage = { base64: dataUrl.split(',')[1], mimeType: file.type || 'image/jpeg', dataUrl };
+    const preview = document.getElementById('brain-image-preview');
+    if (preview) preview.innerHTML = `<div class="brain-image-preview-inner"><img src="${dataUrl}" style="height:44px;border-radius:6px;object-fit:cover"><span style="font-size:0.72rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span><button onclick="clearBrainImage()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;line-height:1" title="Remove">✕</button></div>`;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function clearBrainImage() {
+  _brainAttachedImage = null;
+  const preview = document.getElementById('brain-image-preview');
+  if (preview) preview.innerHTML = '';
+}
+
+function _renderSuggestedReplies(text, container) {
+  const options = [];
+  const re = /\*\*OPTION\s*(\d)\s*[—–\-]\s*([^*\n]+)\*\*\s*\n([\s\S]*?)(?=\n\*\*OPTION|\s*$)/gi;
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    options.push({ num: match[1], label: match[2].trim(), body: match[3].trim() });
+  }
+  if (!options.length) {
+    const parts = text.split(/\n(?=\*\*Option\s*\d|\bOption\s*\d)/i);
+    for (const part of parts) {
+      const h = part.match(/^\*?\*?Option\s*(\d)[^\n]*\*?\*?\n?/i);
+      if (h) options.push({ num: h[1], label: '', body: part.replace(h[0], '').trim() });
+    }
+  }
+  if (!options.length) {
+    const el = document.createElement('div');
+    el.className = 'msg-wrap';
+    el.innerHTML = `<div class="msg-label">qmi brain</div><div class="msg-bubble">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`;
+    container.appendChild(el);
+    return;
+  }
+  const colours = ['#A78BFA','#34D399','#FBBF24'];
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap';
+  wrap.style.maxWidth = '100%';
+  wrap.innerHTML = `<div class="msg-label">qmi brain — 3 suggested replies</div><div class="suggested-replies-wrap">${options.map((o,i) => `<div class="suggested-reply-card"><div class="suggested-reply-label" style="color:${colours[i]||'var(--accent)'}">Option ${o.num}${o.label ? ' — ' + o.label : ''}</div><div class="suggested-reply-text">${o.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div><button class="suggested-reply-copy" onclick='copyBrainReply(this, ${JSON.stringify(o.body)})'>Copy</button></div>`).join('')}</div>`;
+  container.appendChild(wrap);
+}
+
+function copyBrainReply(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied ✓'; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+  });
+}
+
+async function fetchWADataForBrain() {
+  try {
+    const res  = await fetch(`${PROXY_URL}?id=${WA_SHEET_ID_BRAIN}&sheet=Log`);
+    if (!res.ok) return [];
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length < 2) return [];
+    const msgs = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const ts     = String(row[0]||'').trim();
+      const client = String(row[1]||'').trim();
+      const sender = String(row[2]||'').trim();
+      const text   = String(row[3]||'').trim();
+      const type   = String(row[4]||'client').trim();
+      if (!text || !client) continue;
+      msgs.push({ ts, client, sender, text, type });
+    }
+    return msgs.reverse();
+  } catch(e) { return []; }
+}
+
+async function fetchClientKB() {
+  try {
+    const res = await fetch(`${PROXY_URL}?service=client_kb`);
+    if (!res.ok) return {};
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return {};
+    const kb = {};
+    for (const row of rows) { if (row.client) kb[row.client] = row; }
+    return kb;
+  } catch(e) { return {}; }
+}
+
+async function renderQMIBrainPage() {
+  // Restore persistent brain chat history
+  try {
+    const saved = localStorage.getItem('qmi_aj_brain_history');
+    if (saved) {
+      _ajBrainHistory = JSON.parse(saved);
+      const msgsEl = document.getElementById('brain-messages');
+      const orbEl  = document.getElementById('brain-orb-section');
+      if (msgsEl && _ajBrainHistory.length) {
+        if (orbEl) orbEl.style.display = 'none';
+        msgsEl.style.display = 'flex';
+        msgsEl.innerHTML = '';
+        for (const m of _ajBrainHistory) _appendBrainMsg(m.role, m.content, msgsEl);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+    }
+  } catch(e) { _ajBrainHistory = []; }
+
+  const statsEl = document.getElementById('brain-kb-stats');
+  if (!window._ajWaData || !window._ajWaData.length) {
+    if (statsEl) statsEl.textContent = 'Loading…';
+    const [waData, kbData] = await Promise.all([fetchWADataForBrain(), fetchClientKB()]);
+    window._ajWaData   = waData || [];
+    window._ajClientKB = kbData || {};
+  } else if (!window._ajClientKB) {
+    window._ajClientKB = await fetchClientKB();
+  }
+
+  // Fetch overview doc content if not yet loaded (background, non-blocking for re-renders)
+  if (!window._ajOverviewContent) {
+    fetchAllOverviewDocs().then(m => { window._ajOverviewContent = m; });
+  }
+
+  _updateBrainStats();
+}
+
+function _updateBrainStats() {
+  const statsEl = document.getElementById('brain-kb-stats');
+  if (!statsEl) return;
+  const msgs = window._ajWaData || [];
+  if (!msgs.length) {
+    statsEl.innerHTML = 'No WhatsApp messages loaded yet.<br>Messages will appear after the proxy sync runs.';
+    return;
+  }
+  const clients = new Set(msgs.map(m => m.client).filter(Boolean));
+  const clMsgs  = msgs.filter(m => m.type !== 'aj');
+  const ajMsgs  = msgs.filter(m => m.type === 'aj');
+  const withTs  = msgs.filter(m => m.ts);
+  const earliest = withTs.length ? withTs.reduce((a, b) => (a.ts < b.ts ? a : b)) : null;
+  const dateStr  = earliest ? (earliest.ts.split(',')[0].trim() || earliest.ts.slice(0,10)) : '—';
+  const kbCount  = Object.keys(window._ajClientKB || {}).length;
+  statsEl.innerHTML = `
+    <strong>${msgs.length}</strong> messages loaded<br>
+    <strong>${clients.size}</strong> clients in history<br>
+    <strong>${clMsgs.length}</strong> client messages<br>
+    <strong>${ajMsgs.length}</strong> your messages<br>
+    History from <strong>${dateStr}</strong><br>
+    <strong>${kbCount}</strong> client KB${kbCount !== 1 ? 's' : ''} loaded
+  `;
+}
+
+function saveBrainSOP() {
+  const sopEl    = document.getElementById('brain-sop-input');
+  const statusEl = document.getElementById('brain-sop-status');
+  if (!sopEl) return;
+  localStorage.setItem('qmi_brain_sop', sopEl.value);
+  if (statusEl) {
+    statusEl.textContent = '✓ Saved';
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000);
+  }
+}
+
+function useBrainChip(el) {
+  const inp = document.getElementById('brain-input');
+  if (!inp) return;
+  inp.value = el.textContent;
+  inp.dispatchEvent(new Event('input'));
+  sendBrainMessage();
+}
+
+function brainKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBrainMessage(); }
+}
+
+function _buildBrainSystemPrompt() {
+  const sop  = QMI_COMMS_SOP;
+  const msgs = window._ajWaData || [];
+  const kb   = window._ajClientKB || {};
+
+  const byClient = {};
+  for (const m of msgs) {
+    if (!m.client || !m.text) continue;
+    if (!byClient[m.client]) byClient[m.client] = [];
+    byClient[m.client].push(m);
+  }
+
+  const overviewContent = window._ajOverviewContent || {};
+  const allClients = new Set([...Object.keys(byClient), ...Object.keys(kb), ...Object.keys(overviewContent)]);
+
+  let clientSections = '';
+  for (const client of allClients) {
+    clientSections += `\n\n=== ${client} ===`;
+
+    const kbEntry = kb[client];
+    if (kbEntry) {
+      if (kbEntry.notes) {
+        clientSections += `\n📋 SALES CALL NOTES:\n${kbEntry.notes}`;
+      }
+      if (kbEntry.transcript) {
+        const t = kbEntry.transcript;
+        clientSections += `\n\n📝 SALES CALL TRANSCRIPT:\n${t.slice(0, 4000)}${t.length > 4000 ? '\n[transcript truncated]' : ''}`;
+      }
+    }
+
+    const ov = overviewContent[client];
+    if (ov) {
+      clientSections += `\n\n📄 OVERVIEW DOC:\n${ov.slice(0, 1500)}${ov.length > 1500 ? '\n[truncated]' : ''}`;
+    }
+
+    const clientMsgs = byClient[client];
+    if (clientMsgs && clientMsgs.length) {
+      const lines = [...clientMsgs].map(m => {
+        const who  = m.type === 'aj' ? 'YOU' : (m.sender || 'CLIENT');
+        const when = m.ts ? m.ts.split(',')[0].trim() + ' ' + (m.ts.split(',')[1] || '').trim() : '';
+        return `[${when}] ${who}: ${m.text}`;
+      });
+      clientSections += `\n\n💬 WHATSAPP HISTORY:\n${lines.join('\n')}`;
+    }
+  }
+
+  const sopSection = sop ? `\n\n=== CLIENT COMMUNICATION SOP ===\n${sop}` : '';
+
+  return `You are the QMI Client Communication Brain for Quality Jobs — a lead generation and appointment booking agency.
+
+You have access to each client's full knowledge base: their sales call notes, sales call transcript (what was sold to them, their situation, what was promised), and their complete WhatsApp communication history. Use all of this to:
+- Mirror the owner's communication style exactly (tone, length, formality, emoji use)
+- Reference actual past conversations and what was sold to each client
+- Draft messages that align with what was promised on the sales call
+- Give advice grounded in real context — not generic AI responses
+
+Quality Jobs context:
+- Owner is Alfie, runs the agency
+- Two calling agents: Jules and Ayessa
+- Media buyer: AJ (manages ads, budgets, leads)
+- Clients are builders, renovators, trade businesses paying for lead generation
+- Most client comms happen via WhatsApp${sopSection}
+
+=== CLIENT KNOWLEDGE BASE + WHATSAPP HISTORY ===${clientSections || '\n(No data loaded yet.)'}`;
+}
+
+async function sendBrainMessage() {
+  const key = localStorage.getItem('aj_anthropic_key') || '';
+  if (!key) { alert('Add your Anthropic API key in Settings first.'); return; }
+
+  const inp    = document.getElementById('brain-input');
+  const send   = document.getElementById('brain-send');
+  const msgsEl = document.getElementById('brain-messages');
+  const orbEl  = document.getElementById('brain-orb-section');
+  if (!inp || !msgsEl) return;
+
+  const text  = inp.value.trim();
+  const image = _brainAttachedImage;
+  if (!text && !image) return;
+
+  inp.value = '';
+  inp.style.height = '';
+  if (send) { send.disabled = true; send.textContent = '…'; }
+
+  if (orbEl) orbEl.style.display = 'none';
+  msgsEl.style.display = 'flex';
+
+  const isImageMode = !!image;
+  const replyPrompt = `\n\nBased on this screenshot and your knowledge of this client's history and communication style, generate exactly 3 different WhatsApp replies I could send. Format your response exactly like this:\n\n**OPTION 1 — Brief & Direct**\n[reply]\n\n**OPTION 2 — Friendly & Warm**\n[reply]\n\n**OPTION 3 — Detailed & Professional**\n[reply]\n\nKeep each reply natural and ready to copy-paste.`;
+
+  let userContent;
+  if (isImageMode) {
+    userContent = [
+      { type: 'image', source: { type: 'base64', media_type: image.mimeType, data: image.base64 } },
+      { type: 'text', text: (text || 'Here is a screenshot of a client message.') + replyPrompt }
+    ];
+    const userEl = document.createElement('div');
+    userEl.className = 'msg-wrap msg-user';
+    userEl.innerHTML = `<div class="msg-label">you</div><div class="msg-bubble"><img src="${image.dataUrl}" style="max-width:200px;border-radius:8px;display:block${text ? ';margin-bottom:0.4rem' : ''}">${text ? `<div>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>` : ''}</div>`;
+    msgsEl.appendChild(userEl);
+    clearBrainImage();
+  } else {
+    userContent = text;
+    _ajBrainHistory.push({ role: 'user', content: text });
+    _appendBrainMsg('user', text, msgsEl);
+  }
+
+  const typingId = 'brain-typing-' + Date.now();
+  msgsEl.innerHTML += `<div id="${typingId}" class="msg-wrap"><div class="msg-label">qmi brain</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  try {
+    const messages = isImageMode
+      ? [{ role: 'user', content: userContent }]
+      : _ajBrainHistory.slice(-20);
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 2048, system: _buildBrainSystemPrompt(), messages })
+    });
+    const data  = await res.json();
+    const reply = data.content?.[0]?.text || '(no response)';
+    document.getElementById(typingId)?.remove();
+
+    if (isImageMode) {
+      _renderSuggestedReplies(reply, msgsEl);
+    } else {
+      _ajBrainHistory.push({ role: 'assistant', content: reply });
+      localStorage.setItem('qmi_aj_brain_history', JSON.stringify(_ajBrainHistory));
+      _appendBrainMsg('assistant', reply, msgsEl);
+    }
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    _appendBrainMsg('assistant', 'Error: ' + e.message, msgsEl);
+  }
+
+  if (send) { send.disabled = false; send.textContent = 'send ↑'; }
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function _appendBrainMsg(role, text, container) {
+  const isUser    = role === 'user';
+  const label     = isUser ? 'you' : 'qmi brain';
+  const formatted = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  container.innerHTML += `
+    <div class="msg-wrap${isUser ? ' msg-user' : ''}">
+      <div class="msg-label">${label}</div>
+      <div class="msg-bubble">${formatted}</div>
+    </div>`;
+}
+
+function clearBrainHistory() {
+  _ajBrainHistory = [];
+  localStorage.removeItem('qmi_aj_brain_history');
+  const msgsEl = document.getElementById('brain-messages');
+  const orbEl  = document.getElementById('brain-orb-section');
+  if (msgsEl) { msgsEl.innerHTML = ''; msgsEl.style.display = 'none'; }
+  if (orbEl)  orbEl.style.display = 'flex';
+}
+</script>
+</body>
+</html>

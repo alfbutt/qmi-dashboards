@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quality Jobs · Client Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #111110;
+    --surface: #1a1916;
+    --surface2: #23221e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f5f2ea;
+    --muted: #8a8678;
+    --accent: #c9960c;
+    --jules: #c9960c;
+    --ayessa: #e6b84a;
+    --green: #34d399;
+    --red: #f87171;
+    --blue: #60a5fa;
+  }
+
+  body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    padding: 1.4rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); position: sticky; top: 0; z-index: 100;
+  }
+  .header-left h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+  .header-left p { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .back-link { font-size: 0.75rem; font-family: 'DM Mono', monospace; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .back-link:hover { color: var(--text); }
+
+  .main { padding: 2rem 2.5rem; max-width: 960px; margin: 0 auto; }
+
+  .api-key-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 0.9rem 1.25rem;
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;
+  }
+  .api-key-bar label { font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--muted); white-space: nowrap; letter-spacing: 0.06em; text-transform: uppercase; }
+  .api-key-bar input { flex: 1; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+  }
+  .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.01em; }
+  .card-sub { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 1.75rem; }
+
+  .section-header {
+    font-size: 0.68rem; font-family: 'DM Mono', monospace;
+    color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase;
+    margin: 1.75rem 0 1rem; padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-header:first-of-type { margin-top: 0; }
+
+  .ai-section {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem; margin-bottom: 1.75rem;
+  }
+  .ai-section-label {
+    font-size: 0.68rem; font-family: 'DM Mono', monospace;
+    color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;
+  }
+  .ai-badge {
+    background: rgba(201,150,12,0.12); border: 1px solid rgba(201,150,12,0.25);
+    border-radius: 100px; padding: 1px 7px; font-size: 0.6rem;
+  }
+
+  .manual-section {
+    background: rgba(96,165,250,0.04); border: 1px solid rgba(96,165,250,0.12);
+    border-radius: 12px; padding: 1.25rem; margin-top: 1.75rem;
+  }
+  .manual-section-label {
+    font-size: 0.68rem; font-family: 'DM Mono', monospace;
+    color: var(--blue); letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 0.68rem; font-family: 'DM Mono', monospace;
+    color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  input, textarea, select {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 0.65rem 0.9rem;
+    color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.88rem;
+    outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 90px; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+
+  .agent-toggle { display: flex; gap: 0.5rem; }
+  .agent-btn {
+    flex: 1; padding: 0.65rem; border-radius: 8px;
+    border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--muted); font-family: 'DM Mono', monospace;
+    font-size: 0.8rem; cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+  }
+  .agent-btn.active.jules { background: rgba(201,150,12,0.15); border-color: var(--jules); color: var(--jules); font-weight: 600; }
+  .agent-btn.active.ayessa { background: rgba(230,184,74,0.15); border-color: var(--ayessa); color: var(--ayessa); font-weight: 600; }
+
+  .btn {
+    padding: 0.75rem 1.5rem; border-radius: 10px; border: none;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+  }
+  .btn-primary { background: var(--accent); color: #000; font-weight: 700; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+  .btn-secondary:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+  .btn-danger:hover { background: rgba(248,113,113,0.22); }
+  .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ai { background: rgba(96,165,250,0.1); color: var(--blue); border: 1px solid rgba(96,165,250,0.25); padding: 0.5rem 1rem; font-size: 0.72rem; }
+  .btn-ai:hover { background: rgba(96,165,250,0.18); }
+  .btn-ai:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-row { display: flex; gap: 0.75rem; margin-top: 1.75rem; align-items: center; flex-wrap: wrap; }
+
+  .status { font-size: 0.78rem; font-family: 'DM Mono', monospace; }
+  .status.success { color: var(--green); }
+  .status.error   { color: var(--red); }
+  .status.loading { color: var(--muted); }
+
+  .churn-row { display: flex; gap: 0.75rem; align-items: flex-end; }
+  .churn-row .form-group { flex: 1; }
+
+  .input-with-btn { display: flex; gap: 0.5rem; }
+  .input-with-btn input { flex: 1; }
+
+  /* ── Fathom Extractor ── */
+  .fathom-api-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+  }
+  .fathom-api-bar label { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); white-space: nowrap; letter-spacing: 0.06em; text-transform: uppercase; }
+  .fathom-api-bar input { flex: 1; }
+  .ghl-answers-grid { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
+  .ghl-answer-row {
+    display: grid; grid-template-columns: 200px 1fr auto;
+    gap: 0.75rem; align-items: start;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.75rem 1rem;
+  }
+  .ghl-answer-label { font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--accent); letter-spacing: 0.04em; padding-top: 2px; }
+  .ghl-answer-input {
+    font-size: 0.84rem; line-height: 1.55; color: var(--text);
+    background: transparent; border: 1px solid transparent; border-radius: 6px;
+    padding: 3px 6px; width: 100%; resize: vertical; min-height: 32px;
+    font-family: 'Syne', sans-serif; transition: border-color 0.15s;
+  }
+  .ghl-answer-input:focus { outline: none; border-color: var(--border2); background: rgba(255,255,255,0.03); }
+  .ghl-answer-input.empty { border-color: rgba(201,150,12,0.35); background: rgba(201,150,12,0.04); color: var(--muted); }
+  .ghl-answer-input.empty:focus { color: var(--text); }
+  .copy-btn {
+    background: none; border: 1px solid var(--border2); border-radius: 6px;
+    color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.65rem;
+    padding: 4px 10px; cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    align-self: flex-start;
+  }
+  .copy-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+  .copy-all-btn {
+    background: rgba(201,150,12,0.1); border: 1px solid rgba(201,150,12,0.25);
+    border-radius: 8px; color: var(--accent); font-family: 'DM Mono', monospace;
+    font-size: 0.72rem; padding: 0.5rem 1rem; cursor: pointer; transition: all 0.15s;
+  }
+  .copy-all-btn:hover { background: rgba(201,150,12,0.18); }
+  @media(max-width:640px) { .ghl-answer-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Quality Jobs <span style="color:var(--muted);font-weight:400">·</span> Client Onboarding</h1>
+    <p>Add or remove clients from the command centre</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ONBOARD -->
+  <div class="card">
+    <div class="card-title">Onboard New Client</div>
+    <div class="card-sub">Fill in the details from GHL — the overview doc is read automatically by the Command Centre</div>
+
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      <a href="https://api.leadconnectorhq.com/widget/survey/t0fQmhVl67oU2KBKymsB?notrack=true" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,150,12,0.1);border:1px solid rgba(201,150,12,0.25);border-radius:8px;padding:0.45rem 0.9rem;font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">📋 GHL Onboarding Form ↗</a>
+      <a href="https://docs.google.com/document/d/1lcxKmcEFu4z78jx92ph2GzFonJmIM4AwjCc1frGoVgU/edit?usp=sharing" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:0.45rem 0.9rem;font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--blue);text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">🔑 Anthropic API Key ↗</a>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Client Name *</label>
+        <input type="text" id="clientName" placeholder="e.g. Renovate Right Homes" />
+      </div>
+      <div class="form-group">
+        <label>Assigned Agent *</label>
+        <div class="agent-toggle">
+          <button class="agent-btn jules" id="btnJules" onclick="selectAgent('Jules')">Jules</button>
+          <button class="agent-btn ayessa" id="btnAyessa" onclick="selectAgent('Ayessa')">Ayessa</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>WhatsApp Group Chat ID *</label>
+        <input type="text" id="chatId" placeholder="e.g. 120363402952787202@g.us" />
+      </div>
+      <div class="form-group">
+        <label>Stats Sheet URL *</label>
+        <input type="text" id="statsSheetUrl" placeholder="Paste Google Sheet URL (created by GHL)" />
+      </div>
+      <div class="form-group">
+        <label>Client's Personal Name</label>
+        <input type="text" id="businessName" placeholder="e.g. John Smith" />
+      </div>
+      <div class="form-group">
+        <label>City</label>
+        <input type="text" id="city" placeholder="e.g. Melbourne" />
+      </div>
+      <div class="form-group full">
+        <label>Client Overview Doc URL</label>
+        <input type="text" id="overviewDocUrl" placeholder="Paste Google Doc URL (created by GHL) — client info is read from this automatically" />
+      </div>
+      <div class="form-group full">
+        <label>Google Drive Folder URL</label>
+        <input type="text" id="driveUrl" placeholder="Paste Google Drive folder URL for client ads" />
+      </div>
+      <div class="form-group">
+        <label>Live Date</label>
+        <input type="date" id="liveDate" />
+      </div>
+      <div class="form-group">
+        <label>Billing Start Date</label>
+        <input type="date" id="billingStartDate" />
+      </div>
+      <div class="form-group">
+        <label>MRR ($/month)</label>
+        <input type="number" id="mrrAmount" placeholder="e.g. 2000" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Contracted Value ($)</label>
+        <input type="number" id="contractedValue" placeholder="e.g. 6000" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Upfront Cash Collected ($)</label>
+        <input type="number" id="upfrontCash" placeholder="e.g. 2500" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Payment Type</label>
+        <select id="paymentType">
+          <option value="">Select...</option>
+          <option value="Monthly">Monthly</option>
+          <option value="3 Months">3 Months</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Lead Source</label>
+        <select id="leadSource">
+          <option value="">Select...</option>
+          <option value="Paid Ads">Paid Ads</option>
+          <option value="IG DM">IG DM</option>
+          <option value="Cold Call">Cold Call</option>
+          <option value="FB Group">FB Group</option>
+          <option value="Referral">Referral</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="onboardClient()" id="onboardBtn">Onboard Client</button>
+      <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+      <span id="onboardStatus" class="status"></span>
+    </div>
+  </div>
+
+  <!-- FATHOM EXTRACTOR -->
+  <div class="card">
+    <div class="card-title">📝 Fathom Notes → GHL Answers</div>
+    <div class="card-sub">Paste your Fathom call transcript and AI will extract answers for every question on the GHL onboarding form</div>
+
+    <a href="https://docs.google.com/document/d/1lcxKmcEFu4z78jx92ph2GzFonJmIM4AwjCc1frGoVgU/edit?usp=sharing" target="_blank" style="display:inline-block;margin-bottom:0.75rem;font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;opacity:0.8" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">🔑 View API Key Document ↗</a>
+
+    <div class="fathom-api-bar">
+      <label>Anthropic API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+      <button class="btn btn-secondary" onclick="saveApiKey()" style="white-space:nowrap">Save</button>
+      <span id="apiKeyStatus" class="status"></span>
+    </div>
+
+    <div class="form-group">
+      <label>Fathom Call Notes / Transcript</label>
+      <textarea id="fathomNotes" style="min-height:220px" placeholder="Paste your full Fathom transcript or call notes here..."></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="extractGHLAnswers()" id="extractBtn">✦ Extract GHL Answers</button>
+      <span id="extractStatus" class="status"></span>
+    </div>
+
+    <div id="ghlAnswersSection" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:1.5rem 0 0.5rem">
+        <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted)">Extracted answers — review before copying into GHL</div>
+        <button class="copy-all-btn" onclick="copyAllAnswers()">⎘ Copy All</button>
+      </div>
+      <div id="ghlAnswersGrid" class="ghl-answers-grid"></div>
+    </div>
+
+    <div id="fathomOnboardPrompt" style="display:none;margin-top:1.5rem;background:rgba(201,150,12,0.06);border:1px solid rgba(201,150,12,0.2);border-radius:12px;padding:1.1rem 1.25rem">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--accent);margin-bottom:0.3rem">✦ Ready to onboard with this data</div>
+      <div style="font-size:0.72rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:0.9rem">Extraction complete — scroll up, fill in Client Name, Agent, Chat ID & Stats Sheet, then submit. All extracted details will be saved automatically.</div>
+      <button class="btn btn-primary" style="font-size:0.78rem;padding:0.5rem 1.2rem" onclick="document.getElementById('clientName').scrollIntoView({behavior:'smooth'});setTimeout(()=>document.getElementById('clientName').focus(),400)">↑ Go to Onboarding Form</button>
+    </div>
+  </div>
+
+  <!-- CHURN -->
+  <div class="card">
+    <div class="card-title">Remove Client</div>
+    <div class="card-sub">Mark a client as churned — they will stop appearing across all dashboards within the hour</div>
+    <div class="churn-row">
+      <div class="form-group">
+        <label>Select Client</label>
+        <select id="churnSelect">
+          <option value="">Loading clients...</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:180px">
+        <label>MRR Lost ($/month)</label>
+        <input type="number" id="churnMRR" placeholder="e.g. 2000" min="0" />
+      </div>
+      <button class="btn btn-danger" onclick="churnClient()" id="churnBtn">Mark as Churned</button>
+    </div>
+    <span id="churnStatus" class="status" style="display:block;margin-top:0.75rem"></span>
+  </div>
+
+</div>
+
+<script>
+const PROXY_URL        = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const CLIENTS_SHEET_ID = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
+
+let selectedAgent = 'Jules';
+
+window.onload = function() {
+  selectAgent('Jules');
+  loadClientsForChurn();
+};
+
+function setStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + (type || '');
+}
+
+function selectAgent(agent) {
+  selectedAgent = agent;
+  document.getElementById('btnJules').classList.toggle('active', agent === 'Jules');
+  document.getElementById('btnAyessa').classList.toggle('active', agent === 'Ayessa');
+}
+
+function getField(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+async function onboardClient() {
+  const clientName    = getField('clientName');
+  const chatIdRaw     = getField('chatId');
+  const chatId        = chatIdRaw && chatIdRaw.indexOf('@') === -1 ? chatIdRaw + '@g.us' : chatIdRaw;
+  const statsSheetUrl = getField('statsSheetUrl');
+  const fa            = window._fathomAnswers || {};
+
+  if (!clientName)    { alert('Client name is required.'); return; }
+  if (!chatId)        { alert('WhatsApp Chat ID is required.'); return; }
+  if (!statsSheetUrl) { alert('Stats Sheet URL is required.'); return; }
+
+  const btn = document.getElementById('onboardBtn');
+  btn.disabled = true;
+  setStatus('onboardStatus', 'Saving...', 'loading');
+
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action:           'addClient',
+        clientName,
+        agent:            selectedAgent,
+        chatId,
+        statsSheetUrl,
+        // Form fields (take priority)
+        businessName:     getField('businessName')    || (fa.ownerName       || ''),
+        website:          getField('driveUrl'),
+        businessAddress:  getField('city')            || (fa.businessAddress || ''),
+        liveDate:         getField('liveDate'),
+        overview:         getField('overviewDocUrl')  || (fa.clientOverview  || ''),
+        billingStartDate: getField('billingStartDate'),
+        paymentType:      getField('paymentType'),
+        leadSource:       getField('leadSource'),
+        // Fathom-extracted fields
+        email:                fa.email                || '',
+        phone:                fa.phone                || '',
+        timeZone:             fa.timeZone             || '',
+        serviceArea:          fa.serviceArea          || '',
+        constructionCategory: fa.constructionCategory || '',
+        serviceName:          fa.mainServices         || '',
+        idealClientProfile:   fa.idealClientProfile   || '',
+        agreedOffer:          fa.agreedOffer          || '',
+        qualification:        fa.qualification        || '',
+        aimOfCall:            fa.aimOfCall            || '',
+        timeline:             fa.timeline             || '',
+        preferredTimeSlots:   fa.preferredTimeSlots   || '',
+        adBudget:             fa.adBudget             || '',
+        mrrCollected:         fa.mrrCollected         || '',
+        ufCash:               getField('upfrontCash') || fa.cashCollected || ''
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setStatus('onboardStatus', '✓ ' + clientName + ' onboarded successfully!', 'success');
+
+      // Save client knowledge base (sales call notes + transcript)
+      try {
+        const kbNotes = [
+          fa.clientOverview      ? 'OVERVIEW: '             + fa.clientOverview      : '',
+          fa.agreedOffer         ? 'AGREED OFFER: '         + fa.agreedOffer         : '',
+          fa.mainServices        ? 'SERVICES: '             + fa.mainServices        : '',
+          fa.serviceArea         ? 'SERVICE AREA: '         + fa.serviceArea         : '',
+          fa.idealClientProfile  ? 'IDEAL CLIENT PROFILE: ' + fa.idealClientProfile  : '',
+          fa.qualification       ? 'QUALIFICATION: '        + fa.qualification       : '',
+          fa.aimOfCall           ? 'AIM OF CALL: '          + fa.aimOfCall           : '',
+          fa.timeline            ? 'TIMELINE: '             + fa.timeline            : '',
+          fa.warranty            ? 'WARRANTY/OFFER: '       + fa.warranty            : '',
+        ].filter(Boolean).join('\n');
+        const kbTranscript = document.getElementById('fathomNotes')?.value?.trim() || '';
+        if (kbNotes || kbTranscript) {
+          fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'saveClientKB', clientName, notes: kbNotes, transcript: kbTranscript })
+          }).catch(() => {});
+        }
+      } catch(_) {}
+
+      // Auto-import WhatsApp chat history for the new client
+      try {
+        const waHistRes = await fetch(
+          'https://api.green-api.com/waInstance7107621691/getChatHistory/6197e37376074d6e8632ca2ab39822bab1efeab69a0c47baae',
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chatId, count: 500 }) }
+        );
+        if (waHistRes.ok) {
+          const waMsgs = await waHistRes.json();
+          if (Array.isArray(waMsgs) && waMsgs.length) {
+            const formatted = [];
+            for (const msg of waMsgs) {
+              if (!msg || msg.typeMessage !== 'textMessage' || !msg.textMessage) continue;
+              const d = new Date(msg.timestamp * 1000);
+              const ts = d.toLocaleDateString('en-AU') + ', ' + d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+              const sender = msg.type === 'outgoing' ? 'You' : (msg.senderName || msg.senderId || 'Client');
+              formatted.push({ ts, rawTs: msg.timestamp, client: clientName, sender, text: msg.textMessage, type: 'client' });
+            }
+            if (formatted.length) {
+              fetch(PROXY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: 'saveWhatsAppMessages', messages: formatted })
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch(_) {}
+
+      // Save signup event for CEO metrics
+      try {
+        const mrr        = parseFloat(document.getElementById('mrrAmount')?.value)      || parseFloat((fa.mrrCollected  || '').toString().replace(/[^0-9.]/g,'')) || 0;
+        const contracted = parseFloat(document.getElementById('contractedValue')?.value) || 0;
+        const cash       = parseFloat(document.getElementById('upfrontCash')?.value)    || parseFloat((fa.cashCollected || '').toString().replace(/[^0-9.]/g,'')) || 0;
+        const signups = JSON.parse(localStorage.getItem('qj_signup_events') || '[]');
+        signups.push({ name: clientName, date: new Date().toISOString(), mrr, contracted, cash });
+        localStorage.setItem('qj_signup_events', JSON.stringify(signups));
+      } catch(_) {}
+
+      // Auto-create PM checklists for Media Buyer (AJ) and Onboarder (Alfie)
+      try {
+        const mrr2       = parseFloat(document.getElementById('mrrAmount')?.value)      || parseFloat((fa.mrrCollected  || '').toString().replace(/[^0-9.]/g,'')) || 0;
+        const contracted2= parseFloat(document.getElementById('contractedValue')?.value) || 0;
+        const clientInfo = {
+          clientName,
+          agent:                selectedAgent           || '',
+          businessName:         getField('businessName')|| fa.ownerName       || '',
+          constructionCategory: fa.constructionCategory || '',
+          serviceArea:          fa.serviceArea          || getField('city')    || '',
+          adBudget:             fa.adBudget             || '',
+          agreedOffer:          fa.agreedOffer          || '',
+          idealClientProfile:   fa.idealClientProfile   || '',
+          serviceName:          fa.mainServices         || '',
+          qualification:        fa.qualification        || '',
+          liveDate:             getField('liveDate')     || '',
+          statsSheetUrl:        getField('statsSheetUrl')|| '',
+          overviewDocUrl:       getField('overviewDocUrl')|| fa.clientOverview || '',
+          chatId:               getField('chatId')       || '',
+          mrr:                  mrr2,
+          contracted:           contracted2,
+          created:              new Date().toISOString(),
+        };
+        // Push project to both roles if not already present
+        ['pm-media', 'pm-onboarder'].forEach(role => {
+          const projects = JSON.parse(localStorage.getItem('qj_pm_projects_' + role) || '[]');
+          const already  = projects.find(p => p.client === clientName && p.trigger === 'New Client Onboarded');
+          if (!already) {
+            projects.unshift({ client: clientName, trigger: 'New Client Onboarded', tmplIdx: 0, created: new Date().toISOString(), clientInfo });
+            localStorage.setItem('qj_pm_projects_' + role, JSON.stringify(projects));
+          }
+        });
+        // Save pm-media projects to Google Sheets so AJ can see them (preserving completed task state)
+        try {
+          const pmProjects = JSON.parse(localStorage.getItem('qj_pm_projects_pm-media') || '[]');
+          // Preserve done arrays stored per-client in localStorage (same key format as call-dashboard)
+          const pmPayload = pmProjects.map(p => {
+            const key  = `qj_pm_pm-media_${p.client.toLowerCase().replace(/\s+/g,'_')}`;
+            const done = JSON.parse(localStorage.getItem(key) || '[]');
+            return { client: p.client, trigger: p.trigger, tmplIdx: p.tmplIdx || 0, created: p.created || '', done };
+          });
+          fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'savePMProjects', projects: pmPayload })
+          }).catch(() => {});
+        } catch(_) {}
+      } catch(_) {}
+      clearForm();
+      loadClientsForChurn();
+    } else {
+      throw new Error(data.error || 'Unknown error');
+    }
+  } catch(e) {
+    setStatus('onboardStatus', 'Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function loadClientsForChurn() {
+  try {
+    const res  = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    const rows = await res.json();
+    const sel  = document.getElementById('churnSelect');
+    sel.innerHTML = '<option value="">Select a client...</option>';
+    for (let i = 1; i < rows.length; i++) {
+      const name   = String(rows[i][0] || '').trim();
+      const agent  = String(rows[i][1] || '').trim();
+      // Check any column for 'Churned' status (column index may vary by sheet layout)
+      const isChurned = rows[i].some(cell => String(cell || '').trim() === 'Churned');
+      if (!name || isChurned) continue;
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name + (agent ? ' — ' + agent : '');
+      sel.appendChild(opt);
+    }
+  } catch(e) {
+    document.getElementById('churnSelect').innerHTML = '<option value="">Could not load clients</option>';
+  }
+}
+
+async function churnClient() {
+  const name    = document.getElementById('churnSelect').value;
+  const mrrLost = parseFloat(document.getElementById('churnMRR').value) || 0;
+  if (!name) { alert('Select a client first.'); return; }
+  if (!confirm(`Mark "${name}" as churned?\n\nThey will stop appearing across all dashboards.`)) return;
+
+  const btn = document.getElementById('churnBtn');
+  btn.disabled = true;
+  setStatus('churnStatus', 'Updating...', 'loading');
+
+  try {
+    // 1. Mark churned in Clients sheet
+    const res  = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'churnClient', clientName: name })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Unknown error');
+
+    // 2. Mark churned in Payment Log (col A = Status, col B = Client Name)
+    try {
+      await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'churnPaymentLog', clientName: name })
+      });
+    } catch(_) {} // non-fatal — Clients sheet already updated
+
+    // 3. Update localStorage so Finance dashboard reflects change immediately
+    try {
+      const yr  = new Date().getFullYear();
+      const mo  = new Date().getMonth();
+      const key = `qj_ms_${yr}_${mo}_${name.toLowerCase().replace(/[^a-z0-9]/g,'_')}`;
+      localStorage.setItem(key, 'churned');
+    } catch(_) {}
+    // Add to churned clients blacklist
+    try {
+      const churned = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
+      if (!churned.includes(name)) { churned.push(name); localStorage.setItem('qj_churned_clients', JSON.stringify(churned)); }
+    } catch(_) {}
+    // Save churn event for CEO metrics
+    try {
+      const events = JSON.parse(localStorage.getItem('qj_churn_events') || '[]');
+      events.push({ name, date: new Date().toISOString(), mrrLost });
+      localStorage.setItem('qj_churn_events', JSON.stringify(events));
+    } catch(_) {}
+
+    // Auto-create offboarding project in PM → Client Offboarding + save to Sheets so AJ sees it
+    try {
+      const offProjects = JSON.parse(localStorage.getItem('qj_off_projects') || '[]');
+      if (!offProjects.find(p => p.client === name)) {
+        offProjects.unshift({ client: name, created: new Date().toISOString() });
+        localStorage.setItem('qj_off_projects', JSON.stringify(offProjects));
+      }
+      // Also save to Google Sheets so AJ's dashboard picks it up
+      try {
+        // Fetch existing AJ off projects from Sheets to preserve done arrays
+        let existingOff = [];
+        try {
+          const exRes = await fetch(PROXY_URL + '?service=off_projects');
+          if (exRes.ok) { const ex = await exRes.json(); if (Array.isArray(ex)) existingOff = ex; }
+        } catch(_) {}
+        const ajOffPayload = offProjects.map(p => {
+          const existing = existingOff.find(e => e.client === p.client);
+          return { client: p.client, created: p.created || new Date().toISOString(), done: existing?.done || [] };
+        });
+        fetch(PROXY_URL, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'saveOffProjects', projects: ajOffPayload })
+        }).catch(() => {});
+      } catch(_) {}
+    } catch(_) {}
+
+    document.getElementById('churnMRR').value = '';
+    setStatus('churnStatus', '✓ ' + name + ' marked as churned in Clients sheet + Payment Log.', 'success');
+    loadClientsForChurn();
+  } catch(e) {
+    setStatus('churnStatus', 'Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function clearForm() {
+  ['clientName','chatId','statsSheetUrl','overviewDocUrl','liveDate','billingStartDate','mrrAmount','contractedValue']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['paymentType','leadSource']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  selectAgent('Jules');
+  setStatus('onboardStatus', '', '');
+}
+
+// ── Fathom → GHL Extractor ─────────────────────────────────────────────────
+
+let apiKey = localStorage.getItem('qj_claude_key') || '';
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (apiKey) {
+    const el = document.getElementById('apiKeyInput');
+    if (el) { el.value = apiKey; setStatus('apiKeyStatus', '✓ saved', 'success'); }
+  }
+});
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) return;
+  apiKey = val;
+  localStorage.setItem('qj_claude_key', val);
+  setStatus('apiKeyStatus', '✓ saved', 'success');
+}
+
+const GHL_QUESTIONS = [
+  { key: 'ownerName',          label: 'Business Owner Name(s)' },
+  { key: 'email',              label: 'Email Address' },
+  { key: 'phone',              label: 'Phone Number' },
+  { key: 'businessName',       label: 'Business Name' },
+  { key: 'website',            label: 'Website URL' },
+  { key: 'businessAddress',    label: 'Business Address' },
+  { key: 'receptionist',       label: 'Receptionist' },
+  { key: 'timeZone',           label: 'Time Zone' },
+  { key: 'serviceArea',        label: 'Service Area' },
+  { key: 'constructionCategory', label: 'Construction Category' },
+  { key: 'mainServices',       label: 'Main Services Client Offers' },
+  { key: 'idealClientProfile', label: 'Ideal Client Profile' },
+  { key: 'agreedOffer',        label: 'Agreed Offer To Run With' },
+  { key: 'warranty',           label: 'Homeowners Warranty' },
+  { key: 'qualification',      label: 'Qualification' },
+  { key: 'clientOverview',     label: 'Client Overview' },
+  { key: 'videoScript1',       label: 'Video Script 1' },
+  { key: 'videoScript2',       label: 'Video Script 2' },
+  { key: 'aimOfCall',          label: 'Aim of Call' },
+  { key: 'timeline',           label: 'Timeline / Deadline' },
+  { key: 'showroom',           label: 'Showroom Available?' },
+  { key: 'preferredTimeSlots', label: 'Preferred Time Slots' },
+  { key: 'adBudget',           label: 'Ad Budget' },
+  { key: 'mrrCollected',       label: 'MRR Collected' },
+  { key: 'cashCollected',      label: 'Cash Collected Up Front' },
+  { key: 'contentType',        label: 'Content Type (Authentic vs AI-Generated)' },
+];
+
+async function extractGHLAnswers() {
+  const notes = document.getElementById('fathomNotes').value.trim();
+  if (!notes) { alert('Paste your Fathom notes first.'); return; }
+  if (!apiKey) { alert('Save your Anthropic API key first.'); return; }
+
+  const btn = document.getElementById('extractBtn');
+  btn.disabled = true;
+  setStatus('extractStatus', 'Extracting…', 'loading');
+  document.getElementById('ghlAnswersSection').style.display = 'none';
+
+  const questionsList = GHL_QUESTIONS.map((q,i) => `${i+1}. ${q.label} → key: "${q.key}"`).join('\n');
+
+  try {
+    const claudeBody = JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 4000,
+        system: `You are extracting and generating answers for a client onboarding form from call notes.
+
+For each question: extract the answer verbatim if clearly stated, or generate a professional answer based on context.
+- For Video Script 1: write a short cold outreach video script (30–45 sec) based on the client's offer and target market.
+- For Video Script 2: write a follow-up/retargeting variation of Video Script 1.
+- For Client Overview: 3–4 sentences covering who they are, what they do, and who they serve.
+- For Aim of Call: what the call centre agents should achieve on each call for this client.
+- For Qualification: bullet points of what qualifies or disqualifies a lead.
+- For Content Type: state whether the client is using authentic/existing content (real footage, photos) or AI-generated content (AI images, AI video), or a mix of both — based on any mention in the notes.
+- If something is genuinely unknown, return "Not mentioned".
+
+Return ONLY a valid JSON object with exactly these keys:
+ownerName, email, phone, businessName, website, businessAddress, receptionist, timeZone, serviceArea, constructionCategory, mainServices, idealClientProfile, agreedOffer, warranty, qualification, clientOverview, videoScript1, videoScript2, aimOfCall, timeline, showroom, preferredTimeSlots, adBudget, mrrCollected, cashCollected, contentType`,
+        messages: [{
+          role: 'user',
+          content: `Here are the onboarding call notes:\n\n${notes}\n\n---\nQuestions to answer:\n${questionsList}`
+        }]
+      });
+
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'claudeProxy',
+        apiKey:  apiKey,
+        body:    claudeBody
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content[0].text;
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Could not parse response — try again');
+    const answers = JSON.parse(match[0]);
+
+    window._fathomAnswers = answers;
+    renderGHLAnswers(answers);
+    setStatus('extractStatus', '✓ Done — review answers below', 'success');
+    // Pre-fill onboarding form fields where possible
+    if (answers.ownerName)      document.getElementById('businessName').value = answers.ownerName;
+    if (answers.businessAddress) document.getElementById('city').value         = answers.businessAddress;
+    // Show onboard prompt
+    document.getElementById('fathomOnboardPrompt').style.display = 'block';
+  } catch(e) {
+    setStatus('extractStatus', 'Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderGHLAnswers(answers) {
+  const grid = document.getElementById('ghlAnswersGrid');
+  grid.innerHTML = GHL_QUESTIONS.map(q => {
+    const val = (answers[q.key] || '').toString().trim();
+    const isEmpty = !val || val === 'Not mentioned';
+    const displayVal = isEmpty ? '' : val;
+    return `<div class="ghl-answer-row">
+      <div class="ghl-answer-label">${q.label}</div>
+      <textarea class="ghl-answer-input${isEmpty ? ' empty' : ''}" id="ans-${q.key}" rows="1"
+        placeholder="Not mentioned"
+        oninput="this.classList.toggle('empty', !this.value.trim()); if(window._fathomAnswers) window._fathomAnswers['${q.key}'] = this.value; autoResizeTextarea(this);"
+      >${displayVal}</textarea>
+      <button class="copy-btn" onclick="copyAnswer('${q.key}', this)">⎘ Copy</button>
+    </div>`;
+  }).join('');
+  document.getElementById('ghlAnswersSection').style.display = 'block';
+  document.getElementById('ghlAnswersSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window._lastAnswers = answers;
+  // Auto-resize all textareas after render
+  document.querySelectorAll('.ghl-answer-input').forEach(autoResizeTextarea);
+}
+
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.max(el.scrollHeight, 32) + 'px';
+}
+
+function copyAnswer(key, btn) {
+  const el = document.getElementById('ans-' + key);
+  if (!el) return;
+  const text = el.value.trim() || el.placeholder;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘ Copy'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function copyAllAnswers() {
+  const text = GHL_QUESTIONS.map(q => {
+    const el = document.getElementById('ans-' + q.key);
+    const val = el ? el.value.trim() : (window._lastAnswers?.[q.key] || '');
+    return `${q.label}:\n${val || 'Not mentioned'}`;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-all-btn');
+    btn.textContent = '✓ All Copied';
+    setTimeout(() => { btn.textContent = '⎘ Copy All'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
