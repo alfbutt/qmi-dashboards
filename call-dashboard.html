@@ -10543,6 +10543,17 @@ function _invBuildPDF(jsPDFClass, data) {
     doc.line(tx, y, W - mr, y);
     y += 7;
   } else {
+    y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 92, 82);
+    doc.text('GST', tx, y);
+    doc.setTextColor(100, 92, 82);
+    doc.text('Included', W - mr, y, { align: 'right' });
+
+    y += 4;
+    doc.setDrawColor(220, 215, 205);
+    doc.line(tx, y, W - mr, y);
     y += 7;
   }
 
