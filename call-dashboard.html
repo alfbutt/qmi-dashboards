@@ -10330,21 +10330,25 @@ async function _invExtractPayments() {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: _invScreenMime, data: _invScreenB64 } },
-          { type: 'text', text: 'This is a payment processor screenshot. Extract ALL individual payment amounts. Return ONLY a valid JSON array of plain numbers (no currency symbols, no commas in numbers). Example: [1500,2000,850.50]. If no payments are visible return [].' }
+          { type: 'text', text: 'This is a payment processor screenshot. Extract ALL individual payment transactions.\n\nFor each payment return a JSON object with:\n- "amount": dollar amount as a plain number (e.g. 1500 or 850.50)\n- "service": categorise as "marketing" (marketing/advertising/social media/ads), "website" (website development/design/build), or "maintenance" (website maintenance/support/hosting). Default to "marketing" if unclear.\n- "date": the payment date in YYYY-MM-DD format (e.g. "2026-07-01"), or null if not visible.\n\nReturn ONLY a valid JSON array with no other text. Example:\n[{"amount":1500,"service":"marketing","date":"2026-07-01"},{"amount":2000,"service":"website","date":"2026-06-15"}]\n\nIf no payments are visible return [].' }
         ]}]
       })
     });
     if (!res.ok) throw new Error(await res.text());
     var data    = await res.json();
     var rawTxt  = (data.content && data.content[0] && data.content[0].text) || '[]';
-    var match   = rawTxt.match(/\[[\d.,\s]+\]/);
-    if (!match) throw new Error('No payment amounts found in the screenshot');
-    var amounts = JSON.parse(match[0]).filter(function(n) { return typeof n === 'number' && n > 0; });
-    _invExtracted = amounts.map(function(a) { return { amount: a }; });
-    if (status) status.textContent = '✓ Found ' + amounts.length + ' payment' + (amounts.length !== 1 ? 's' : '');
+    var start   = rawTxt.indexOf('[');
+    var end     = rawTxt.lastIndexOf(']');
+    if (start === -1 || end === -1) throw new Error('No payment data found in the screenshot');
+    var parsed  = JSON.parse(rawTxt.substring(start, end + 1));
+    var validSvc = ['marketing', 'website', 'maintenance'];
+    _invExtracted = parsed
+      .filter(function(p) { return p && typeof p.amount === 'number' && p.amount > 0; })
+      .map(function(p) { return { amount: p.amount, service: validSvc.indexOf(p.service) !== -1 ? p.service : 'marketing', date: p.date || '' }; });
+    if (status) status.textContent = '✓ Found ' + _invExtracted.length + ' payment' + (_invExtracted.length !== 1 ? 's' : '');
     _invRenderExtracted();
     var btn = document.getElementById('inv-generate-btn');
     if (btn) btn.textContent = '🧾 Generate ' + amounts.length + ' Invoice' + (amounts.length !== 1 ? 's' : '');
@@ -10357,13 +10361,25 @@ function _invRenderExtracted() {
   var el = document.getElementById('inv-extracted-list');
   if (!el) return;
   if (!_invExtracted.length) { el.innerHTML = ''; return; }
-  var html = '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Extracted Payments</div>';
+  var html = '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Extracted Payments — review and edit before generating</div>';
   for (var i = 0; i < _invExtracted.length; i++) {
-    html += '<div style="display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px">' +
-      '<span style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;min-width:24px">P' + (i + 1) + '</span>' +
+    var p    = _invExtracted[i];
+    var svc  = p.service || 'marketing';
+    var mSel = svc === 'marketing'    ? ' selected' : '';
+    var wSel = svc === 'website'      ? ' selected' : '';
+    var aSel = svc === 'maintenance'  ? ' selected' : '';
+    html +=
+      '<div style="display:grid;grid-template-columns:26px 10px 90px 1fr 120px 28px;align-items:center;gap:6px;padding:0.5rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px">' +
+      '<span style="font-size:0.65rem;color:var(--muted);font-family:\'DM Mono\',monospace">P' + (i + 1) + '</span>' +
       '<span style="font-size:0.8rem;font-family:\'DM Mono\',monospace;color:var(--muted)">$</span>' +
-      '<input type="number" value="' + _invExtracted[i].amount + '" step="0.01" data-idx="' + i + '" onchange="_invExtracted[parseInt(this.dataset.idx)].amount=parseFloat(this.value)||0" style="flex:1;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.82rem;font-family:\'DM Mono\',monospace">' +
-      '<button data-idx="' + i + '" onclick="_invRemoveExtracted(parseInt(this.dataset.idx))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px 5px" onmouseover="this.style.opacity=\'1\';this.style.color=\'#f87171\'" onmouseout="this.style.opacity=\'0.4\';this.style.color=\'var(--muted)\'">&#x2715;</button>' +
+      '<input type="number" value="' + p.amount + '" step="0.01" data-idx="' + i + '" onchange="_invExtracted[parseInt(this.dataset.idx)].amount=parseFloat(this.value)||0" style="padding:0.3rem 0.4rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.8rem;font-family:\'DM Mono\',monospace;width:100%">' +
+      '<select data-idx="' + i + '" onchange="_invExtracted[parseInt(this.dataset.idx)].service=this.value" style="padding:0.3rem 0.4rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.74rem;width:100%">' +
+        '<option value="marketing"' + mSel + '>Marketing Campaign</option>' +
+        '<option value="website"' + wSel + '>Website Development</option>' +
+        '<option value="maintenance"' + aSel + '>Website Maintenance</option>' +
+      '</select>' +
+      '<input type="date" value="' + (p.date || '') + '" data-idx="' + i + '" onchange="_invExtracted[parseInt(this.dataset.idx)].date=this.value" style="padding:0.3rem 0.4rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.74rem;width:100%">' +
+      '<button data-idx="' + i + '" onclick="_invRemoveExtracted(parseInt(this.dataset.idx))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px 4px;text-align:center" onmouseover="this.style.opacity=\'1\';this.style.color=\'#f87171\'" onmouseout="this.style.opacity=\'0.4\';this.style.color=\'var(--muted)\'">&#x2715;</button>' +
       '</div>';
   }
   html += '<button onclick="_invAddExtracted()" style="width:100%;padding:0.45rem;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--muted);font-size:0.75rem;cursor:pointer;margin-top:3px">+ Add payment manually</button>';
@@ -10379,16 +10395,25 @@ function _invRemoveExtracted(idx) {
 }
 
 function _invAddExtracted() {
-  _invExtracted.push({ amount: 0 });
+  _invExtracted.push({ amount: 0, service: 'marketing', date: '' });
   _invRenderExtracted();
 }
 
+function _invFormatDate(dateVal) {
+  if (!dateVal) return null;
+  try {
+    var d = new Date(dateVal + 'T12:00:00');
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' });
+  } catch(e) { return null; }
+}
+
 async function _invGenerate() {
-  var clientName = (document.getElementById('inv-client-name') ? document.getElementById('inv-client-name').value.trim() : '');
-  var company    = (document.getElementById('inv-company')     ? document.getElementById('inv-company').value.trim()     : '');
-  var service    = (document.getElementById('inv-service')     ? document.getElementById('inv-service').value             : 'marketing');
-  var gstSetting = (document.getElementById('inv-gst')         ? document.getElementById('inv-gst').value                 : 'included');
-  var invStatus  = (document.getElementById('inv-status')      ? document.getElementById('inv-status').value              : 'paid');
+  var clientName  = (document.getElementById('inv-client-name') ? document.getElementById('inv-client-name').value.trim() : '');
+  var company     = (document.getElementById('inv-company')     ? document.getElementById('inv-company').value.trim()     : '');
+  var defService  = (document.getElementById('inv-service')     ? document.getElementById('inv-service').value             : 'marketing');
+  var gstSetting  = (document.getElementById('inv-gst')         ? document.getElementById('inv-gst').value                 : 'included');
+  var invStatus   = (document.getElementById('inv-status')      ? document.getElementById('inv-status').value              : 'paid');
 
   if (!clientName) { alert('Please enter the client name.'); return; }
 
@@ -10397,10 +10422,12 @@ async function _invGenerate() {
     var amountEl = document.getElementById('inv-amount');
     var amount   = amountEl ? parseFloat(amountEl.value) : 0;
     if (!amount || amount <= 0) { alert('Please enter a valid invoice amount.'); return; }
-    payments = [amount];
+    payments = [{ amount: amount, service: defService, date: '' }];
   } else {
     if (!_invExtracted.length) { alert('No payments found. Upload a screenshot first.'); return; }
-    payments = _invExtracted.map(function(p) { return parseFloat(p.amount) || 0; }).filter(function(a) { return a > 0; });
+    payments = _invExtracted
+      .map(function(p) { return { amount: parseFloat(p.amount) || 0, service: p.service || defService, date: p.date || '' }; })
+      .filter(function(p) { return p.amount > 0; });
     if (!payments.length) { alert('No valid payment amounts found.'); return; }
   }
 
@@ -10411,12 +10438,14 @@ async function _invGenerate() {
   try {
     var jsPDFClass = await _loadJsPDF();
     var today      = new Date();
-    var dateStr    = today.toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' });
+    var todayStr   = today.toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' });
 
     for (var i = 0; i < payments.length; i++) {
+      var p          = payments[i];
       var invoiceNum = _invNextNumber();
-      var gstCalc    = _invCalcGST(payments[i], gstSetting);
-      _invBuildPDF(jsPDFClass, { clientName: clientName, company: company, service: service, status: invStatus, gstCalc: gstCalc, invoiceNum: invoiceNum, dateStr: dateStr, gstSetting: gstSetting });
+      var gstCalc    = _invCalcGST(p.amount, gstSetting);
+      var dateStr    = _invFormatDate(p.date) || todayStr;
+      _invBuildPDF(jsPDFClass, { clientName: clientName, company: company, service: p.service, status: invStatus, gstCalc: gstCalc, invoiceNum: invoiceNum, dateStr: dateStr, gstSetting: gstSetting });
       if (statusMsg) statusMsg.textContent = 'Generated ' + (i + 1) + ' of ' + payments.length + '…';
       if (payments.length > 1 && i < payments.length - 1) await new Promise(function(r) { setTimeout(r, 400); });
     }
@@ -10598,14 +10627,22 @@ function renderInvoicePage() {
   // Pre-build extracted payments list
   var extractedHTML = '';
   if (nPayments > 0) {
-    extractedHTML += '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Extracted Payments</div>';
+    extractedHTML += '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Extracted Payments — review and edit before generating</div>';
     for (var xi = 0; xi < _invExtracted.length; xi++) {
+      var xp   = _invExtracted[xi];
+      var xsvc = xp.service || 'marketing';
       extractedHTML +=
-        '<div style="display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px">' +
-        '<span style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;min-width:24px">P' + (xi + 1) + '</span>' +
+        '<div style="display:grid;grid-template-columns:26px 10px 90px 1fr 120px 28px;align-items:center;gap:6px;padding:0.5rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px">' +
+        '<span style="font-size:0.65rem;color:var(--muted);font-family:\'DM Mono\',monospace">P' + (xi + 1) + '</span>' +
         '<span style="font-size:0.8rem;font-family:\'DM Mono\',monospace;color:var(--muted)">$</span>' +
-        '<input type="number" value="' + _invExtracted[xi].amount + '" step="0.01" data-idx="' + xi + '" onchange="_invExtracted[parseInt(this.dataset.idx)].amount=parseFloat(this.value)||0" style="flex:1;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.82rem;font-family:\'DM Mono\',monospace">' +
-        '<button data-idx="' + xi + '" onclick="_invRemoveExtracted(parseInt(this.dataset.idx))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px 5px" onmouseover="this.style.opacity=\'1\';this.style.color=\'#f87171\'" onmouseout="this.style.opacity=\'0.4\';this.style.color=\'var(--muted)\'">✕</button>' +
+        '<input type="number" value="' + xp.amount + '" step="0.01" data-idx="' + xi + '" onchange="_invExtracted[parseInt(this.dataset.idx)].amount=parseFloat(this.value)||0" style="padding:0.3rem 0.4rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.8rem;font-family:\'DM Mono\',monospace;width:100%">' +
+        '<select data-idx="' + xi + '" onchange="_invExtracted[parseInt(this.dataset.idx)].service=this.value" style="padding:0.3rem 0.4rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.74rem;width:100%">' +
+          '<option value="marketing"' + (xsvc === 'marketing' ? ' selected' : '') + '>Marketing Campaign</option>' +
+          '<option value="website"' + (xsvc === 'website' ? ' selected' : '') + '>Website Development</option>' +
+          '<option value="maintenance"' + (xsvc === 'maintenance' ? ' selected' : '') + '>Website Maintenance</option>' +
+        '</select>' +
+        '<input type="date" value="' + (xp.date || '') + '" data-idx="' + xi + '" onchange="_invExtracted[parseInt(this.dataset.idx)].date=this.value" style="padding:0.3rem 0.4rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.74rem;width:100%">' +
+        '<button data-idx="' + xi + '" onclick="_invRemoveExtracted(parseInt(this.dataset.idx))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px 4px;text-align:center" onmouseover="this.style.opacity=\'1\';this.style.color=\'#f87171\'" onmouseout="this.style.opacity=\'0.4\';this.style.color=\'var(--muted)\'">✕</button>' +
         '</div>';
     }
     extractedHTML += '<button onclick="_invAddExtracted()" style="width:100%;padding:0.45rem;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--muted);font-size:0.75rem;cursor:pointer;margin-top:3px">+ Add payment manually</button>';
