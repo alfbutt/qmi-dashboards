@@ -1335,6 +1335,11 @@
     <div id="app-finance"></div>
   </div>
 
+  <!-- ══ PAGE: INVOICES ══ -->
+  <div id="page-invoices" class="page">
+    <div id="app-invoices"></div>
+  </div>
+
   <!-- ══ PAGE: CLIENTS ══ -->
   <div id="page-clients" class="page">
     <div id="app-clients"><div class="loading"><div class="spinner"></div>loading clients...</div></div>
@@ -2598,6 +2603,7 @@ const NAV_STRUCTURE = {
       { id: 'ceo-agents',        label: 'Agents'            },
       { id: 'finance',           label: 'Finance'           },
       { id: 'ceo-reel',          label: '🎬 Reel Generator' },
+      { id: 'invoices',          label: '🧾 Invoice Generator' },
     ],
     default: 'ceo-overview'
   },
@@ -2747,6 +2753,7 @@ function switchPage(page) {
   if (page === 'ceo-overview')  renderCEOOverview();
   if (page === 'ceo-todos')     renderCEOTodos();
   if (page === 'ceo-agents')    renderCEOAgents();
+  if (page === 'invoices')      renderInvoicePage();
 
 }
 
@@ -10227,6 +10234,477 @@ window._syncToAJ = _syncToAJ;
     </div>
   </div>
 </div>
+
+
+<script>
+// ════════════════════════════════════════════════
+// INVOICE GENERATOR
+// ════════════════════════════════════════════════
+var _invMode       = 'manual';
+var _invExtracted  = [];
+var _invScreenB64  = null;
+var _invScreenMime = null;
+
+function _loadJsPDF() {
+  return new Promise(function(resolve) {
+    if (window.jspdf && window.jspdf.jsPDF) { resolve(window.jspdf.jsPDF); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload  = function() { resolve(window.jspdf.jsPDF); };
+    s.onerror = function() { alert('Could not load PDF library. Check your internet connection.'); };
+    document.head.appendChild(s);
+  });
+}
+
+function _invNextNumber() {
+  var key = 'qj_invoice_counter';
+  var n   = (parseInt(localStorage.getItem(key) || '0', 10)) + 1;
+  localStorage.setItem(key, String(n));
+  return 'QJ-' + new Date().getFullYear() + '-' + String(n).padStart(4, '0');
+}
+
+function _invCalcGST(amount, gstSetting) {
+  if (gstSetting === 'included') {
+    var total    = Math.round(parseFloat(amount) * 100) / 100;
+    var subtotal = Math.round((total / 1.1) * 100) / 100;
+    var gst      = Math.round((total - subtotal) * 100) / 100;
+    return { subtotal: subtotal, gst: gst, total: total };
+  } else {
+    var subtotal2 = Math.round(parseFloat(amount) * 100) / 100;
+    var gst2      = Math.round(subtotal2 * 0.1 * 100) / 100;
+    var total2    = Math.round((subtotal2 + gst2) * 100) / 100;
+    return { subtotal: subtotal2, gst: gst2, total: total2 };
+  }
+}
+
+function _invSetMode(mode) {
+  _invMode = mode;
+  if (mode !== 'screenshot') { _invExtracted = []; _invScreenB64 = null; _invScreenMime = null; }
+  renderInvoicePage();
+}
+
+function _invHandleFile(file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var result    = e.target.result;
+    var commaIdx  = result.indexOf(',');
+    var meta      = result.substring(0, commaIdx);
+    _invScreenMime = meta.match(/:(.*?);/)[1];
+    _invScreenB64  = result.substring(commaIdx + 1);
+    var preview = document.getElementById('inv-screenshot-preview');
+    if (preview) {
+      preview.style.display = 'block';
+      preview.innerHTML = '<img src="' + result + '" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border)">';
+    }
+    _invExtractPayments();
+  };
+  reader.readAsDataURL(file);
+}
+
+function _invHandleDrop(e) {
+  e.preventDefault();
+  var dz = document.getElementById('inv-drop-zone');
+  if (dz) dz.style.borderColor = 'var(--border2)';
+  var file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) _invHandleFile(file);
+}
+
+async function _invExtractPayments() {
+  var apiKey = localStorage.getItem('aj_anthropic_key') || '';
+  var status = document.getElementById('inv-extract-status');
+  if (!apiKey) {
+    if (status) status.innerHTML = '&#9888; No API key &mdash; set it in <b>Intelligence &rarr; QJ Assistant</b>';
+    return;
+  }
+  if (!_invScreenB64 || !_invScreenMime) return;
+  if (status) status.textContent = '🔍 Analysing screenshot…';
+  try {
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: _invScreenMime, data: _invScreenB64 } },
+          { type: 'text', text: 'This is a payment processor screenshot. Extract ALL individual payment amounts. Return ONLY a valid JSON array of plain numbers (no currency symbols, no commas in numbers). Example: [1500,2000,850.50]. If no payments are visible return [].' }
+        ]}]
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    var data    = await res.json();
+    var rawTxt  = (data.content && data.content[0] && data.content[0].text) || '[]';
+    var match   = rawTxt.match(/\[[\d.,\s]+\]/);
+    if (!match) throw new Error('No payment amounts found in the screenshot');
+    var amounts = JSON.parse(match[0]).filter(function(n) { return typeof n === 'number' && n > 0; });
+    _invExtracted = amounts.map(function(a) { return { amount: a }; });
+    if (status) status.textContent = '✓ Found ' + amounts.length + ' payment' + (amounts.length !== 1 ? 's' : '');
+    _invRenderExtracted();
+    var btn = document.getElementById('inv-generate-btn');
+    if (btn) btn.textContent = '🧾 Generate ' + amounts.length + ' Invoice' + (amounts.length !== 1 ? 's' : '');
+  } catch(err) {
+    if (status) status.textContent = '⚠️ ' + err.message;
+  }
+}
+
+function _invRenderExtracted() {
+  var el = document.getElementById('inv-extracted-list');
+  if (!el) return;
+  if (!_invExtracted.length) { el.innerHTML = ''; return; }
+  var html = '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Extracted Payments</div>';
+  for (var i = 0; i < _invExtracted.length; i++) {
+    html += '<div style="display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px">' +
+      '<span style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;min-width:24px">P' + (i + 1) + '</span>' +
+      '<span style="font-size:0.8rem;font-family:\'DM Mono\',monospace;color:var(--muted)">$</span>' +
+      '<input type="number" value="' + _invExtracted[i].amount + '" step="0.01" data-idx="' + i + '" onchange="_invExtracted[parseInt(this.dataset.idx)].amount=parseFloat(this.value)||0" style="flex:1;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.82rem;font-family:\'DM Mono\',monospace">' +
+      '<button data-idx="' + i + '" onclick="_invRemoveExtracted(parseInt(this.dataset.idx))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px 5px" onmouseover="this.style.opacity=\'1\';this.style.color=\'#f87171\'" onmouseout="this.style.opacity=\'0.4\';this.style.color=\'var(--muted)\'">&#x2715;</button>' +
+      '</div>';
+  }
+  html += '<button onclick="_invAddExtracted()" style="width:100%;padding:0.45rem;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--muted);font-size:0.75rem;cursor:pointer;margin-top:3px">+ Add payment manually</button>';
+  el.innerHTML = html;
+}
+
+function _invRemoveExtracted(idx) {
+  _invExtracted.splice(idx, 1);
+  _invRenderExtracted();
+  var btn = document.getElementById('inv-generate-btn');
+  if (btn && _invExtracted.length) btn.textContent = '🧾 Generate ' + _invExtracted.length + ' Invoice' + (_invExtracted.length !== 1 ? 's' : '');
+  else if (btn) btn.textContent = '🧾 Generate Invoice';
+}
+
+function _invAddExtracted() {
+  _invExtracted.push({ amount: 0 });
+  _invRenderExtracted();
+}
+
+async function _invGenerate() {
+  var clientName = (document.getElementById('inv-client-name') ? document.getElementById('inv-client-name').value.trim() : '');
+  var company    = (document.getElementById('inv-company')     ? document.getElementById('inv-company').value.trim()     : '');
+  var service    = (document.getElementById('inv-service')     ? document.getElementById('inv-service').value             : 'marketing');
+  var gstSetting = (document.getElementById('inv-gst')         ? document.getElementById('inv-gst').value                 : 'included');
+  var invStatus  = (document.getElementById('inv-status')      ? document.getElementById('inv-status').value              : 'paid');
+
+  if (!clientName) { alert('Please enter the client name.'); return; }
+
+  var payments = [];
+  if (_invMode === 'manual') {
+    var amountEl = document.getElementById('inv-amount');
+    var amount   = amountEl ? parseFloat(amountEl.value) : 0;
+    if (!amount || amount <= 0) { alert('Please enter a valid invoice amount.'); return; }
+    payments = [amount];
+  } else {
+    if (!_invExtracted.length) { alert('No payments found. Upload a screenshot first.'); return; }
+    payments = _invExtracted.map(function(p) { return parseFloat(p.amount) || 0; }).filter(function(a) { return a > 0; });
+    if (!payments.length) { alert('No valid payment amounts found.'); return; }
+  }
+
+  var btn       = document.getElementById('inv-generate-btn');
+  var statusMsg = document.getElementById('inv-status-msg');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+
+  try {
+    var jsPDFClass = await _loadJsPDF();
+    var today      = new Date();
+    var dateStr    = today.toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    for (var i = 0; i < payments.length; i++) {
+      var invoiceNum = _invNextNumber();
+      var gstCalc    = _invCalcGST(payments[i], gstSetting);
+      _invBuildPDF(jsPDFClass, { clientName: clientName, company: company, service: service, status: invStatus, gstCalc: gstCalc, invoiceNum: invoiceNum, dateStr: dateStr, gstSetting: gstSetting });
+      if (statusMsg) statusMsg.textContent = 'Generated ' + (i + 1) + ' of ' + payments.length + '…';
+      if (payments.length > 1 && i < payments.length - 1) await new Promise(function(r) { setTimeout(r, 400); });
+    }
+    if (statusMsg) statusMsg.textContent = '✓ ' + payments.length + ' invoice' + (payments.length !== 1 ? 's' : '') + ' generated successfully';
+  } catch(err) {
+    if (statusMsg) statusMsg.textContent = '⚠️ Error: ' + err.message;
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🧾 Generate Invoice' + (payments.length > 1 ? 's' : ''); }
+}
+
+function _invBuildPDF(jsPDFClass, data) {
+  var doc    = new jsPDFClass({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var W      = 210, H = 297, ml = 20, mr = 20;
+  var cw     = W - ml - mr;
+  var isPaid = data.status === 'paid';
+
+  // Header bar
+  doc.setFillColor(39, 35, 31);
+  doc.rect(0, 0, W, 44, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(245, 242, 234);
+  doc.text('Quality Jobs Media', ml, 20);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 146, 128);
+  doc.text('ABN 91 463 305 751', ml, 28);
+  doc.text('qualityjobsmedia.com.au', ml, 35);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(181, 135, 13);
+  doc.text('TAX INVOICE', W - mr, 20, { align: 'right' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 146, 128);
+  doc.text(data.invoiceNum, W - mr, 28, { align: 'right' });
+  doc.text(data.dateStr,    W - mr, 35, { align: 'right' });
+
+  // Status badge
+  if (isPaid) doc.setFillColor(22, 163, 74);
+  else        doc.setFillColor(181, 135, 13);
+  doc.roundedRect(W - mr - 36, 49, 36, 9, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text(isPaid ? 'PAID' : 'AMOUNT DUE', W - mr - 18, 55, { align: 'center' });
+
+  // Bill To
+  var y = 60;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(154, 146, 128);
+  doc.text('BILL TO', ml, y);
+
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(30, 26, 22);
+  doc.text(data.clientName || '—', ml, y);
+
+  if (data.company) {
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 92, 82);
+    doc.text(data.company, ml, y);
+  }
+
+  // Divider
+  y += 14;
+  doc.setDrawColor(220, 215, 205);
+  doc.setLineWidth(0.3);
+  doc.line(ml, y, W - mr, y);
+
+  // Table header row
+  y += 7;
+  doc.setFillColor(248, 245, 237);
+  doc.rect(ml, y - 4, cw, 9, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(154, 146, 128);
+  doc.text('DESCRIPTION', ml + 4, y + 1.5);
+  doc.text('AMOUNT (EX. GST)', W - mr - 4, y + 1.5, { align: 'right' });
+
+  // Description row
+  y += 13;
+  var serviceLabel = data.service === 'marketing' ? 'Marketing Campaign' : 'Website Development';
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(30, 26, 22);
+  doc.text(serviceLabel, ml + 4, y);
+  doc.setFont('helvetica', 'bold');
+  doc.text('$' + data.gstCalc.subtotal.toFixed(2), W - mr - 4, y, { align: 'right' });
+
+  // Totals
+  y += 16;
+  doc.setDrawColor(220, 215, 205);
+  doc.line(ml, y, W - mr, y);
+
+  var tx = W - mr - 75;
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 92, 82);
+  doc.text('Subtotal (ex. GST)', tx, y);
+  doc.setTextColor(30, 26, 22);
+  doc.text('$' + data.gstCalc.subtotal.toFixed(2), W - mr, y, { align: 'right' });
+
+  y += 7;
+  doc.setTextColor(100, 92, 82);
+  doc.text('GST (10%)', tx, y);
+  doc.setTextColor(30, 26, 22);
+  doc.text('$' + data.gstCalc.gst.toFixed(2), W - mr, y, { align: 'right' });
+
+  y += 4;
+  doc.setDrawColor(220, 215, 205);
+  doc.line(tx, y, W - mr, y);
+
+  y += 7;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setTextColor(30, 26, 22);
+  doc.text('TOTAL', tx, y);
+  doc.setTextColor(181, 135, 13);
+  doc.text('$' + data.gstCalc.total.toFixed(2) + ' AUD', W - mr, y, { align: 'right' });
+
+  // GST note
+  y += 10;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(154, 146, 128);
+  var gstNote = data.gstSetting === 'included'
+    ? 'Total of $' + data.gstCalc.total.toFixed(2) + ' includes GST of $' + data.gstCalc.gst.toFixed(2)
+    : 'GST of $' + data.gstCalc.gst.toFixed(2) + ' has been added to the subtotal of $' + data.gstCalc.subtotal.toFixed(2);
+  doc.text(gstNote, ml, y);
+
+  // Footer
+  doc.setFillColor(248, 245, 237);
+  doc.rect(0, H - 24, W, 24, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(154, 146, 128);
+  doc.text('Thank you for your business.', W / 2, H - 14, { align: 'center' });
+  doc.text('Quality Jobs Media  ·  ABN 91 463 305 751', W / 2, H - 9, { align: 'center' });
+
+  var safeName = (data.company || data.clientName || 'Client').replace(/[^a-zA-Z0-9\s\-]/g, '').replace(/\s+/g, '-');
+  doc.save('Invoice-' + data.invoiceNum + '-' + safeName + '.pdf');
+}
+
+function renderInvoicePage() {
+  var el = document.getElementById('app-invoices');
+  if (!el) return;
+
+  var modeManual = _invMode === 'manual';
+  var modeShot   = _invMode === 'screenshot';
+  var nPayments  = _invExtracted.length;
+
+  // Pre-build extracted payments list
+  var extractedHTML = '';
+  if (nPayments > 0) {
+    extractedHTML += '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">Extracted Payments</div>';
+    for (var xi = 0; xi < _invExtracted.length; xi++) {
+      extractedHTML +=
+        '<div style="display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px">' +
+        '<span style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;min-width:24px">P' + (xi + 1) + '</span>' +
+        '<span style="font-size:0.8rem;font-family:\'DM Mono\',monospace;color:var(--muted)">$</span>' +
+        '<input type="number" value="' + _invExtracted[xi].amount + '" step="0.01" data-idx="' + xi + '" onchange="_invExtracted[parseInt(this.dataset.idx)].amount=parseFloat(this.value)||0" style="flex:1;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:0.82rem;font-family:\'DM Mono\',monospace">' +
+        '<button data-idx="' + xi + '" onclick="_invRemoveExtracted(parseInt(this.dataset.idx))" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px 5px" onmouseover="this.style.opacity=\'1\';this.style.color=\'#f87171\'" onmouseout="this.style.opacity=\'0.4\';this.style.color=\'var(--muted)\'">✕</button>' +
+        '</div>';
+    }
+    extractedHTML += '<button onclick="_invAddExtracted()" style="width:100%;padding:0.45rem;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--muted);font-size:0.75rem;cursor:pointer;margin-top:3px">+ Add payment manually</button>';
+  }
+
+  var previewStyle = _invScreenB64 ? 'display:block' : 'display:none';
+  var previewImg   = _invScreenB64 ? '<img src="data:' + _invScreenMime + ';base64,' + _invScreenB64 + '" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border)">' : '';
+  var genBtnLabel  = nPayments > 1 && modeShot ? '🧾 Generate Invoices (' + nPayments + ')' : '🧾 Generate Invoice';
+
+  var mManualBorder = modeManual ? 'var(--accent)' : 'var(--border)';
+  var mManualBg     = modeManual ? 'rgba(181,135,13,0.08)' : 'transparent';
+  var mManualColor  = modeManual ? 'var(--accent)' : 'var(--muted)';
+  var mShotBorder   = modeShot   ? 'var(--accent)' : 'var(--border)';
+  var mShotBg       = modeShot   ? 'rgba(181,135,13,0.08)' : 'transparent';
+  var mShotColor    = modeShot   ? 'var(--accent)' : 'var(--muted)';
+
+  var amountSection = modeManual
+    ? '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;">' +
+        '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.65rem">Invoice Amount</div>' +
+        '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+          '<span style="font-size:1rem;color:var(--muted);font-family:\'DM Mono\',monospace;flex-shrink:0">$</span>' +
+          '<input id="inv-amount" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1;padding:0.6rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:1.1rem;font-family:\'DM Mono\',monospace;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border2)\'">' +
+          '<span style="font-size:0.72rem;color:var(--muted);font-family:\'DM Mono\',monospace;flex-shrink:0">AUD</span>' +
+        '</div>' +
+      '</div>'
+    : '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.85rem;">' +
+        '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">Payment Screenshot</div>' +
+        '<div id="inv-drop-zone" onclick="document.getElementById(\'inv-file-input\').click()" style="border:2px dashed var(--border2);border-radius:12px;padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" ondrop="_invHandleDrop(event)">' +
+          '<div style="font-size:2rem;margin-bottom:0.5rem">&#128248;</div>' +
+          '<div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.25rem">Drop screenshot here or click to browse</div>' +
+          '<div style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace">PNG &middot; JPG &middot; WEBP &nbsp;&mdash;&nbsp; AI will extract all payment amounts</div>' +
+        '</div>' +
+        '<input id="inv-file-input" type="file" accept="image/*" style="display:none" onchange="_invHandleFile(this.files[0])">' +
+        '<div id="inv-screenshot-preview" style="' + previewStyle + '">' + previewImg + '</div>' +
+        '<div id="inv-extract-status" style="font-size:0.75rem;color:var(--muted);font-family:\'DM Mono\',monospace"></div>' +
+        '<div id="inv-extracted-list">' + extractedHTML + '</div>' +
+      '</div>';
+
+  el.innerHTML =
+    '<div style="max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:1.25rem;padding-bottom:2rem;">' +
+
+    '<div style="display:flex;align-items:baseline;gap:0.75rem;">' +
+      '<h2 style="font-size:1.05rem;font-weight:800;color:var(--text);margin:0">Invoice Generator</h2>' +
+      '<span style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace">Quality Jobs Media &nbsp;&middot;&nbsp; ABN 91 463 305 751</span>' +
+    '</div>' +
+
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.65rem">Invoice Source</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+        '<button onclick="_invSetMode(\'manual\')" style="padding:0.65rem;border-radius:9px;border:2px solid ' + mManualBorder + ';background:' + mManualBg + ';color:' + mManualColor + ';font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.15s">&#x270F;&#xFE0F; Enter Amount Manually</button>' +
+        '<button onclick="_invSetMode(\'screenshot\')" style="padding:0.65rem;border-radius:9px;border:2px solid ' + mShotBorder + ';background:' + mShotBg + ';color:' + mShotColor + ';font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.15s">&#128248; Upload Payment Screenshot</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.85rem;">' +
+      '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">Client Details</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">CLIENT NAME</label>' +
+          '<input id="inv-client-name" type="text" placeholder="e.g. John Smith" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.82rem;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border2)\'">' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">COMPANY NAME</label>' +
+          '<input id="inv-company" type="text" placeholder="e.g. Acme Pty Ltd" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.82rem;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border2)\'">' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.85rem;">' +
+      '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">Invoice Options</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">SERVICE TYPE</label>' +
+          '<select id="inv-service" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.8rem;box-sizing:border-box">' +
+            '<option value="marketing">Marketing Campaign</option>' +
+            '<option value="website">Website Development</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">GST</label>' +
+          '<select id="inv-gst" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.8rem;box-sizing:border-box">' +
+            '<option value="included">GST Included in Amount</option>' +
+            '<option value="excluded">GST Not Included (add 10%)</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">INVOICE STATUS</label>' +
+          '<select id="inv-status" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.8rem;box-sizing:border-box">' +
+            '<option value="paid">Paid</option>' +
+            '<option value="due">Amount Due</option>' +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    amountSection +
+
+    '<button onclick="_invGenerate()" id="inv-generate-btn" style="padding:0.85rem;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all 0.15s;letter-spacing:0.01em">' +
+      genBtnLabel +
+    '</button>' +
+
+    '<div id="inv-status-msg" style="font-size:0.75rem;color:var(--muted);font-family:\'DM Mono\',monospace;text-align:center;min-height:1.2em"></div>' +
+
+    '</div>';
+}
+
+window._invSetMode       = _invSetMode;
+window._invHandleFile    = _invHandleFile;
+window._invHandleDrop    = _invHandleDrop;
+window._invExtractPayments = _invExtractPayments;
+window._invRenderExtracted = _invRenderExtracted;
+window._invRemoveExtracted = _invRemoveExtracted;
+window._invAddExtracted  = _invAddExtracted;
+window._invGenerate      = _invGenerate;
+</script>
 
 </body>
 </html>
