@@ -7034,7 +7034,7 @@ async function _ajLoadFromSheets() {
     const tasks = await res.json();
     if (Array.isArray(tasks)) {
       localStorage.setItem('qj_aj_tasks', JSON.stringify(tasks));
-      renderPMAJPage();
+      _renderAjTasksOnly();
     }
   } catch(_) {}
   finally { _ajLoadingFromSheets = false; }
@@ -7087,8 +7087,12 @@ function _ajAddTask() {
   const tasks = _ajGetTasks();
   tasks.unshift({ id: Date.now().toString(), label, date, done: false, created: new Date().toISOString() });
   _ajSaveTasks(tasks);
-  renderPMAJPage();
-  setTimeout(() => document.getElementById('aj-task-input')?.focus(), 50);
+  const inp = document.getElementById('aj-task-input');
+  const dt  = document.getElementById('aj-task-date');
+  if (inp) inp.value = '';
+  if (dt)  dt.value  = '';
+  _renderAjTasksOnly();
+  setTimeout(() => inp?.focus(), 50);
 }
 function _ajQuickTask(type) {
   const client = document.getElementById('aj-quick-client')?.value?.trim();
@@ -7102,7 +7106,7 @@ function _ajQuickTask(type) {
   const tasks = _ajGetTasks();
   tasks.unshift({ id: Date.now().toString(), label, date, done: false, created: new Date().toISOString() });
   _ajSaveTasks(tasks);
-  renderPMAJPage();
+  _renderAjTasksOnly();
 }
 window._ajQuickTask = _ajQuickTask;
 function _ajToggleTask(id) {
@@ -7110,11 +7114,11 @@ function _ajToggleTask(id) {
   const t = tasks.find(t => t.id === id);
   if (t) t.done = !t.done;
   _ajSaveTasks(tasks);
-  renderPMAJPage();
+  _renderAjTasksOnly();
 }
 function _ajDeleteTask(id) {
   _ajSaveTasks(_ajGetTasks().filter(t => t.id !== id));
-  renderPMAJPage();
+  _renderAjTasksOnly();
 }
 window._ajAddTask    = _ajAddTask;
 window._ajToggleTask = _ajToggleTask;
@@ -7298,12 +7302,41 @@ function renderPMAJPage() {
         style="padding:0.6rem 1.2rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">＋ Add Task</button>
     </div>
 
-    ${customSection}
+    <div id="aj-task-list-wrap">${customSection}</div>
 
     ${projects.length > 0 ? `
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.75rem">CLIENT CHECKLISTS</div>
       <div class="pm-projects">${projectCards}</div>` : ''}`;
 }
+
+function _renderAjTasksOnly() {
+  const wrap = document.getElementById('aj-task-list-wrap');
+  if (!wrap) { renderPMAJPage(); return; }
+  const ajTasks = _ajGetTasks();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const customRows = ajTasks.map(t => {
+    const dueDate   = t.date ? new Date(t.date + 'T00:00:00') : null;
+    const isOverdue = dueDate && dueDate < today && !t.done;
+    const dateLabel = dueDate ? dueDate.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    return `<div style="display:flex;align-items:center;gap:0.75rem;padding:0.8rem 1rem;background:var(--surface);border:1px solid ${isOverdue?'rgba(248,113,113,0.35)':'var(--border)'};border-radius:12px;${t.done?'opacity:0.45':''}">
+      <button data-id="${t.id}" onclick="_ajToggleTask(this.dataset.id)"
+        style="flex-shrink:0;width:20px;height:20px;border-radius:5px;border:2px solid ${t.done?'var(--green)':'var(--border2)'};
+               background:${t.done?'var(--green)':'transparent'};color:#fff;font-size:0.65rem;cursor:pointer;
+               display:flex;align-items:center;justify-content:center;transition:all 0.15s">${t.done?'✓':''}</button>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.82rem;font-weight:600;${t.done?'text-decoration:line-through;color:var(--muted)':'color:var(--text)'}">${t.label}</div>
+      </div>
+      ${dateLabel ? `<span style="font-size:0.65rem;font-family:'DM Mono',monospace;padding:3px 9px;border-radius:6px;white-space:nowrap;background:${isOverdue?'rgba(248,113,113,0.12)':'rgba(181,135,13,0.1)'};color:${isOverdue?'#f87171':'var(--accent)'};">${isOverdue?'⚠ ':''}${dateLabel}</span>` : ''}
+      <button data-id="${t.id}" onclick="_ajDeleteTask(this.dataset.id)"
+        style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;opacity:0.35;padding:2px 5px;flex-shrink:0"
+        onmouseover="this.style.opacity='1';this.style.color='#f87171'" onmouseout="this.style.opacity='0.35';this.style.color='var(--muted)'">✕</button>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = ajTasks.length === 0
+    ? `<div class="pm-empty" style="margin-bottom:1.5rem">No one-off tasks yet — type one above and hit Add.</div>`
+    : `<div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.75rem">${customRows}</div>`;
+}
+window._renderAjTasksOnly = _renderAjTasksOnly;
 window.renderPMAJPage = renderPMAJPage;
 
 // ── Closer PM page — tabbed ───────────────────────────────────────────────────
@@ -7758,7 +7791,11 @@ async function _pmLoadFromSheets() {
     for (const p of projects) {
       localStorage.setItem(_pmKey('pm-media', p.client), JSON.stringify(p.done || []));
     }
-    renderPMAJPage();
+    _renderAjTasksOnly();
+    const pmEl = document.getElementById('app-pm-media');
+    if (!pmEl || !pmEl.contains(document.activeElement)) {
+      renderPMAJPage();
+    }
   } catch(_) {}
   finally { _pmLoadingFromSheets = false; }
 }
