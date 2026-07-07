@@ -10508,7 +10508,7 @@ function _invBuildPDF(jsPDFClass, data) {
 
   // Description row
   y += 13;
-  var serviceLabel = data.service === 'marketing' ? 'Marketing Campaign' : 'Website Development';
+  var serviceLabel = data.service === 'marketing' ? 'Marketing Campaign' : data.service === 'maintenance' ? 'Website Maintenance' : 'Website Development';
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(30, 26, 22);
@@ -10682,6 +10682,7 @@ function renderInvoicePage() {
           '<select id="inv-service" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.8rem;box-sizing:border-box">' +
             '<option value="marketing">Marketing Campaign</option>' +
             '<option value="website">Website Development</option>' +
+            '<option value="maintenance">Website Maintenance</option>' +
           '</select>' +
         '</div>' +
         '<div>' +
