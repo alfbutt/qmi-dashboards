@@ -10441,13 +10441,13 @@ function _invBuildPDF(jsPDFClass, data) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
   doc.setTextColor(245, 242, 234);
-  doc.text('Quality Jobs Media', ml, 20);
+  doc.text('Quality Jobs', ml, 20);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(154, 146, 128);
   doc.text('ABN 91 463 305 751', ml, 28);
-  doc.text('qualityjobsmedia.com.au', ml, 35);
+  doc.text('qualityjobs.com.au', ml, 35);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
@@ -10504,7 +10504,7 @@ function _invBuildPDF(jsPDFClass, data) {
   doc.setFontSize(7);
   doc.setTextColor(154, 146, 128);
   doc.text('DESCRIPTION', ml + 4, y + 1.5);
-  doc.text('AMOUNT (EX. GST)', W - mr - 4, y + 1.5, { align: 'right' });
+  doc.text(data.gstSetting === 'included' ? 'AMOUNT (INC. GST)' : 'AMOUNT (EX. GST)', W - mr - 4, y + 1.5, { align: 'right' });
 
   // Description row
   y += 13;
@@ -10514,7 +10514,7 @@ function _invBuildPDF(jsPDFClass, data) {
   doc.setTextColor(30, 26, 22);
   doc.text(serviceLabel, ml + 4, y);
   doc.setFont('helvetica', 'bold');
-  doc.text('$' + data.gstCalc.subtotal.toFixed(2), W - mr - 4, y, { align: 'right' });
+  doc.text('$' + data.gstCalc.total.toFixed(2), W - mr - 4, y, { align: 'right' });
 
   // Totals
   y += 16;
@@ -10522,25 +10522,30 @@ function _invBuildPDF(jsPDFClass, data) {
   doc.line(ml, y, W - mr, y);
 
   var tx = W - mr - 75;
-  y += 8;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(100, 92, 82);
-  doc.text('Subtotal (ex. GST)', tx, y);
-  doc.setTextColor(30, 26, 22);
-  doc.text('$' + data.gstCalc.subtotal.toFixed(2), W - mr, y, { align: 'right' });
 
-  y += 7;
-  doc.setTextColor(100, 92, 82);
-  doc.text('GST (10%)', tx, y);
-  doc.setTextColor(30, 26, 22);
-  doc.text('$' + data.gstCalc.gst.toFixed(2), W - mr, y, { align: 'right' });
+  if (data.gstSetting === 'excluded') {
+    y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 92, 82);
+    doc.text('Subtotal (ex. GST)', tx, y);
+    doc.setTextColor(30, 26, 22);
+    doc.text('$' + data.gstCalc.subtotal.toFixed(2), W - mr, y, { align: 'right' });
 
-  y += 4;
-  doc.setDrawColor(220, 215, 205);
-  doc.line(tx, y, W - mr, y);
+    y += 7;
+    doc.setTextColor(100, 92, 82);
+    doc.text('GST (10%)', tx, y);
+    doc.setTextColor(30, 26, 22);
+    doc.text('$' + data.gstCalc.gst.toFixed(2), W - mr, y, { align: 'right' });
 
-  y += 7;
+    y += 4;
+    doc.setDrawColor(220, 215, 205);
+    doc.line(tx, y, W - mr, y);
+    y += 7;
+  } else {
+    y += 7;
+  }
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10.5);
   doc.setTextColor(30, 26, 22);
@@ -10554,8 +10559,8 @@ function _invBuildPDF(jsPDFClass, data) {
   doc.setFontSize(7.5);
   doc.setTextColor(154, 146, 128);
   var gstNote = data.gstSetting === 'included'
-    ? 'Total of $' + data.gstCalc.total.toFixed(2) + ' includes GST of $' + data.gstCalc.gst.toFixed(2)
-    : 'GST of $' + data.gstCalc.gst.toFixed(2) + ' has been added to the subtotal of $' + data.gstCalc.subtotal.toFixed(2);
+    ? 'GST is included in the above price.'
+    : 'GST of $' + data.gstCalc.gst.toFixed(2) + ' has been added to the subtotal of $' + data.gstCalc.subtotal.toFixed(2) + '.';
   doc.text(gstNote, ml, y);
 
   // Footer
@@ -10565,7 +10570,7 @@ function _invBuildPDF(jsPDFClass, data) {
   doc.setFontSize(7.5);
   doc.setTextColor(154, 146, 128);
   doc.text('Thank you for your business.', W / 2, H - 14, { align: 'center' });
-  doc.text('Quality Jobs Media  ·  ABN 91 463 305 751', W / 2, H - 9, { align: 'center' });
+  doc.text('Quality Jobs  ·  ABN 91 463 305 751', W / 2, H - 9, { align: 'center' });
 
   var safeName = (data.company || data.clientName || 'Client').replace(/[^a-zA-Z0-9\s\-]/g, '').replace(/\s+/g, '-');
   doc.save('Invoice-' + data.invoiceNum + '-' + safeName + '.pdf');
@@ -10633,7 +10638,7 @@ function renderInvoicePage() {
 
     '<div style="display:flex;align-items:baseline;gap:0.75rem;">' +
       '<h2 style="font-size:1.05rem;font-weight:800;color:var(--text);margin:0">Invoice Generator</h2>' +
-      '<span style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace">Quality Jobs Media &nbsp;&middot;&nbsp; ABN 91 463 305 751</span>' +
+      '<span style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace">Quality Jobs &nbsp;&middot;&nbsp; ABN 91 463 305 751</span>' +
     '</div>' +
 
     '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;">' +
