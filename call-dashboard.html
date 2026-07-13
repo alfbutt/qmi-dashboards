@@ -7142,6 +7142,10 @@ function _ajCyclePriority(id) {
   }
   _ajSaveTasks(tasks);
   _renderAjTasksOnly();
+  // Push to JSONBin so AJ's dashboard picks up the priority change
+  if (localStorage.getItem('qj_aj_bin_id') && localStorage.getItem('qj_aj_master_key')) {
+    _syncToAJ();
+  }
 }
 function _ajPrioBadge(t) {
   const p   = t.priority || 'medium';
@@ -10209,16 +10213,16 @@ async function _syncToAJ() {
     catch(_) { payload[key] = []; }
   });
 
-  // Step 3: Merge qj_aj_tasks by ID — union of local + remote so neither side loses tasks
-  const localTasks  = Array.isArray(payload.qj_aj_tasks) ? payload.qj_aj_tasks : [];
-  const remoteTasks = Array.isArray(remote.qj_aj_tasks)  ? remote.qj_aj_tasks  : [];
-  const merged = [...remoteTasks];
-  for (const lt of localTasks) {
-    if (!merged.some(rt => rt.id === lt.id)) merged.push(lt);
+  // Step 3: Merge qj_aj_tasks — local wins for existing tasks (priority changes must flow through)
+  let localTasks = [];
+  try { localTasks = JSON.parse(localStorage.getItem('qj_aj_tasks') || '[]'); } catch(_) {}
+  const remoteTasks = Array.isArray(remote.qj_aj_tasks) ? remote.qj_aj_tasks : [];
+  // Start with local as source of truth, then append remote-only tasks
+  const merged = [...localTasks];
+  for (const rt of remoteTasks) {
+    if (!merged.some(lt => lt.id === rt.id)) merged.push(rt);
   }
   payload.qj_aj_tasks = merged;
-  // Persist merged list back to localStorage so the next sync never starts with a stale empty list
-  localStorage.setItem('qj_aj_tasks', JSON.stringify(merged));
 
   // Include live account lists so AJ sees the same clients
   payload.jules_accounts  = (typeof JULES_ACCOUNTS  !== 'undefined') ? JULES_ACCOUNTS  : JULES_FALLBACK;

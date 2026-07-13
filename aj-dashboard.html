@@ -1751,11 +1751,25 @@ let _ajTasksMem    = [];
 let _ajPMMem       = [];
 let _tasksLoading  = false;
 
+async function _loadTasksFromJSONBin() {
+  const binId     = localStorage.getItem('qj_aj_bin_id');
+  const masterKey = localStorage.getItem('qj_aj_master_key');
+  if (!binId || !masterKey) return null;
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+      headers: { 'X-Master-Key': masterKey }
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j.record || null;
+  } catch(_) { return null; }
+}
+
 async function renderTasksTab() {
   if (_tasksLoading) return;
   _tasksLoading = true;
   const status = document.getElementById('tasksStatus');
-  if (status) status.textContent = 'Syncing with Google Sheets…';
+  if (status) status.textContent = 'Syncing…';
   try {
     const [tasksRes, pmRes, offRes] = await Promise.all([
       fetch(PROXY_URL + '?service=aj_tasks'),
@@ -1765,6 +1779,24 @@ async function renderTasksTab() {
     if (tasksRes.ok) { const t = await tasksRes.json(); if (Array.isArray(t)) _ajTasksMem = t; }
     if (pmRes.ok)    { const p = await pmRes.json();    if (Array.isArray(p)) _ajPMMem    = p; }
     if (offRes.ok)   { const o = await offRes.json();   if (Array.isArray(o)) _ajOffMem   = o; }
+
+    // Merge priority values from JSONBin — Sheets may strip custom fields like priority
+    const bin = await _loadTasksFromJSONBin();
+    if (bin && Array.isArray(bin.qj_aj_tasks)) {
+      const binMap = {};
+      bin.qj_aj_tasks.forEach(t => { binMap[t.id] = t; });
+      _ajTasksMem = _ajTasksMem.map(t => {
+        const bt = binMap[t.id];
+        if (bt && bt.priority && bt.priority !== 'medium') return { ...t, priority: bt.priority };
+        if (bt && bt.priority) return { ...t, priority: bt.priority };
+        return t;
+      });
+      // Also add any tasks that exist in JSONBin but not yet in Sheets (just created on QJ side)
+      bin.qj_aj_tasks.forEach(bt => {
+        if (!_ajTasksMem.some(t => t.id === bt.id)) _ajTasksMem.unshift(bt);
+      });
+    }
+
     if (status) { status.textContent = 'Live · ' + new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit' }); }
   } catch(_) {
     if (status) status.textContent = 'Could not reach Google Sheets';
