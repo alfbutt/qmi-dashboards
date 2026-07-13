@@ -7059,6 +7059,7 @@ function _ajSyncToMake(list) {
     tasks:     (list || _ajGetTasks()).map(t => ({
       label:    t.label,
       done:     t.done,
+      priority: t.priority || 'medium',
       dueDate:  t.date  || null,
       created:  t.created || null,
     }))
@@ -7315,11 +7316,14 @@ function renderPMAJPage() {
         </select>
         <input id="aj-quick-date" type="date"
           style="padding:0.5rem 0.7rem;border:1px solid var(--border);border-radius:9px;font-size:0.75rem;background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;outline:none" />
-        <select id="aj-quick-priority" style="padding:0.5rem 0.7rem;border:1px solid var(--border);border-radius:9px;font-size:0.74rem;background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;outline:none;cursor:pointer">
-          <option value="medium">◆ Med</option>
-          <option value="high">▲ High</option>
-          <option value="low">▼ Low</option>
-        </select>
+        <div style="display:flex;align-items:center;gap:0.35rem;flex-shrink:0">
+          <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap">Priority</span>
+          <select id="aj-quick-priority" style="padding:0.5rem 0.7rem;border:1px solid var(--border);border-radius:9px;font-size:0.74rem;background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;outline:none;cursor:pointer">
+            <option value="medium">◆ Med</option>
+            <option value="high">▲ High</option>
+            <option value="low">▼ Low</option>
+          </select>
+        </div>
       </div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         ${QUICK_TYPES.map(q => `
@@ -7337,11 +7341,14 @@ function renderPMAJPage() {
         onkeydown="if(event.key==='Enter')_ajAddTask()" />
       <input id="aj-task-date" type="date"
         style="padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:10px;font-size:0.75rem;background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;outline:none" />
-      <select id="aj-task-priority" style="padding:0.6rem 0.7rem;border:1px solid var(--border);border-radius:10px;font-size:0.74rem;background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;outline:none;cursor:pointer">
-        <option value="medium">◆ Med</option>
-        <option value="high">▲ High</option>
-        <option value="low">▼ Low</option>
-      </select>
+      <div style="display:flex;align-items:center;gap:0.35rem;flex-shrink:0">
+        <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap">Priority</span>
+        <select id="aj-task-priority" style="padding:0.6rem 0.7rem;border:1px solid var(--border);border-radius:10px;font-size:0.74rem;background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;outline:none;cursor:pointer">
+          <option value="medium">◆ Med</option>
+          <option value="high">▲ High</option>
+          <option value="low">▼ Low</option>
+        </select>
+      </div>
       <button onclick="_ajAddTask()"
         style="padding:0.6rem 1.2rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">＋ Add Task</button>
     </div>

@@ -399,6 +399,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .task-date-tag.overdue { background: rgba(220,38,38,0.1); color: var(--red); }
 .task-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; opacity: 0.3; padding: 2px 6px; flex-shrink: 0; transition: all 0.15s; }
 .task-del:hover { opacity: 1; color: var(--red); }
+.task-prio { flex-shrink: 0; font-size: 0.62rem; font-family: 'DM Mono', monospace; padding: 2px 9px; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap; font-weight: 700; letter-spacing: 0.02em; transition: opacity 0.15s; }
+.task-prio:hover { opacity: 0.75; }
+.task-add-row select { background: var(--card); border: 1px solid var(--border2); border-radius: 9px; padding: 0.6rem 0.75rem; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.75rem; outline: none; cursor: pointer; flex-shrink: 0; }
 .pm-proj-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.75rem; overflow: hidden; }
 .pm-proj-head { padding: 0.9rem 1.1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; gap: 0.75rem; }
 .pm-proj-head:hover { background: rgba(0,0,0,0.02); }
@@ -732,6 +735,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="task-add-row">
         <input type="text" id="taskInput" placeholder="Add a task…" onkeydown="if(event.key==='Enter') ajTaskAdd()">
         <input type="date" id="taskDate" style="flex:0;min-width:130px">
+        <select id="taskPriority" title="Priority">
+          <option value="medium">◆ Med</option>
+          <option value="high">▲ High</option>
+          <option value="low">▼ Low</option>
+        </select>
         <button class="task-add-btn" onclick="ajTaskAdd()">Add</button>
       </div>
       <div id="tasksList"></div>
@@ -1780,9 +1788,13 @@ function _renderOneOffTasks() {
     const due      = t.date ? new Date(t.date + 'T00:00:00') : null;
     const overdue  = due && due < today && !t.done;
     const dateTag  = due ? `<span class="task-date-tag${overdue?' overdue':''}">${overdue?'⚠ ':''}${due.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})}</span>` : '';
+    const prio = t.priority || 'medium';
+    const prioCfg = { high: ['▲ High','#ef4444','rgba(239,68,68,0.1)'], medium: ['◆ Med','#f59e0b','rgba(245,158,11,0.1)'], low: ['▼ Low','#22c55e','rgba(34,197,94,0.1)'] };
+    const [prioLabel, prioColor, prioBg] = prioCfg[prio] || prioCfg.medium;
     return `<div class="task-item${overdue?' overdue':''}${t.done?' opacity-55':''}">
       <button class="task-check${t.done?' done':''}" onclick="ajTaskToggle('${t.id}')">${t.done ? '✓' : ''}</button>
       <span class="task-label${t.done?' done':''}">${t.label}</span>
+      <button class="task-prio" onclick="ajTaskCyclePriority('${t.id}')" title="Click to cycle priority" style="background:${prioBg};color:${prioColor}">${prioLabel}</button>
       ${dateTag}
       <button class="task-del" onclick="ajTaskDelete('${t.id}')">✕</button>
     </div>`;
@@ -1846,10 +1858,23 @@ async function ajTaskAdd() {
   const dateInp = document.getElementById('taskDate');
   const label = (inp?.value || '').trim();
   if (!label) { inp?.focus(); return; }
-  const task = { id: Date.now().toString(), label, date: dateInp?.value || '', done: false, created: new Date().toISOString() };
+  const prioEl = document.getElementById('taskPriority');
+  const priority = prioEl?.value || 'medium';
+  const task = { id: Date.now().toString(), label, date: dateInp?.value || '', priority, done: false, created: new Date().toISOString() };
   _ajTasksMem.unshift(task);
   if (inp) inp.value = '';
   if (dateInp) dateInp.value = '';
+  if (prioEl) prioEl.value = 'medium';
+  _renderOneOffTasks();
+  await _ajSaveTasksToSheets();
+}
+
+async function ajTaskCyclePriority(id) {
+  const t = _ajTasksMem.find(t => t.id === id);
+  if (t) {
+    const next = { low: 'medium', medium: 'high', high: 'low' };
+    t.priority = next[t.priority || 'medium'] || 'medium';
+  }
   _renderOneOffTasks();
   await _ajSaveTasksToSheets();
 }
