@@ -2686,3 +2686,9 @@ cp: /Users/admin/Desktop/HTML/Important/call-dashboard (3).html: Operation not p
 cp: /Users/admin/Desktop/HTML/Important/aj-dashboard.html: Operation not permitted
 cp: /Users/admin/Desktop/HTML/Important/agent-dashboard.html: Operation not permitted
 cp: /Users/admin/Desktop/HTML/Important/qj-onboarding.html: Operation not permitted
+[qmi-sync] Done — changes are live.
+[qmi-sync] Change detected: /Users/admin/Desktop/HTML/Important/call-dashboard (3).html — pushing to GitHub...
+cp: /Users/admin/Desktop/HTML/Important/call-dashboard (3).html: Operation not permitted
+cp: /Users/admin/Desktop/HTML/Important/aj-dashboard.html: Operation not permitted
+cp: /Users/admin/Desktop/HTML/Important/agent-dashboard.html: Operation not permitted
+cp: /Users/admin/Desktop/HTML/Important/qj-onboarding.html: Operation not permitted
