@@ -1660,6 +1660,10 @@ const AGENT_OVERRIDES = {
 const NON_CC_CLIENTS = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms"];
 function isNonCC(name) {
   const n = (name||'').toLowerCase().replace(/\s+/g,'');
+  try {
+    const local = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]');
+    if (local.some(x => x.toLowerCase().replace(/\s+/g,'') === n)) return true;
+  } catch(_) {}
   return NON_CC_CLIENTS.some(x => x.toLowerCase().replace(/\s+/g,'') === n
     || n.includes(x.toLowerCase().replace(/\s+/g,'').slice(0,8))
     || x.toLowerCase().replace(/\s+/g,'').includes(n.slice(0,8)));
@@ -1760,6 +1764,7 @@ async function fetchClientsData() {
       if (!name || status === 'Churned' || _churnedLocally(name) || _pausedLocally(name) || _isHardPaused(name)) continue;
       if (isNonCC(name)) continue; // non-CC clients excluded from call centre views
       const effectiveAgent = AGENT_OVERRIDES[name] || agent;
+      if (effectiveAgent === 'Ads Only') continue; // ads-only clients excluded from call centre views
       if (effectiveAgent === 'Jules')  jules.push(name);
       if (effectiveAgent === 'Ayessa') ayessa.push(name);
     }
@@ -9398,8 +9403,22 @@ function renderAdClientsPage() {
   const el = document.getElementById('app-ad-clients');
   if (!el) return;
 
-  // Build rows for every non-CC client
-  const rows = NON_CC_CLIENTS.map(name => {
+  // Collect ads-only clients from all sources
+  let localAdsOnly = [];
+  try { localAdsOnly = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]'); } catch(_) {}
+  const sheetAdsOnly = (window._clientsRaw || [])
+    .filter(c => (c.agent || '') === 'Ads Only' && c.status !== 'Churned')
+    .map(c => c.name);
+  const seen = new Set();
+  const allAdsOnly = [...NON_CC_CLIENTS, ...localAdsOnly, ...sheetAdsOnly].filter(name => {
+    const key = name.toLowerCase().replace(/\s+/g,'');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Build rows for every ads-only client
+  const rows = allAdsOnly.map(name => {
     const ads = getAds(name);
     const spent  = ads ? fmtCurrency(ads.spent)  : '—';
     const leads  = ads ? fmt(ads.leads)           : '—';
@@ -9434,7 +9453,7 @@ function renderAdClientsPage() {
         <div style="font-size:1.1rem;font-weight:800;letter-spacing:-0.02em;">Ad Clients</div>
       </div>
     </div>
-    ${NON_CC_CLIENTS.length === 0
+    ${allAdsOnly.length === 0
       ? `<div style="text-align:center;padding:4rem;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.78rem;">No ad-only clients configured</div>`
       : `<div class="ad-clients-grid">${rows}</div>`}
   </div>`;

@@ -116,6 +116,7 @@
   }
   .agent-btn.active.jules { background: rgba(201,150,12,0.15); border-color: var(--jules); color: var(--jules); font-weight: 600; }
   .agent-btn.active.ayessa { background: rgba(230,184,74,0.15); border-color: var(--ayessa); color: var(--ayessa); font-weight: 600; }
+  .agent-btn.active.ads-only { background: rgba(96,165,250,0.15); border-color: var(--blue); color: var(--blue); font-weight: 600; }
 
   .btn {
     padding: 0.75rem 1.5rem; border-radius: 10px; border: none;
@@ -217,15 +218,17 @@
         <input type="text" id="clientName" placeholder="e.g. Renovate Right Homes" />
       </div>
       <div class="form-group">
-        <label>Assigned Agent *</label>
+        <label>Assigned Agent / Type</label>
         <div class="agent-toggle">
           <button class="agent-btn jules" id="btnJules" onclick="selectAgent('Jules')">Jules</button>
           <button class="agent-btn ayessa" id="btnAyessa" onclick="selectAgent('Ayessa')">Ayessa</button>
+          <button class="agent-btn ads-only" id="btnAdsOnly" onclick="selectAgent('Ads Only')">📢 Ads Only</button>
         </div>
       </div>
       <div class="form-group">
-        <label>WhatsApp Group Chat ID *</label>
+        <label id="chatIdLabel">WhatsApp Group Chat ID *</label>
         <input type="text" id="chatId" placeholder="e.g. 120363402952787202@g.us" />
+        <div id="ads-only-note" style="display:none;font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--blue);margin-top:0.25rem">Chat ID not required for ads-only clients</div>
       </div>
       <div class="form-group">
         <label>Stats Sheet URL *</label>
@@ -378,6 +381,12 @@ function selectAgent(agent) {
   selectedAgent = agent;
   document.getElementById('btnJules').classList.toggle('active', agent === 'Jules');
   document.getElementById('btnAyessa').classList.toggle('active', agent === 'Ayessa');
+  document.getElementById('btnAdsOnly').classList.toggle('active', agent === 'Ads Only');
+  const isAdsOnly = agent === 'Ads Only';
+  const lbl = document.getElementById('chatIdLabel');
+  if (lbl) lbl.textContent = isAdsOnly ? 'WhatsApp Group Chat ID' : 'WhatsApp Group Chat ID *';
+  const note = document.getElementById('ads-only-note');
+  if (note) note.style.display = isAdsOnly ? 'block' : 'none';
 }
 
 function getField(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
@@ -390,7 +399,7 @@ async function onboardClient() {
   const fa            = window._fathomAnswers || {};
 
   if (!clientName)    { alert('Client name is required.'); return; }
-  if (!chatId)        { alert('WhatsApp Chat ID is required.'); return; }
+  if (!chatId && selectedAgent !== 'Ads Only') { alert('WhatsApp Chat ID is required.'); return; }
   if (!statsSheetUrl) { alert('Stats Sheet URL is required.'); return; }
 
   const btn = document.getElementById('onboardBtn');
@@ -438,6 +447,15 @@ async function onboardClient() {
     const data = await res.json();
     if (data.success) {
       setStatus('onboardStatus', '✓ ' + clientName + ' onboarded successfully!', 'success');
+
+      // Track ads-only clients in localStorage so Command Centre can filter them
+      if (selectedAgent === 'Ads Only') {
+        const aoList = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]');
+        if (!aoList.includes(clientName)) {
+          aoList.push(clientName);
+          localStorage.setItem('qj_ads_only_clients', JSON.stringify(aoList));
+        }
+      }
 
       // Save client knowledge base (sales call notes + transcript)
       try {
