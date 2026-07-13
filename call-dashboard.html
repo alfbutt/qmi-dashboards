@@ -7086,11 +7086,12 @@ function _ajSaveWebhook() {
 }
 window._ajSaveWebhook = _ajSaveWebhook;
 function _ajAddTask() {
-  const label = document.getElementById('aj-task-input')?.value?.trim();
+  const label    = document.getElementById('aj-task-input')?.value?.trim();
   if (!label) { document.getElementById('aj-task-input')?.focus(); return; }
-  const date  = document.getElementById('aj-task-date')?.value || '';
-  const tasks = _ajGetTasks();
-  tasks.unshift({ id: Date.now().toString(), label, date, done: false, created: new Date().toISOString() });
+  const date     = document.getElementById('aj-task-date')?.value || '';
+  const priority = document.getElementById('aj-task-priority')?.value || 'medium';
+  const tasks    = _ajGetTasks();
+  tasks.unshift({ id: Date.now().toString(), label, date, priority, done: false, created: new Date().toISOString() });
   _ajSaveTasks(tasks);
   const inp = document.getElementById('aj-task-input');
   const dt  = document.getElementById('aj-task-date');
@@ -7100,8 +7101,9 @@ function _ajAddTask() {
   setTimeout(() => inp?.focus(), 50);
 }
 function _ajQuickTask(type) {
-  const client = document.getElementById('aj-quick-client')?.value?.trim();
-  const date   = document.getElementById('aj-quick-date')?.value || '';
+  const client   = document.getElementById('aj-quick-client')?.value?.trim();
+  const date     = document.getElementById('aj-quick-date')?.value || '';
+  const priority = document.getElementById('aj-quick-priority')?.value || 'medium';
   if (!client) {
     const sel = document.getElementById('aj-quick-client');
     if (sel) { sel.style.outline='2px solid #f87171'; setTimeout(()=>sel.style.outline='',1200); }
@@ -7109,7 +7111,7 @@ function _ajQuickTask(type) {
   }
   const label = `${type} — ${client}`;
   const tasks = _ajGetTasks();
-  tasks.unshift({ id: Date.now().toString(), label, date, done: false, created: new Date().toISOString() });
+  tasks.unshift({ id: Date.now().toString(), label, date, priority, done: false, created: new Date().toISOString() });
   _ajSaveTasks(tasks);
   _renderAjTasksOnly();
 }
@@ -7125,9 +7127,30 @@ function _ajDeleteTask(id) {
   _ajSaveTasks(_ajGetTasks().filter(t => t.id !== id));
   _renderAjTasksOnly();
 }
-window._ajAddTask    = _ajAddTask;
-window._ajToggleTask = _ajToggleTask;
-window._ajDeleteTask = _ajDeleteTask;
+function _ajCyclePriority(id) {
+  const tasks = _ajGetTasks();
+  const t = tasks.find(t => t.id === id);
+  if (t) {
+    const next = { low: 'medium', medium: 'high', high: 'low' };
+    t.priority = next[t.priority || 'low'];
+  }
+  _ajSaveTasks(tasks);
+  _renderAjTasksOnly();
+}
+function _ajPrioBadge(t) {
+  const p   = t.priority || 'medium';
+  const cfg = {
+    high:   ['▲ High', '#ef4444', 'rgba(239,68,68,0.1)'],
+    medium: ['◆ Med',  '#f59e0b', 'rgba(245,158,11,0.1)'],
+    low:    ['▼ Low',  '#22c55e', 'rgba(34,197,94,0.1)'],
+  };
+  const [label, color, bg] = cfg[p] || cfg.medium;
+  return `<button data-id="${t.id}" onclick="_ajCyclePriority(this.dataset.id)" title="Click to cycle priority" style="flex-shrink:0;font-size:0.62rem;font-family:'DM Mono',monospace;padding:2px 9px;border-radius:6px;border:none;background:${bg};color:${color};cursor:pointer;white-space:nowrap;font-weight:700;letter-spacing:0.02em">${label}</button>`;
+}
+window._ajAddTask       = _ajAddTask;
+window._ajToggleTask    = _ajToggleTask;
+window._ajDeleteTask    = _ajDeleteTask;
+window._ajCyclePriority = _ajCyclePriority;
 
 function renderPMAJPage() {
   const el = document.getElementById('app-pm-media');
@@ -7153,6 +7176,7 @@ function renderPMAJPage() {
       <div style="flex:1;min-width:0">
         <div style="font-size:0.82rem;font-weight:600;${t.done?'text-decoration:line-through;color:var(--muted)':'color:var(--text)'}">${t.label}</div>
       </div>
+      ${_ajPrioBadge(t)}
       ${dateLabel ? `<span style="font-size:0.65rem;font-family:'DM Mono',monospace;padding:3px 9px;border-radius:6px;white-space:nowrap;background:${isOverdue?'rgba(248,113,113,0.12)':'rgba(181,135,13,0.1)'};color:${isOverdue?'#f87171':'var(--accent)'};">${isOverdue?'⚠ ':''}${dateLabel}</span>` : ''}
       <button data-id="${t.id}" onclick="_ajDeleteTask(this.dataset.id)"
         style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;opacity:0.35;padding:2px 5px;flex-shrink:0"
@@ -7286,6 +7310,11 @@ function renderPMAJPage() {
         </select>
         <input id="aj-quick-date" type="date"
           style="padding:0.5rem 0.7rem;border:1px solid var(--border);border-radius:9px;font-size:0.75rem;background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;outline:none" />
+        <select id="aj-quick-priority" style="padding:0.5rem 0.7rem;border:1px solid var(--border);border-radius:9px;font-size:0.74rem;background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;outline:none;cursor:pointer">
+          <option value="medium">◆ Med</option>
+          <option value="high">▲ High</option>
+          <option value="low">▼ Low</option>
+        </select>
       </div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         ${QUICK_TYPES.map(q => `
@@ -7303,6 +7332,11 @@ function renderPMAJPage() {
         onkeydown="if(event.key==='Enter')_ajAddTask()" />
       <input id="aj-task-date" type="date"
         style="padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:10px;font-size:0.75rem;background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;outline:none" />
+      <select id="aj-task-priority" style="padding:0.6rem 0.7rem;border:1px solid var(--border);border-radius:10px;font-size:0.74rem;background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;outline:none;cursor:pointer">
+        <option value="medium">◆ Med</option>
+        <option value="high">▲ High</option>
+        <option value="low">▼ Low</option>
+      </select>
       <button onclick="_ajAddTask()"
         style="padding:0.6rem 1.2rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">＋ Add Task</button>
     </div>
@@ -7331,6 +7365,7 @@ function _renderAjTasksOnly() {
       <div style="flex:1;min-width:0">
         <div style="font-size:0.82rem;font-weight:600;${t.done?'text-decoration:line-through;color:var(--muted)':'color:var(--text)'}">${t.label}</div>
       </div>
+      ${_ajPrioBadge(t)}
       ${dateLabel ? `<span style="font-size:0.65rem;font-family:'DM Mono',monospace;padding:3px 9px;border-radius:6px;white-space:nowrap;background:${isOverdue?'rgba(248,113,113,0.12)':'rgba(181,135,13,0.1)'};color:${isOverdue?'#f87171':'var(--accent)'};">${isOverdue?'⚠ ':''}${dateLabel}</span>` : ''}
       <button data-id="${t.id}" onclick="_ajDeleteTask(this.dataset.id)"
         style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;opacity:0.35;padding:2px 5px;flex-shrink:0"
