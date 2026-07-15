@@ -501,6 +501,33 @@
   }
   .finance-relock:hover { color:var(--red); border-color:rgba(248,113,113,0.3); }
 
+  /* ── BANK & P&L ── */
+  .bank-section { background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem;margin-bottom:1rem; }
+  .bank-section h3 { font-size:0.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 1rem; }
+  .bank-upload-zone { border:2px dashed var(--border2);border-radius:12px;padding:2rem;text-align:center;color:var(--muted);font-size:0.85rem;cursor:pointer;transition:border-color .2s; }
+  .bank-upload-zone:hover { border-color:var(--accent); }
+  .bank-metric { background:var(--surface2);border-radius:12px;padding:1rem;flex:1;min-width:120px; }
+  .bank-metric .label { font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem; }
+  .bank-metric .value { font-size:1.4rem;font-weight:700;font-family:'DM Mono',monospace; }
+  .bank-tx-row { display:grid;grid-template-columns:90px 1fr 160px 90px 28px 28px;gap:.5rem;align-items:center;padding:.45rem .25rem;border-bottom:1px solid var(--border);font-size:0.8rem; }
+  .bank-tx-row:last-child { border-bottom:none; }
+  .bank-badge { display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:600;white-space:nowrap; }
+  .bank-pl-bar-wrap { display:flex;align-items:center;gap:.5rem;margin:.25rem 0; }
+  .bank-pl-bar { height:10px;border-radius:5px;min-width:2px;transition:width .3s; }
+  .bank-pl-bar-label { font-size:0.72rem;color:var(--muted);min-width:140px; }
+  .bank-pl-bar-amount { font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--text);min-width:70px;text-align:right; }
+  .bank-action-row { display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem; }
+  .bank-btn { background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.78rem;cursor:pointer;color:var(--text);transition:all .15s; }
+  .bank-btn:hover { background:var(--accent);color:#fff;border-color:var(--accent); }
+  .bank-btn.primary { background:var(--accent);color:#fff;border-color:var(--accent); }
+  .bank-sub-card { background:var(--surface2);border-radius:10px;padding:.75rem 1rem;margin:.4rem 0;display:flex;justify-content:space-between;align-items:center;font-size:0.82rem; }
+  .bank-filter-row { display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem; }
+  .bank-filter-row input,.bank-filter-row select { background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:0.78rem;color:var(--text); }
+  .bank-th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:.35rem .25rem;border-bottom:2px solid var(--border2); }
+  .bank-tx-grid { display:grid;grid-template-columns:90px 1fr 160px 90px 28px 28px;gap:.5rem; }
+  .bank-manual-form { background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-end; }
+  .bank-manual-form input,.bank-manual-form select { background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:0.78rem;color:var(--text); }
+
   /* ── GROWTH TAB ── */
   .growth-page { display:flex; flex-direction:column; gap:1.5rem; }
   .growth-setup {
@@ -1334,6 +1361,9 @@
   <div id="page-finance" class="page">
     <div id="app-finance"></div>
   </div>
+
+  <!-- ══ PAGE: BANK & P&L ══ -->
+  <div id="page-finance-bank" class="page"><div id="app-finance-bank"></div></div>
 
   <!-- ══ PAGE: INVOICES ══ -->
   <div id="page-invoices" class="page">
@@ -2607,6 +2637,7 @@ const NAV_STRUCTURE = {
       { id: 'ceo-todos',         label: 'To-Do'             },
       { id: 'ceo-agents',        label: 'Agents'            },
       { id: 'finance',           label: 'Finance'           },
+      { id: 'finance-bank',      label: 'Bank & P&L'        },
     ],
     default: 'ceo-overview'
   },
@@ -2757,6 +2788,7 @@ function switchPage(page) {
   if (page === 'ceo-todos')     renderCEOTodos();
   if (page === 'ceo-agents')    renderCEOAgents();
   if (page === 'invoices')      renderInvoicePage();
+  if (page === 'finance-bank')  renderFinanceBankPage();
 
 }
 
@@ -10851,6 +10883,357 @@ window._invRenderExtracted = _invRenderExtracted;
 window._invRemoveExtracted = _invRemoveExtracted;
 window._invAddExtracted  = _invAddExtracted;
 window._invGenerate      = _invGenerate;
+</script>
+
+<!-- ══ BANK & P&L TRACKER ══ -->
+<script>
+// ── Constants ──
+const BANK_CATEGORIES = ['Revenue','Advertising Spend','Software & Tools','Payroll & Contractors','Tax & Accounting','Bank Fees','Office & Admin','Other Expense','Uncategorised'];
+const BANK_CAT_COLORS = {
+  'Revenue':'#22c55e','Advertising Spend':'#f59e0b','Software & Tools':'#60a5fa',
+  'Payroll & Contractors':'#c084fc','Tax & Accounting':'#fb7185','Bank Fees':'#94a3b8',
+  'Office & Admin':'#f97316','Other Expense':'#6b7280','Uncategorised':'#4b5563'
+};
+
+// ── Storage ──
+function _bankGetTx() { try { return JSON.parse(localStorage.getItem('qj_bank_tx') || '[]'); } catch(_) { return []; } }
+function _bankSaveTx(list) { localStorage.setItem('qj_bank_tx', JSON.stringify(list)); }
+
+// ── CSV Parsing ──
+function _bankParseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toLowerCase());
+  const hasNarration = headers.includes('narration');
+  const hasDebit = headers.includes('debit');
+  const results = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g) || lines[i].split(',');
+    const clean = cols.map(c => (c || '').replace(/"/g,'').trim());
+    const get = (name) => { const idx = headers.indexOf(name); return idx >= 0 ? (clean[idx] || '') : ''; };
+    const rawDate = get('date') || get('settlement date') || get('transaction date') || clean[0] || '';
+    const desc = get('description') || get('narration') || get('details') || get('transaction details') || clean[1] || '';
+    if (!rawDate || !desc) continue;
+    // Parse date
+    let date = rawDate;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawDate)) {
+      const [d,m,y] = rawDate.split('/'); date = `${y}-${m}-${d}`;
+    } else if (/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(rawDate)) {
+      const months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+      const [d,mo,y] = rawDate.split('-'); date = `${y}-${months[mo.toLowerCase()]}-${d.padStart(2,'0')}`;
+    }
+    let amount = 0;
+    if (hasNarration && hasDebit) {
+      const cr = parseFloat((get('credit') || '0').replace(/,/g,'')) || 0;
+      const dr = parseFloat((get('debit') || '0').replace(/,/g,'')) || 0;
+      amount = cr - dr;
+    } else {
+      const raw = get('amount') || get('debit amount') || clean[2] || '0';
+      amount = parseFloat(raw.replace(/,/g,'')) || 0;
+    }
+    results.push({ id: `${Date.now()}_${i}`, date, description: desc, amount, category: 'Uncategorised', type: amount >= 0 ? 'income' : 'expense', include: true });
+  }
+  return results;
+}
+
+// ── AI Categorisation ──
+async function _bankCategoriseWithAI() {
+  const apiKey = localStorage.getItem('aj_anthropic_key');
+  if (!apiKey) { alert('No Anthropic API key found. Add it in Settings.'); return; }
+  const all = _bankGetTx();
+  const todo = all.filter(t => t.category === 'Uncategorised');
+  if (!todo.length) { alert('All transactions are already categorised.'); return; }
+  const statusEl = document.getElementById('bank-ai-status');
+  if (statusEl) statusEl.textContent = `Categorising ${todo.length} transactions...`;
+  const batchSize = 30;
+  for (let b = 0; b < todo.length; b += batchSize) {
+    const batch = todo.slice(b, b + batchSize);
+    const txText = batch.map(t => `[${t.id}] ${t.description} ${t.amount}`).join('\n');
+    const prompt = `You are a bookkeeper for an Australian digital marketing agency. Categorise these bank transactions.\nCategories: Revenue, Advertising Spend, Software & Tools, Payroll & Contractors, Tax & Accounting, Bank Fees, Office & Admin, Other Expense.\nFor each, return {id, category, type: 'income'|'expense'}. Return ONLY a valid JSON array.\nTransactions:\n${txText}`;
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:2048, messages:[{ role:'user', content: prompt }] })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || '[]';
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const cats = JSON.parse(match[0]);
+        const map = {};
+        cats.forEach(c => { map[c.id] = c; });
+        const updated = _bankGetTx().map(t => map[t.id] ? { ...t, category: map[t.id].category || t.category, type: map[t.id].type || t.type } : t);
+        _bankSaveTx(updated);
+      }
+    } catch(e) { console.error('AI categorise error', e); }
+  }
+  if (statusEl) statusEl.textContent = 'Done!';
+  _bankRenderTxTable();
+  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderSubs();
+}
+
+// ── Recurring Detection ──
+function _bankDetectRecurring(txList) {
+  const norm = s => s.toLowerCase().replace(/\d+/g,'').replace(/\s+/g,' ').trim();
+  const groups = {};
+  txList.filter(t => t.include && t.type === 'expense').forEach(t => {
+    const key = norm(t.description);
+    if (!groups[key]) groups[key] = { description: t.description, normalised: key, txs: [] };
+    groups[key].txs.push(t);
+  });
+  return Object.values(groups).map(g => {
+    const months = [...new Set(g.txs.map(t => t.date.slice(0,7)))];
+    const avgAmount = g.txs.reduce((s,t) => s + Math.abs(t.amount), 0) / g.txs.length;
+    return { ...g, count: g.txs.length, months, avgAmount, monthlyAmount: avgAmount };
+  }).filter(g => g.months.length >= 2).sort((a,b) => b.monthlyAmount - a.monthlyAmount);
+}
+
+// ── P&L Calculation ──
+function _bankCalcPL(txList, yyyyMM) {
+  const filtered = txList.filter(t => t.include && t.date.slice(0,7) === yyyyMM);
+  const income = filtered.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const expenses = filtered.filter(t => t.type === 'expense').reduce((s,t) => s + Math.abs(t.amount), 0);
+  const net = income - expenses;
+  const byCategory = {};
+  filtered.filter(t => t.type === 'expense').forEach(t => {
+    byCategory[t.category] = (byCategory[t.category] || 0) + Math.abs(t.amount);
+  });
+  return { income, expenses, net, byCategory };
+}
+
+// ── P&L Render ──
+window._bankPLOffset = 0;
+function _bankRenderPL(offset) {
+  window._bankPLOffset = offset;
+  const panel = document.getElementById('bank-pl-panel');
+  if (!panel) return;
+  const now = new Date();
+  now.setMonth(now.getMonth() + offset);
+  const yyyyMM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const label = now.toLocaleString('default',{month:'long',year:'numeric'});
+  const pl = _bankCalcPL(_bankGetTx(), yyyyMM);
+  const fmt = n => '$' + n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const maxExp = Math.max(...Object.values(pl.byCategory), 1);
+  const bars = Object.entries(pl.byCategory).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([cat,val]) =>
+    `<div class="bank-pl-bar-wrap">
+      <span class="bank-pl-bar-label">${cat}</span>
+      <div class="bank-pl-bar" style="width:${Math.round(val/maxExp*100)}%;background:${BANK_CAT_COLORS[cat]||'#6b7280'}"></div>
+      <span class="bank-pl-bar-amount">${fmt(val)}</span>
+    </div>`).join('');
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+      <button class="bank-btn" onclick="window._bankNavPL(-1)">←</button>
+      <span style="font-weight:600;font-size:0.9rem">${label}</span>
+      <button class="bank-btn" onclick="window._bankNavPL(1)" ${offset >= 0 ? 'disabled' : ''}>→</button>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;">
+      <div class="bank-metric"><div class="label">Income</div><div class="value" style="color:var(--green)">${fmt(pl.income)}</div></div>
+      <div class="bank-metric"><div class="label">Expenses</div><div class="value" style="color:var(--red)">${fmt(pl.expenses)}</div></div>
+      <div class="bank-metric"><div class="label">Net Profit</div><div class="value" style="color:${pl.net>=0?'var(--green)':'var(--red)'}">${fmt(pl.net)}</div></div>
+    </div>
+    ${bars || '<p style="color:var(--muted);font-size:0.8rem">No expense data for this month.</p>'}`;
+}
+
+// ── Tx Table Render ──
+function _bankRenderTxTable() {
+  const body = document.getElementById('bank-tx-body');
+  if (!body) return;
+  const search = (document.getElementById('bank-search')||{}).value || '';
+  const month  = (document.getElementById('bank-month-filter')||{}).value || '';
+  const cat    = (document.getElementById('bank-cat-filter')||{}).value || '';
+  let txs = _bankGetTx().filter(t => {
+    if (search && !t.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (month && t.date.slice(0,7) !== month) return false;
+    if (cat && t.category !== cat) return false;
+    return true;
+  }).sort((a,b) => b.date.localeCompare(a.date));
+  if (!txs.length) { body.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:1.5rem 0;text-align:center">No transactions yet — upload a bank statement to get started.</div>'; return; }
+  const catOpts = BANK_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  body.innerHTML = txs.map(t => {
+    const color = BANK_CAT_COLORS[t.category] || '#6b7280';
+    const amtColor = t.type === 'income' ? 'var(--green)' : 'var(--red)';
+    const desc = t.description.length > 42 ? t.description.slice(0,42) + '…' : t.description;
+    const amt = (t.type === 'expense' ? '-' : '+') + '$' + Math.abs(t.amount).toFixed(2);
+    return `<div class="bank-tx-row">
+      <span style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted)">${t.date}</span>
+      <span title="${t.description.replace(/"/g,'&quot;')}">${desc}</span>
+      <select style="background:${color}22;border:1px solid ${color}66;border-radius:6px;font-size:0.72rem;color:var(--text);padding:2px 4px" onchange="window._bankSetCategory('${t.id}',this.value)">${BANK_CATEGORIES.map(c=>`<option value="${c}"${c===t.category?' selected':''}>${c}</option>`).join('')}</select>
+      <span style="font-family:'DM Mono',monospace;font-size:0.78rem;color:${amtColor};text-align:right">${amt}</span>
+      <input type="checkbox" ${t.include?'checked':''} onchange="window._bankToggleInclude('${t.id}')" title="Include in P&L" style="cursor:pointer">
+      <button onclick="window._bankDeleteTx('${t.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0" title="Delete">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Subs Render ──
+function _bankRenderSubs() {
+  const panel = document.getElementById('bank-subs-panel');
+  if (!panel) return;
+  const recs = _bankDetectRecurring(_bankGetTx());
+  if (!recs.length) { panel.innerHTML = '<p style="color:var(--muted);font-size:0.82rem">No recurring payments detected yet.</p>'; return; }
+  panel.innerHTML = recs.map(r =>
+    `<div class="bank-sub-card">
+      <div>
+        <div style="font-weight:600;font-size:0.82rem">${r.description.slice(0,50)}</div>
+        <div style="color:var(--muted);font-size:0.72rem;margin-top:2px">Seen ${r.count}× across ${r.months.length} months (${r.months.join(', ')})</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.85rem;color:var(--red);font-weight:700">~$${r.avgAmount.toFixed(2)}/mo</div>
+    </div>`).join('');
+}
+
+// ── Action Handlers ──
+function _bankHandleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parsed = _bankParseCSV(e.target.result);
+    const existing = _bankGetTx();
+    const keys = new Set(existing.map(t => `${t.date}|${t.description}|${t.amount}`));
+    const newTxs = parsed.filter(t => !keys.has(`${t.date}|${t.description}|${t.amount}`));
+    _bankSaveTx([...existing, ...newTxs]);
+    const statusEl = document.getElementById('bank-ai-status');
+    if (statusEl) statusEl.textContent = `Imported ${newTxs.length} new transactions (${parsed.length - newTxs.length} duplicates skipped).`;
+    _bankRenderPL(window._bankPLOffset || 0);
+    _bankRenderTxTable();
+    _bankRenderSubs();
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function _bankSetCategory(id, cat) {
+  const txs = _bankGetTx().map(t => t.id === id ? { ...t, category: cat } : t);
+  _bankSaveTx(txs);
+  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderSubs();
+}
+
+function _bankToggleInclude(id) {
+  const txs = _bankGetTx().map(t => t.id === id ? { ...t, include: !t.include } : t);
+  _bankSaveTx(txs);
+  _bankRenderPL(window._bankPLOffset || 0);
+}
+
+function _bankDeleteTx(id) {
+  _bankSaveTx(_bankGetTx().filter(t => t.id !== id));
+  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderTxTable();
+  _bankRenderSubs();
+}
+
+function _bankNavPL(delta) {
+  _bankRenderPL((window._bankPLOffset || 0) + delta);
+}
+
+function _bankAddManual() {
+  const d = document.getElementById('bank-man-date').value;
+  const desc = document.getElementById('bank-man-desc').value.trim();
+  const amt = parseFloat(document.getElementById('bank-man-amt').value);
+  const cat = document.getElementById('bank-man-cat').value;
+  if (!d || !desc || isNaN(amt)) { alert('Please fill in date, description, and amount.'); return; }
+  const tx = { id: `manual_${Date.now()}`, date: d, description: desc, amount: amt, category: cat, type: amt >= 0 ? 'income' : 'expense', include: true };
+  _bankSaveTx([..._bankGetTx(), tx]);
+  document.getElementById('bank-man-date').value = '';
+  document.getElementById('bank-man-desc').value = '';
+  document.getElementById('bank-man-amt').value = '';
+  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderTxTable();
+  _bankRenderSubs();
+}
+
+function _bankToggleManual() {
+  const f = document.getElementById('bank-manual-form');
+  if (f) f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+}
+
+// ── Main Render ──
+function renderFinanceBankPage() {
+  const el = document.getElementById('app-finance-bank');
+  if (!el) return;
+  const unlocked = sessionStorage.getItem('qj_finance_unlocked') === '1';
+  if (!unlocked) { showFinanceLock(el, localStorage.getItem('qj_finance_pw')); return; }
+
+  // Get months for filter dropdown
+  const txs = _bankGetTx();
+  const months = [...new Set(txs.map(t => t.date.slice(0,7)))].sort().reverse();
+  const monthOpts = months.map(m => `<option value="${m}">${m}</option>`).join('');
+  const catOpts = BANK_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+      <h2 style="margin:0;font-size:1.1rem;font-weight:700">Bank & P&L Tracker</h2>
+      <button class="finance-relock" onclick="sessionStorage.removeItem('qj_finance_unlocked');renderFinanceBankPage()">🔒 Lock</button>
+    </div>
+
+    <!-- P&L Summary -->
+    <div class="bank-section">
+      <h3>P&L Summary</h3>
+      <div id="bank-pl-panel"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="bank-action-row">
+      <label class="bank-btn primary" style="cursor:pointer">
+        📤 Upload CSV
+        <input type="file" accept=".csv" style="display:none" onchange="window._bankHandleFile(this)">
+      </label>
+      <button class="bank-btn" onclick="window._bankToggleManual()">+ Add Transaction</button>
+      <button class="bank-btn" onclick="window._bankCategoriseWithAI()">✦ Auto-Categorise</button>
+      <span id="bank-ai-status" style="font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace"></span>
+    </div>
+
+    <!-- Manual Form -->
+    <div id="bank-manual-form" class="bank-manual-form" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:2px"><label style="font-size:0.7rem;color:var(--muted)">Date</label><input type="date" id="bank-man-date"></div>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1"><label style="font-size:0.7rem;color:var(--muted)">Description</label><input type="text" id="bank-man-desc" placeholder="e.g. Google Ads"></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><label style="font-size:0.7rem;color:var(--muted)">Amount</label><input type="number" id="bank-man-amt" placeholder="-150.00" style="width:110px"></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><label style="font-size:0.7rem;color:var(--muted)">Category</label><select id="bank-man-cat">${catOpts}</select></div>
+      <button class="bank-btn primary" onclick="window._bankAddManual()" style="align-self:flex-end">Add</button>
+    </div>
+
+    <!-- Transactions -->
+    <div class="bank-section">
+      <h3>Transactions</h3>
+      <div class="bank-filter-row">
+        <input type="search" id="bank-search" placeholder="Search…" oninput="_bankRenderTxTable()" style="flex:1;min-width:140px">
+        <select id="bank-month-filter" onchange="_bankRenderTxTable()"><option value="">All months</option>${monthOpts}</select>
+        <select id="bank-cat-filter" onchange="_bankRenderTxTable()"><option value="">All categories</option>${catOpts}</select>
+      </div>
+      <div class="bank-tx-grid" style="border-bottom:2px solid var(--border2);padding-bottom:.25rem;margin-bottom:.25rem;">
+        <span class="bank-th">Date</span>
+        <span class="bank-th">Description</span>
+        <span class="bank-th">Category</span>
+        <span class="bank-th" style="text-align:right">Amount</span>
+        <span class="bank-th" title="Include in P&L">P&L</span>
+        <span class="bank-th"></span>
+      </div>
+      <div id="bank-tx-body"></div>
+    </div>
+
+    <!-- Subscriptions -->
+    <div class="bank-section">
+      <h3>🔔 Subscription Watch</h3>
+      <p style="font-size:0.75rem;color:var(--muted);margin:0 0 .75rem">Recurring payments detected across 2+ months</p>
+      <div id="bank-subs-panel"></div>
+    </div>`;
+
+  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderTxTable();
+  _bankRenderSubs();
+}
+
+window._bankHandleFile       = _bankHandleFile;
+window._bankSetCategory      = _bankSetCategory;
+window._bankToggleInclude    = _bankToggleInclude;
+window._bankDeleteTx         = _bankDeleteTx;
+window._bankNavPL            = _bankNavPL;
+window._bankAddManual        = _bankAddManual;
+window._bankToggleManual     = _bankToggleManual;
+window._bankCategoriseWithAI = _bankCategoriseWithAI;
+window.renderFinanceBankPage = renderFinanceBankPage;
 </script>
 
 </body>
