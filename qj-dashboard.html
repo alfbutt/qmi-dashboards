@@ -6515,6 +6515,7 @@ const PM_ROLES = {
       {
         trigger: 'New Client Onboarded',
         tasks: [
+          { id: 'alf-won', label: 'Move Lead to "Won" in Pipeline', desc: 'Open GHL and move this client\'s contact card to the "Won" stage in the pipeline. This confirms the deal is closed and triggers the correct post-sale automations. Assigned to: Owner / Onboarder.' },
           { id: 'alf-1', label: 'Fill out Onboarding Form 1', desc: 'Use Onboarding Form 2\'s generator — paste in the onboarding call transcript, then copy & paste the client overview document, stats sheet URL, and WhatsApp group ID into the relevant fields. Then submit Form 1 to fully onboard the client.', hasVideo: true },
           { id: 'alf-2', label: 'Update Client Manually in Payment Log', desc: 'Open the Payment Log Google Sheet and manually add the new client row with their MRR, start date, payment type, and any other relevant fields.', hasVideo: true },
           { id: 'alf-3', label: 'Mark as Closed in Closer Tracker', desc: 'Open the Google Sheet Closer Tracker and mark this deal as Closed. Enter the MRR and Contracted Revenue figures.', hasVideo: true },
