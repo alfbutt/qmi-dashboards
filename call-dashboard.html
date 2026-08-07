@@ -11356,6 +11356,19 @@ function renderFinanceBankPage() {
       <button class="finance-relock" onclick="sessionStorage.removeItem('qj_finance_unlocked');renderFinanceBankPage()">🔒 Lock</button>
     </div>
 
+    <!-- API Key -->
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.6rem .85rem;">
+      <span style="font-size:0.75rem;color:var(--muted);white-space:nowrap;font-weight:600">🔑 Anthropic API Key</span>
+      <input type="password" id="bank-api-key-input" placeholder="sk-ant-…" value="${localStorage.getItem('aj_anthropic_key')||''}"
+             style="flex:1;background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--text)"
+             oninput="localStorage.setItem('aj_anthropic_key',this.value)">
+      <span id="bank-api-key-saved" style="font-size:0.7rem;color:#4ade80;display:none">Saved ✓</span>
+      <button class="bank-btn" style="padding:4px 10px;font-size:0.72rem" onclick="
+        const v=document.getElementById('bank-api-key-input').value.trim();
+        if(v){localStorage.setItem('aj_anthropic_key',v);const s=document.getElementById('bank-api-key-saved');s.style.display='inline';setTimeout(()=>s.style.display='none',2000);}
+      ">Save</button>
+    </div>
+
     <!-- Bulk Upload Zone -->
     <div class="bank-upload-zone" id="bankUploadZone"
          onclick="document.getElementById('bankFileInput').click()"
