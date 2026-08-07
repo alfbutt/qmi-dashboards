@@ -11158,53 +11158,71 @@ async function _bankReadWithClaude(file, apiKey, setStatus) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
 
-  // Render every page to a JPEG image
+  // Render every page to a compact JPEG
   const images = [];
   for (let p = 1; p <= pdf.numPages; p++) {
     setStatus(`Rendering ${file.name} — page ${p} of ${pdf.numPages}…`);
     const page = await pdf.getPage(p);
-    const vp = page.getViewport({ scale: 1.8 });
+    const vp = page.getViewport({ scale: 1.2 });
     const canvas = document.createElement('canvas');
     canvas.width = vp.width; canvas.height = vp.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-    images.push(canvas.toDataURL('image/jpeg', 0.88).split(',')[1]);
+    images.push(canvas.toDataURL('image/jpeg', 0.72).split(',')[1]);
   }
 
-  setStatus(`Sending ${file.name} to Claude…`);
-  const content = images.flatMap(b64 => [
-    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }
-  ]);
-  content.push({ type: 'text', text:
-    `These are pages from an ANZ bank statement. Extract every transaction and return ONLY a valid JSON array — no explanation, no markdown.
+  // Send pages in batches of 3 to keep payload small
+  const BATCH = 3;
+  let allText = '';
+  for (let b = 0; b < images.length; b += BATCH) {
+    const batch = images.slice(b, b + BATCH);
+    const pageNums = `pages ${b+1}–${Math.min(b+BATCH, images.length)}`;
+    setStatus(`Sending ${file.name} (${pageNums}) to Claude…`);
+    const content = batch.flatMap(b64 => [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }
+    ]);
+    content.push({ type: 'text', text:
+      `These are pages from an ANZ bank statement. Extract every transaction and return ONLY a valid JSON array — no explanation, no markdown.
+Each item: {"date":"YYYY-MM-DD","description":"merchant name","amount":number,"category":"string"}
+- amount: positive = deposit/income, negative = withdrawal/expense
+- category: one of: Revenue | Advertising Spend | Software & Tools | Payroll & Contractors | Tax & Accounting | Bank Fees | Office & Admin | Other Expense
+- Skip opening/closing balance rows and totals. Include every real transaction.` });
 
-Each item must have:
-  "date": "YYYY-MM-DD",
-  "description": "clean merchant / payee name",
-  "amount": number  (positive = deposit/income, negative = withdrawal/expense),
-  "category": one of exactly: Revenue | Advertising Spend | Software & Tools | Payroll & Contractors | Tax & Accounting | Bank Fees | Office & Admin | Other Expense
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    let res;
+    try {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4096, messages: [{ role: 'user', content }] })
+      });
+    } finally { clearTimeout(timeout); }
 
-Rules:
-- Skip opening balance, closing balance, and totals rows
-- Every real transaction must appear, including inter-account transfers
-- Use the transaction date (not effective date) for "date"` });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`API error ${res.status}: ${errText.slice(0, 200)}`);
+    }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    allText += (data.content?.[0]?.text || '') + '\n';
+  }
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4096, messages: [{ role: 'user', content }] })
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  const text = data.content?.[0]?.text || '[]';
-  const match = text.match(/\[[\s\S]*\]/);
-  if (!match) throw new Error('No transaction data returned');
-  const txs = JSON.parse(match[0]);
-  return txs
+  // Merge all JSON arrays from every batch into one
+  const allTxs = [];
+  const arrayRe = /\[[\s\S]*?\]/g;
+  let m;
+  while ((m = arrayRe.exec(allText)) !== null) {
+    try { allTxs.push(...JSON.parse(m[0])); } catch(e) {}
+  }
+  if (!allTxs.length) throw new Error('No transactions found in response — check the file is a valid bank statement');
+
+  return allTxs
     .map((t, i) => ({
       id: `ai_${Date.now()}_${i}`,
       date: String(t.date || ''),
