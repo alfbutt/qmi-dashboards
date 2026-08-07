@@ -11106,25 +11106,132 @@ function _bankRenderSubs() {
     </div>`).join('');
 }
 
+// ── PDF Parser (ANZ Business Essentials) ──
+async function _bankHandlePDF(file) {
+  const statusEl = document.getElementById('bank-ai-status');
+  if (statusEl) statusEl.textContent = 'Loading PDF reader…';
+  if (!window.pdfjsLib) {
+    await new Promise((res, rej) => {
+      const s = Object.assign(document.createElement('script'), {
+        src: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+        onload: res, onerror: rej
+      });
+      document.head.appendChild(s);
+    });
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const items = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const vp   = page.getViewport({ scale: 1 });
+    const tc   = await page.getTextContent();
+    for (const it of tc.items) {
+      if (!it.str.trim()) continue;
+      items.push({ str: it.str.trim(), x: it.transform[4], y: vp.height - it.transform[5], page: p });
+    }
+    if (statusEl) statusEl.textContent = `Reading PDF… page ${p} of ${pdf.numPages}`;
+  }
+  items.sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
+  const rows = [];
+  for (const it of items) {
+    const last = rows[rows.length - 1];
+    if (last && last[0].page === it.page && Math.abs(it.y - last[0].y) <= 4) last.push(it);
+    else rows.push([it]);
+  }
+  const MON = {JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'};
+  const MONFULL = {JANUARY:'01',FEBRUARY:'02',MARCH:'03',APRIL:'04',MAY:'05',JUNE:'06',JULY:'07',AUGUST:'08',SEPTEMBER:'09',OCTOBER:'10',NOVEMBER:'11',DECEMBER:'12'};
+  const dateRe = /^(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i;
+  const amtRe  = /^[\d,]+\.\d{2}$/;
+  let startMo = 0, startYr = new Date().getFullYear(), endYr = startYr;
+  const headerText = rows.slice(0, 30).map(r => r.map(i => i.str).join(' ')).join(' ');
+  const pm = headerText.match(/(\d{1,2})\s+(\w+)\s+(\d{4})\s+TO\s+(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+  if (pm) {
+    startMo = parseInt(MONFULL[pm[2].toUpperCase()] || MON[pm[2].toUpperCase().slice(0,3)] || '1');
+    startYr = parseInt(pm[3]);
+    endYr   = parseInt(pm[6]);
+  }
+  const txYear = mo => (startYr === endYr || mo >= startMo) ? startYr : endYr;
+  const SKIP = /OPENING BALANCE|CLOSING BALANCE|TOTALS AT END|TRANSACTION DETAILS|Withdrawals \(\$\)|Deposits \(\$\)|Balance \(\$\)|Please retain|Page \d+ of|ANZ BUSINESS|Account Number|NEED TO GET|IMPORTANT INFORMATION|STATEMENT NUMBER|WELCOME TO|This Statement|RTBSP/i;
+  const results = [];
+  let cur = null, prevBal = null;
+  function flush() {
+    if (!cur || !cur.amounts.length) { cur = null; return; }
+    const sorted = [...cur.amounts].sort((a, b) => b.x - a.x);
+    const bal  = sorted[0].val;
+    const desc = cur.desc.replace(/\s+/g,' ').trim();
+    if (!desc) { cur = null; prevBal = bal; return; }
+    let amount;
+    if (prevBal !== null) {
+      amount = Math.round((bal - prevBal) * 100) / 100;
+    } else if (sorted.length >= 2) {
+      const t2 = sorted[1];
+      amount = (sorted[0].x - t2.x) > 60 ? -t2.val : t2.val;
+    } else { cur = null; prevBal = bal; return; }
+    prevBal = bal;
+    if (amount === 0) { cur = null; return; }
+    results.push({ id:`pdf_${Date.now()}_${results.length}`, date:cur.date, description:desc, amount, category:'Uncategorised', type:amount>=0?'income':'expense', include:true });
+    cur = null;
+  }
+  for (const row of rows) {
+    const rowStr = row.map(r => r.str).join(' ');
+    if (SKIP.test(rowStr)) {
+      if (/OPENING BALANCE/i.test(rowStr)) {
+        const nums = row.filter(r => amtRe.test(r.str)).sort((a,b) => b.x - a.x);
+        if (nums[0]) prevBal = parseFloat(nums[0].str.replace(/,/g,''));
+      }
+      continue;
+    }
+    const dm = row[0].str.match(dateRe);
+    if (dm) {
+      flush();
+      const moNum = parseInt(MON[dm[2].toUpperCase()]);
+      cur = { date:`${txYear(moNum)}-${String(moNum).padStart(2,'0')}-${dm[1].padStart(2,'0')}`, desc:'', amounts:[] };
+      for (let i = 1; i < row.length; i++) {
+        const it = row[i];
+        if (amtRe.test(it.str)) cur.amounts.push({ val:parseFloat(it.str.replace(/,/g,'')), x:it.x });
+        else cur.desc += (cur.desc?' ':'') + it.str;
+      }
+    } else if (cur) {
+      for (const it of row) {
+        if (amtRe.test(it.str)) cur.amounts.push({ val:parseFloat(it.str.replace(/,/g,'')), x:it.x });
+        else if (!/EFFECTIVE DATE/i.test(it.str)) cur.desc += (cur.desc?' ':'') + it.str;
+      }
+    }
+  }
+  flush();
+  return results;
+}
+
 // ── Action Handlers ──
+function _bankImport(parsed) {
+  const existing = _bankGetTx();
+  const keys = new Set(existing.map(t => `${t.date}|${t.description}|${t.amount}`));
+  const newTxs = parsed.filter(t => !keys.has(`${t.date}|${t.description}|${t.amount}`));
+  _bankSaveTx([...existing, ...newTxs]);
+  const statusEl = document.getElementById('bank-ai-status');
+  if (statusEl) statusEl.textContent = `Imported ${newTxs.length} new transactions (${parsed.length - newTxs.length} duplicates skipped).`;
+  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderTxTable();
+  _bankRenderSubs();
+}
+
 function _bankHandleFile(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const parsed = _bankParseCSV(e.target.result);
-    const existing = _bankGetTx();
-    const keys = new Set(existing.map(t => `${t.date}|${t.description}|${t.amount}`));
-    const newTxs = parsed.filter(t => !keys.has(`${t.date}|${t.description}|${t.amount}`));
-    _bankSaveTx([...existing, ...newTxs]);
-    const statusEl = document.getElementById('bank-ai-status');
-    if (statusEl) statusEl.textContent = `Imported ${newTxs.length} new transactions (${parsed.length - newTxs.length} duplicates skipped).`;
-    _bankRenderPL(window._bankPLOffset || 0);
-    _bankRenderTxTable();
-    _bankRenderSubs();
-  };
-  reader.readAsText(file);
   input.value = '';
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    _bankHandlePDF(file).then(parsed => _bankImport(parsed)).catch(err => {
+      const s = document.getElementById('bank-ai-status');
+      if (s) s.textContent = 'PDF error: ' + err.message;
+    });
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => _bankImport(_bankParseCSV(e.target.result));
+    reader.readAsText(file);
+  }
 }
 
 function _bankSetCategory(id, cat) {
@@ -11200,8 +11307,8 @@ function renderFinanceBankPage() {
     <!-- Actions -->
     <div class="bank-action-row">
       <label class="bank-btn primary" style="cursor:pointer">
-        📤 Upload CSV
-        <input type="file" accept=".csv" style="display:none" onchange="window._bankHandleFile(this)">
+        📤 Upload CSV / PDF
+        <input type="file" accept=".csv,.pdf" style="display:none" onchange="window._bankHandleFile(this)">
       </label>
       <button class="bank-btn" onclick="window._bankToggleManual()">+ Add Transaction</button>
       <button class="bank-btn" onclick="window._bankCategoriseWithAI()">✦ Auto-Categorise</button>
