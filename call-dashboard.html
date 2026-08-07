@@ -11154,7 +11154,10 @@ async function _bankHandleFiles(fileList) {
         const text = await files[i].text();
         allParsed = allParsed.concat(_bankParseCSV(text));
       }
-    } catch(e) { console.error('Parse error:', files[i].name, e); }
+    } catch(e) {
+      console.error('Parse error:', files[i].name, e);
+      setStatus(`⚠ Error reading ${files[i].name}: ${e.message}`);
+    }
   }
   // Apply instant categorisation
   allParsed = allParsed.map(t => ({
@@ -11218,10 +11221,13 @@ async function _bankHandlePDF(file) {
   }
   const MON = {JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'};
   const MONFULL = {JANUARY:'01',FEBRUARY:'02',MARCH:'03',APRIL:'04',MAY:'05',JUNE:'06',JULY:'07',AUGUST:'08',SEPTEMBER:'09',OCTOBER:'10',NOVEMBER:'11',DECEMBER:'12'};
-  const dateRe = /^(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i;
-  const amtRe  = /^[\d,]+\.\d{2}$/;
+  // Match date at the START of a joined row (handles split text items like "09" + "MAR")
+  const dateRe = /^(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b/i;
+  // Match standalone dollar amounts (with or without leading $)
+  const amtRe  = /^\$?([\d,]+\.\d{2})$/;
+  const parseAmt = s => parseFloat(s.replace(/[$,]/g,'')) || 0;
   let startMo = 0, startYr = new Date().getFullYear(), endYr = startYr;
-  const headerText = rows.slice(0, 30).map(r => r.map(i => i.str).join(' ')).join(' ');
+  const headerText = rows.slice(0, 40).map(r => r.map(i => i.str).join(' ')).join(' ');
   const pm = headerText.match(/(\d{1,2})\s+(\w+)\s+(\d{4})\s+TO\s+(\d{1,2})\s+(\w+)\s+(\d{4})/i);
   if (pm) {
     startMo = parseInt(MONFULL[pm[2].toUpperCase()] || MON[pm[2].toUpperCase().slice(0,3)] || '1');
@@ -11251,32 +11257,47 @@ async function _bankHandlePDF(file) {
     cur = null;
   }
   for (const row of rows) {
-    const rowStr = row.map(r => r.str).join(' ');
+    // Join the whole row first — handles cases where PDF splits "09" and "MAR" as separate items
+    const rowStr = row.map(r => r.str).join(' ').trim();
     if (SKIP.test(rowStr)) {
       if (/OPENING BALANCE/i.test(rowStr)) {
         const nums = row.filter(r => amtRe.test(r.str)).sort((a,b) => b.x - a.x);
-        if (nums[0]) prevBal = parseFloat(nums[0].str.replace(/,/g,''));
+        if (nums[0]) prevBal = parseAmt(nums[0].str);
       }
       continue;
     }
-    const dm = row[0].str.match(dateRe);
+    // Check the full row string for a date at the start
+    const dm = rowStr.match(dateRe);
     if (dm) {
       flush();
       const moNum = parseInt(MON[dm[2].toUpperCase()]);
-      cur = { date:`${txYear(moNum)}-${String(moNum).padStart(2,'0')}-${dm[1].padStart(2,'0')}`, desc:'', amounts:[] };
-      for (let i = 1; i < row.length; i++) {
-        const it = row[i];
-        if (amtRe.test(it.str)) cur.amounts.push({ val:parseFloat(it.str.replace(/,/g,'')), x:it.x });
-        else cur.desc += (cur.desc?' ':'') + it.str;
+      const date = `${txYear(moNum)}-${String(moNum).padStart(2,'0')}-${dm[1].padStart(2,'0')}`;
+      cur = { date, desc:'', amounts:[] };
+      // Strip the matched date from the front, then classify remaining items
+      const afterDate = rowStr.slice(dm[0].length).trim();
+      // Pull amounts from individual items (preserve their x positions)
+      for (const it of row) {
+        if (amtRe.test(it.str)) {
+          cur.amounts.push({ val: parseAmt(it.str), x: it.x });
+        } else if (!dateRe.test(it.str.trim()) && !/^\d{1,2}$/.test(it.str.trim())) {
+          // Skip bare day numbers that were part of the date
+          cur.desc += (cur.desc?' ':'') + it.str;
+        }
       }
+      // Remove the date prefix from desc if it snuck in
+      cur.desc = cur.desc.replace(new RegExp('^' + dm[0].replace(/\s+/g,'\\s+'), 'i'), '').trim();
     } else if (cur) {
       for (const it of row) {
-        if (amtRe.test(it.str)) cur.amounts.push({ val:parseFloat(it.str.replace(/,/g,'')), x:it.x });
-        else if (!/EFFECTIVE DATE/i.test(it.str)) cur.desc += (cur.desc?' ':'') + it.str;
+        if (amtRe.test(it.str)) {
+          cur.amounts.push({ val: parseAmt(it.str), x: it.x });
+        } else if (!/EFFECTIVE DATE/i.test(it.str)) {
+          cur.desc += (cur.desc?' ':'') + it.str;
+        }
       }
     }
   }
   flush();
+  if (statusEl) statusEl.textContent = `Parsed ${results.length} transactions from ${file.name}`;
   return results;
 }
 
