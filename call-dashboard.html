@@ -11221,53 +11221,59 @@ Rules:
 async function _bankHandleFiles(fileList) {
   const files = Array.from(fileList);
   if (!files.length) return;
-  const getStatus = () => document.getElementById('bank-dz-status') || document.getElementById('bank-ai-status');
-  const setStatus = msg => { const el = getStatus(); if (el) el.textContent = msg; };
+
+  const setStatus = (msg, colour) => {
+    const el = document.getElementById('bank-dz-status');
+    if (!el) return;
+    el.style.display = 'block';
+    el.style.borderColor = colour || 'var(--border2)';
+    el.style.color = colour && colour !== 'var(--border2)' ? colour : 'var(--text)';
+    el.textContent = msg;
+  };
 
   const apiKey = localStorage.getItem('aj_anthropic_key');
   if (!apiKey) {
-    const dzEl = document.getElementById('bankUploadZone');
-    if (dzEl) { dzEl.style.borderColor = '#f87171'; dzEl.style.background = 'rgba(248,113,113,0.08)'; }
-    setStatus('');
+    setStatus('⚠ No API key saved — paste your Anthropic key into the field above and click Save, then upload again.', '#f87171');
     const keyInput = document.getElementById('bank-api-key-input');
     if (keyInput) { keyInput.style.outline = '2px solid #f87171'; keyInput.focus(); }
-    alert('No API key found.\n\nPaste your Anthropic API key into the "🔑 Anthropic API Key" field at the top of this page and click Save, then try uploading again.\n\nGet a key at: console.anthropic.com');
     return;
   }
-  // Reset drop zone style
-  const dzEl = document.getElementById('bankUploadZone');
-  if (dzEl) { dzEl.style.borderColor = ''; dzEl.style.background = ''; }
-  const keyInput = document.getElementById('bank-api-key-input');
-  if (keyInput) keyInput.style.outline = '';
+
+  setStatus(`⏳ Starting — reading ${files.length} file${files.length > 1 ? 's' : ''}…`);
 
   let allParsed = [];
   for (let i = 0; i < files.length; i++) {
     try {
+      setStatus(`⏳ File ${i+1} of ${files.length}: ${files[i].name}`);
       if (files[i].name.toLowerCase().endsWith('.pdf')) {
         const txs = await _bankReadWithClaude(files[i], apiKey, setStatus);
         allParsed = allParsed.concat(txs);
-        setStatus(`✓ ${files[i].name} — ${txs.length} transactions found (${i+1}/${files.length} done)`);
+        setStatus(`✓ ${files[i].name} — ${txs.length} transactions read (${i+1}/${files.length} done)`, '#4ade80');
       } else {
         const text = await files[i].text();
         const txs = _bankParseCSV(text).map(t => ({
           ...t, category: _bankQuickCategory(t.description, t.amount), type: t.amount >= 0 ? 'income' : 'expense'
         }));
         allParsed = allParsed.concat(txs);
+        setStatus(`✓ ${files[i].name} — ${txs.length} transactions read (${i+1}/${files.length} done)`, '#4ade80');
       }
     } catch(e) {
       console.error(files[i].name, e);
-      setStatus(`⚠ Error on ${files[i].name}: ${e.message}`);
+      setStatus(`⚠ Error on ${files[i].name}: ${e.message}`, '#f87171');
     }
   }
 
-  if (!allParsed.length) { setStatus('No transactions found — check the files and try again.'); return; }
+  if (!allParsed.length) {
+    setStatus('No transactions found — check your files and try again.', '#f87171');
+    return;
+  }
 
   const existing = _bankGetTx();
   const keys = new Set(existing.map(t => `${t.date}|${t.description}|${t.amount}`));
   const newTxs = allParsed.filter(t => !keys.has(`${t.date}|${t.description}|${t.amount}`));
   _bankSaveTx([...existing, ...newTxs]);
   const dupes = allParsed.length - newTxs.length;
-  setStatus(`✓ Done — ${newTxs.length} transactions imported & categorised from ${files.length} statement${files.length>1?'s':''}${dupes?` · ${dupes} duplicates skipped`:''}`);
+  setStatus(`✅ Done — ${newTxs.length} transactions imported & categorised from ${files.length} statement${files.length > 1 ? 's' : ''}${dupes ? ` · ${dupes} duplicates skipped` : ''}`, '#4ade80');
   _bankRenderPL(window._bankPLOffset || 0);
   _bankRenderTxTable();
   _bankRenderSubs();
@@ -11379,18 +11385,22 @@ function renderFinanceBankPage() {
       ">Save</button>
     </div>
 
+    <!-- Upload status banner -->
+    <div id="bank-dz-status" style="display:none;padding:.75rem 1rem;border-radius:10px;margin-bottom:.75rem;font-size:0.82rem;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border2);color:var(--text)"></div>
+
     <!-- Bulk Upload Zone -->
     <div class="bank-upload-zone" id="bankUploadZone"
-         onclick="document.getElementById('bankFileInput').click()"
          ondragover="event.preventDefault();this.classList.add('dragover')"
          ondragleave="this.classList.remove('dragover')"
          ondrop="event.preventDefault();this.classList.remove('dragover');window._bankHandleFiles(event.dataTransfer.files)">
       <span class="dz-icon">📂</span>
       <div class="dz-title">Drop all your bank statements here</div>
       <div class="dz-sub">PDF or CSV &nbsp;·&nbsp; Multiple files at once &nbsp;·&nbsp; All accounts</div>
-      <div class="dz-status" id="bank-dz-status"></div>
-      <input type="file" id="bankFileInput" multiple accept=".csv,.pdf" style="display:none"
-             onchange="window._bankHandleFiles(this.files);this.value=''">
+      <label class="bank-btn primary" style="margin-top:.85rem;cursor:pointer" onclick="event.stopPropagation()">
+        Browse files
+        <input type="file" id="bankFileInput" multiple accept=".csv,.pdf" style="display:none"
+               onchange="window._bankHandleFiles(this.files);this.value=''">
+      </label>
     </div>
 
     <!-- Actions row -->
