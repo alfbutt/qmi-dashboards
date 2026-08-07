@@ -11226,9 +11226,19 @@ async function _bankHandleFiles(fileList) {
 
   const apiKey = localStorage.getItem('aj_anthropic_key');
   if (!apiKey) {
-    setStatus('⚠ Anthropic API key needed — go to Intelligence → QJ Assistant in the sidebar to add it, then try again.');
+    const dzEl = document.getElementById('bankUploadZone');
+    if (dzEl) { dzEl.style.borderColor = '#f87171'; dzEl.style.background = 'rgba(248,113,113,0.08)'; }
+    setStatus('');
+    const keyInput = document.getElementById('bank-api-key-input');
+    if (keyInput) { keyInput.style.outline = '2px solid #f87171'; keyInput.focus(); }
+    alert('No API key found.\n\nPaste your Anthropic API key into the "🔑 Anthropic API Key" field at the top of this page and click Save, then try uploading again.\n\nGet a key at: console.anthropic.com');
     return;
   }
+  // Reset drop zone style
+  const dzEl = document.getElementById('bankUploadZone');
+  if (dzEl) { dzEl.style.borderColor = ''; dzEl.style.background = ''; }
+  const keyInput = document.getElementById('bank-api-key-input');
+  if (keyInput) keyInput.style.outline = '';
 
   let allParsed = [];
   for (let i = 0; i < files.length; i++) {
