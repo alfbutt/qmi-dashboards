@@ -10968,7 +10968,7 @@ function _bankParseCSV(text) {
 // ── AI Categorisation ──
 async function _bankCategoriseWithAI() {
   const apiKey = localStorage.getItem('aj_anthropic_key');
-  if (!apiKey) { alert('No Anthropic API key found. Add it in Settings.'); return; }
+  if (!apiKey) { alert('No Anthropic API key found.\n\nGo to Intelligence → QJ Assistant in the sidebar to add your key.'); return; }
   const all = _bankGetTx();
   const todo = all.filter(t => t.category === 'Uncategorised');
   if (!todo.length) { alert('All transactions are already categorised.'); return; }
