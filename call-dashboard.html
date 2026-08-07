@@ -527,6 +527,12 @@
   .bank-tx-grid { display:grid;grid-template-columns:90px 1fr 160px 90px 28px 28px;gap:.5rem; }
   .bank-manual-form { background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-end; }
   .bank-manual-form input,.bank-manual-form select { background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:0.78rem;color:var(--text); }
+  .bank-upload-zone { border:2px dashed var(--border2);border-radius:16px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:1.5rem;background:var(--surface); }
+  .bank-upload-zone:hover,.bank-upload-zone.dragover { border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent); }
+  .bank-upload-zone .dz-icon { font-size:2.2rem;margin-bottom:.5rem;display:block; }
+  .bank-upload-zone .dz-title { font-weight:700;font-size:1rem;margin-bottom:.3rem; }
+  .bank-upload-zone .dz-sub { font-size:0.78rem;color:var(--muted); }
+  .bank-upload-zone .dz-status { font-size:0.78rem;color:var(--accent);margin-top:.6rem;font-family:'DM Mono',monospace;min-height:1.2em; }
 
   /* ── GROWTH TAB ── */
   .growth-page { display:flex; flex-direction:column; gap:1.5rem; }
@@ -11106,6 +11112,75 @@ function _bankRenderSubs() {
     </div>`).join('');
 }
 
+// ── Instant keyword categoriser (no API needed) ──
+function _bankQuickCategory(description, amount) {
+  const d = description.toUpperCase();
+  if (amount > 0) {
+    if (/TRANSFER FROM|PAYMENT FROM|DIRECT CREDIT|RECEIPT|DEPOSIT/.test(d)) return 'Revenue';
+    return 'Revenue';
+  }
+  if (/FACEBK|FACEBOOK|META ADS|META PLATFORMS/.test(d)) return 'Advertising Spend';
+  if (/GOOGLE ADS|GOOGLEADS|ADWORDS/.test(d)) return 'Advertising Spend';
+  if (/TIKTOK|SNAPCHAT|LINKEDIN ADS|TWITTER ADS/.test(d)) return 'Advertising Spend';
+  if (/SLACK|NOTION|MONDAY\.COM|HUBSPOT|ZAPIER|CLICKUP|ASANA|LOOM|ZOOM|DROPBOX|FIGMA|CANVA|ADOBE|MIRO|TYPEFORM|CALENDLY|INTERCOM|ACTIVECAMPAIGN|KLAVIYO|SEMRUSH|AHREFS/.test(d)) return 'Software & Tools';
+  if (/AWS|AMAZON WEB|GOOGLE CLOUD|CLOUDFLARE|VERCEL|NETLIFY|GITHUB|HEROKU/.test(d)) return 'Software & Tools';
+  if (/XERO|MYOB|QUICKBOOKS|RECKON/.test(d)) return 'Software & Tools';
+  if (/PAYROLL|WAGES|SALARY|PAYG|SUPERANNUATION|SUPER PAYMENT/.test(d)) return 'Payroll & Contractors';
+  if (/TRANSFER TO|PAYMENT TO|CONTRACTOR|FREELANCE|INVOICE/.test(d)) return 'Payroll & Contractors';
+  if (/ATO|AUSTRALIA TAXATION|TAX PAYMENT|GST|BAS|INCOME TAX/.test(d)) return 'Tax & Accounting';
+  if (/ACCOUNTANT|BOOKKEEPER|TAX AGENT|H&R BLOCK|PITCHER PARTNER/.test(d)) return 'Tax & Accounting';
+  if (/ANZ FEE|BANK FEE|SERVICE FEE|ACCOUNT KEEPING|OVERDRAWN|MONTHLY FEE|TRANSACTION FEE/.test(d)) return 'Bank Fees';
+  if (/INTEREST CHARGED|OVERDRAFT/.test(d)) return 'Bank Fees';
+  if (/RENT|LEASE|PROPERTY/.test(d)) return 'Office & Admin';
+  if (/TELSTRA|OPTUS|VODAFONE|TPG|AUSSIE BROADBAND|INTERNODE/.test(d)) return 'Office & Admin';
+  if (/OFFICEWORKS|STAPLES|HARVEY NORMAN|JB HI.FI/.test(d)) return 'Office & Admin';
+  if (/COURIER|AUSTRALIA POST|AUSPOST|STARTRACK/.test(d)) return 'Office & Admin';
+  return 'Uncategorised';
+}
+
+// ── Bulk file handler ──
+async function _bankHandleFiles(fileList) {
+  const files = Array.from(fileList);
+  if (!files.length) return;
+  const statusEl = document.getElementById('bank-dz-status') || document.getElementById('bank-ai-status');
+  const setStatus = msg => { if (statusEl) statusEl.textContent = msg; };
+  let allParsed = [];
+  for (let i = 0; i < files.length; i++) {
+    setStatus(`Processing ${i+1} of ${files.length}: ${files[i].name}…`);
+    try {
+      if (files[i].name.toLowerCase().endsWith('.pdf')) {
+        allParsed = allParsed.concat(await _bankHandlePDF(files[i]));
+      } else {
+        const text = await files[i].text();
+        allParsed = allParsed.concat(_bankParseCSV(text));
+      }
+    } catch(e) { console.error('Parse error:', files[i].name, e); }
+  }
+  // Apply instant categorisation
+  allParsed = allParsed.map(t => ({
+    ...t,
+    category: t.category === 'Uncategorised' ? _bankQuickCategory(t.description, t.amount) : t.category,
+    type: t.amount >= 0 ? 'income' : 'expense'
+  }));
+  const existing = _bankGetTx();
+  const keys = new Set(existing.map(t => `${t.date}|${t.description}|${t.amount}`));
+  const newTxs = allParsed.filter(t => !keys.has(`${t.date}|${t.description}|${t.amount}`));
+  _bankSaveTx([...existing, ...newTxs]);
+  const dupes = allParsed.length - newTxs.length;
+  setStatus(`✓ ${newTxs.length} transactions imported from ${files.length} statement${files.length>1?'s':''}${dupes ? ` · ${dupes} duplicates skipped` : ''}. Auto-categorising with AI…`);
+  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderTxTable();
+  _bankRenderSubs();
+  // Auto-trigger Claude AI categorisation if key present
+  const apiKey = localStorage.getItem('aj_anthropic_key');
+  if (apiKey && newTxs.some(t => t.category === 'Uncategorised')) {
+    await _bankCategoriseWithAI();
+  } else {
+    const stillUncategorised = (_bankGetTx()).filter(t => t.category === 'Uncategorised').length;
+    setStatus(`✓ ${newTxs.length} imported · ${stillUncategorised ? stillUncategorised + ' still need a category — click ✦ Auto-Categorise' : 'all categorised'}${dupes ? ` · ${dupes} dupes skipped` : ''}`);
+  }
+}
+
 // ── PDF Parser (ANZ Business Essentials) ──
 async function _bankHandlePDF(file) {
   const statusEl = document.getElementById('bank-ai-status');
@@ -11298,21 +11373,31 @@ function renderFinanceBankPage() {
       <button class="finance-relock" onclick="sessionStorage.removeItem('qj_finance_unlocked');renderFinanceBankPage()">🔒 Lock</button>
     </div>
 
+    <!-- Bulk Upload Zone -->
+    <div class="bank-upload-zone" id="bankUploadZone"
+         onclick="document.getElementById('bankFileInput').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="event.preventDefault();this.classList.remove('dragover');window._bankHandleFiles(event.dataTransfer.files)">
+      <span class="dz-icon">📂</span>
+      <div class="dz-title">Drop all your bank statements here</div>
+      <div class="dz-sub">PDF or CSV &nbsp;·&nbsp; Multiple files at once &nbsp;·&nbsp; All accounts</div>
+      <div class="dz-status" id="bank-dz-status"></div>
+      <input type="file" id="bankFileInput" multiple accept=".csv,.pdf" style="display:none"
+             onchange="window._bankHandleFiles(this.files);this.value=''">
+    </div>
+
+    <!-- Actions row -->
+    <div class="bank-action-row">
+      <button class="bank-btn" onclick="window._bankToggleManual()">+ Add Transaction</button>
+      <button class="bank-btn" onclick="window._bankCategoriseWithAI()">✦ Auto-Categorise</button>
+      <span id="bank-ai-status" style="font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace"></span>
+    </div>
+
     <!-- P&L Summary -->
     <div class="bank-section">
       <h3>P&L Summary</h3>
       <div id="bank-pl-panel"></div>
-    </div>
-
-    <!-- Actions -->
-    <div class="bank-action-row">
-      <label class="bank-btn primary" style="cursor:pointer">
-        📤 Upload CSV / PDF
-        <input type="file" accept=".csv,.pdf" style="display:none" onchange="window._bankHandleFile(this)">
-      </label>
-      <button class="bank-btn" onclick="window._bankToggleManual()">+ Add Transaction</button>
-      <button class="bank-btn" onclick="window._bankCategoriseWithAI()">✦ Auto-Categorise</button>
-      <span id="bank-ai-status" style="font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
 
     <!-- Manual Form -->
@@ -11356,6 +11441,7 @@ function renderFinanceBankPage() {
 }
 
 window._bankHandleFile       = _bankHandleFile;
+window._bankHandleFiles      = _bankHandleFiles;
 window._bankSetCategory      = _bankSetCategory;
 window._bankToggleInclude    = _bankToggleInclude;
 window._bankDeleteTx         = _bankDeleteTx;
