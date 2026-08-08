@@ -506,21 +506,46 @@
   .bank-section h3 { font-size:0.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 1rem; }
   .bank-upload-zone { border:2px dashed var(--border2);border-radius:12px;padding:2rem;text-align:center;color:var(--muted);font-size:0.85rem;cursor:pointer;transition:border-color .2s; }
   .bank-upload-zone:hover { border-color:var(--accent); }
-  .bank-metric { background:var(--surface2);border-radius:12px;padding:1rem;flex:1;min-width:120px; }
-  .bank-metric .label { font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem; }
-  .bank-metric .value { font-size:1.4rem;font-weight:700;font-family:'DM Mono',monospace; }
+  .bank-metric { background:var(--surface2);border-radius:14px;padding:1.1rem 1.2rem;flex:1;min-width:130px;border:1px solid var(--border);position:relative;overflow:hidden; }
+  .bank-metric::before { content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,rgba(255,255,255,.03));pointer-events:none; }
+  .bank-metric .label { font-size:0.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem; }
+  .bank-metric .value { font-size:1.45rem;font-weight:700;font-family:'DM Mono',monospace;line-height:1; }
+  .bank-metric .sub { font-size:0.68rem;color:var(--muted);margin-top:.3rem; }
   .bank-tx-row { display:grid;grid-template-columns:90px 1fr 160px 90px 28px 28px;gap:.5rem;align-items:center;padding:.45rem .25rem;border-bottom:1px solid var(--border);font-size:0.8rem; }
   .bank-tx-row:last-child { border-bottom:none; }
   .bank-badge { display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:600;white-space:nowrap; }
-  .bank-pl-bar-wrap { display:flex;align-items:center;gap:.5rem;margin:.25rem 0; }
-  .bank-pl-bar { height:10px;border-radius:5px;min-width:2px;transition:width .3s; }
-  .bank-pl-bar-label { font-size:0.72rem;color:var(--muted);min-width:140px; }
-  .bank-pl-bar-amount { font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--text);min-width:70px;text-align:right; }
+  .bank-pl-bar-wrap { display:flex;align-items:center;gap:.6rem;margin:.3rem 0; }
+  .bank-pl-bar-track { flex:1;height:8px;border-radius:4px;background:var(--border);overflow:hidden; }
+  .bank-pl-bar { height:8px;border-radius:4px;min-width:2px;transition:width .4s cubic-bezier(.4,0,.2,1); }
+  .bank-pl-bar-label { font-size:0.72rem;color:var(--muted);min-width:150px; }
+  .bank-pl-bar-amount { font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--text);min-width:76px;text-align:right;font-weight:600; }
   .bank-action-row { display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem; }
   .bank-btn { background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.78rem;cursor:pointer;color:var(--text);transition:all .15s; }
   .bank-btn:hover { background:var(--accent);color:#fff;border-color:var(--accent); }
   .bank-btn.primary { background:var(--accent);color:#fff;border-color:var(--accent); }
-  .bank-sub-card { background:var(--surface2);border-radius:10px;padding:.75rem 1rem;margin:.4rem 0;display:flex;justify-content:space-between;align-items:center;font-size:0.82rem; }
+  .bank-pl-table { width:100%;border-collapse:separate;border-spacing:0;font-size:0.83rem; }
+  .bank-pl-table thead tr { border-bottom:2px solid var(--border2); }
+  .bank-pl-table th { padding:.5rem .75rem;font-size:0.65rem;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;font-weight:600; }
+  .bank-pl-table td { padding:.6rem .75rem;border-bottom:1px solid var(--border); }
+  .bank-pl-table tbody tr { transition:background .12s;cursor:pointer; }
+  .bank-pl-table tbody tr:hover { background:var(--surface2); }
+  .bank-pl-table tbody tr:last-child td { border-bottom:none; }
+  .bank-pl-table tfoot td { padding:.65rem .75rem;border-top:2px solid var(--border2);font-weight:700; }
+  .bank-pl-sparkbar { display:block;height:4px;border-radius:2px;margin-top:4px;background:var(--border);overflow:hidden; }
+  .bank-pl-sparkbar-fill { height:4px;border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1); }
+  .bank-sub-card { background:var(--surface2);border-radius:14px;padding:1rem 1.1rem;margin:.55rem 0;border:1px solid var(--border);transition:border-color .15s; }
+  .bank-sub-card:hover { border-color:var(--accent); }
+  .bank-sub-header { display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem; }
+  .bank-sub-name { font-weight:700;font-size:0.85rem;color:var(--text); }
+  .bank-sub-price { font-family:'DM Mono',monospace;font-size:0.92rem;font-weight:700;color:var(--red);white-space:nowrap; }
+  .bank-sub-meta { display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin-top:.5rem; }
+  .bank-sub-pill { font-size:0.68rem;padding:2px 8px;border-radius:20px;font-weight:600;display:inline-flex;align-items:center;gap:4px; }
+  .bank-sub-pill.green { background:#10b98122;color:#10b981; }
+  .bank-sub-pill.amber { background:#f59e0b22;color:#f59e0b; }
+  .bank-sub-pill.red { background:#ef444422;color:#ef4444; }
+  .bank-sub-pill.muted { background:var(--border);color:var(--muted); }
+  .bank-sub-last { font-size:0.72rem;color:var(--muted);margin-top:.35rem; }
+  .bank-sub-total-bar { margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.78rem; }
   .bank-filter-row { display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem; }
   .bank-filter-row input,.bank-filter-row select { background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:0.78rem;color:var(--text); }
   .bank-th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:.35rem .25rem;border-bottom:2px solid var(--border2); }
@@ -11425,7 +11450,7 @@ async function _bankCategoriseWithAI() {
 
 // ── Recurring Detection ──
 function _bankDetectRecurring(txList) {
-  const norm = s => s.toLowerCase().replace(/\d+/g,'').replace(/\s+/g,' ').trim();
+  const norm = s => s.toLowerCase().replace(/\d+/g,'').replace(/[*_\-]/g,' ').replace(/\s+/g,' ').trim();
   const groups = {};
   txList.filter(t => t.include && t.type === 'expense').forEach(t => {
     const key = norm(t.description);
@@ -11433,9 +11458,16 @@ function _bankDetectRecurring(txList) {
     groups[key].txs.push(t);
   });
   return Object.values(groups).map(g => {
-    const months = [...new Set(g.txs.map(t => t.date.slice(0,7)))];
+    const sorted = g.txs.slice().sort((a,b) => b.date.localeCompare(a.date));
+    const months = [...new Set(g.txs.map(t => t.date.slice(0,7)))].sort();
     const avgAmount = g.txs.reduce((s,t) => s + Math.abs(t.amount), 0) / g.txs.length;
-    return { ...g, count: g.txs.length, months, avgAmount, monthlyAmount: avgAmount };
+    const totalSpend = g.txs.reduce((s,t) => s + Math.abs(t.amount), 0);
+    const lastTx = sorted[0];
+    const lastDate = lastTx.date;
+    const lastAmount = Math.abs(lastTx.amount);
+    // days since last payment
+    const daysSince = Math.floor((new Date('2026-08-08') - new Date(lastDate)) / 86400000);
+    return { ...g, count: g.txs.length, months, avgAmount, monthlyAmount: avgAmount, totalSpend, lastDate, lastAmount, daysSince };
   }).filter(g => g.months.length >= 2).sort((a,b) => b.monthlyAmount - a.monthlyAmount);
 }
 
@@ -11460,81 +11492,141 @@ function _bankRenderPL() {
   if (!panel) return;
   const txs = _bankGetTx();
   const fmt = n => '$' + n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtK = n => n >= 1000 ? '$' + (n/1000).toFixed(1) + 'k' : fmt(n);
 
-  // Collect all months that have data
   const allMonths = [...new Set(txs.map(t => t.date.slice(0,7)))].sort();
   if (!allMonths.length) {
-    panel.innerHTML = '<p style="color:var(--muted);font-size:0.82rem">No transactions loaded yet. Paste the inject script into your browser console and reload.</p>';
+    panel.innerHTML = '<p style="color:var(--muted);font-size:0.82rem">No transactions loaded yet.</p>';
     return;
   }
 
+  // Pre-compute all months
+  const plByMonth = {};
+  allMonths.forEach(m => { plByMonth[m] = _bankCalcPL(txs, m); });
+
+  const totIncome  = allMonths.reduce((s,m) => s + plByMonth[m].income,   0);
+  const totExpense = allMonths.reduce((s,m) => s + plByMonth[m].expenses, 0);
+  const totNet     = totIncome - totExpense;
+  const avgNet     = totNet / allMonths.length;
+  const bestMonth  = allMonths.reduce((best,m) => plByMonth[m].net > plByMonth[best].net ? m : best, allMonths[0]);
+  const bestLabel  = new Date(bestMonth + '-15').toLocaleString('default',{month:'short',year:'numeric'});
+  const margin     = totIncome > 0 ? Math.round(totNet / totIncome * 100) : 0;
+
   const selected = window._bankPLMonth;
 
-  // ── Drill-down: single month breakdown ──
+  // ── Drill-down: single month ──
   if (selected) {
-    const pl = _bankCalcPL(txs, selected);
+    const pl = plByMonth[selected] || _bankCalcPL(txs, selected);
     const label = new Date(selected + '-15').toLocaleString('default',{month:'long',year:'numeric'});
-    const maxExp = Math.max(...Object.values(pl.byCategory), 1);
-    const bars = Object.entries(pl.byCategory).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([cat,val]) =>
-      `<div class="bank-pl-bar-wrap">
+    const mMargin = pl.income > 0 ? Math.round(pl.net / pl.income * 100) : 0;
+    const maxExp = Math.max(...Object.values(pl.byCategory).filter(v=>v>0), 1);
+    const bars = Object.entries(pl.byCategory).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([cat,val]) => {
+      const pct = Math.round(val/maxExp*100);
+      const color = BANK_CAT_COLORS[cat] || '#6b7280';
+      return `<div class="bank-pl-bar-wrap">
         <span class="bank-pl-bar-label">${cat}</span>
-        <div class="bank-pl-bar" style="width:${Math.round(val/maxExp*100)}%;background:${BANK_CAT_COLORS[cat]||'#6b7280'}"></div>
+        <div class="bank-pl-bar-track">
+          <div class="bank-pl-bar" style="width:${pct}%;background:${color}"></div>
+        </div>
         <span class="bank-pl-bar-amount">${fmt(val)}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     panel.innerHTML = `
-      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.1rem;">
         <button class="bank-btn" onclick="window._bankPLMonth=null;_bankRenderPL()">← All months</button>
-        <span style="font-weight:600;font-size:0.9rem">${label}</span>
+        <span style="font-weight:700;font-size:0.95rem;color:var(--text)">${label}</span>
       </div>
-      <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;">
-        <div class="bank-metric"><div class="label">Income</div><div class="value" style="color:var(--green)">${fmt(pl.income)}</div></div>
-        <div class="bank-metric"><div class="label">Expenses</div><div class="value" style="color:var(--red)">${fmt(pl.expenses)}</div></div>
-        <div class="bank-metric"><div class="label">Net Profit</div><div class="value" style="color:${pl.net>=0?'var(--green)':'var(--red)'}">${fmt(pl.net)}</div></div>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+        <div class="bank-metric">
+          <div class="label">Revenue</div>
+          <div class="value" style="color:var(--green)">${fmtK(pl.income)}</div>
+        </div>
+        <div class="bank-metric">
+          <div class="label">Expenses</div>
+          <div class="value" style="color:var(--red)">${fmtK(pl.expenses)}</div>
+        </div>
+        <div class="bank-metric">
+          <div class="label">Net Profit</div>
+          <div class="value" style="color:${pl.net>=0?'var(--green)':'var(--red)'}">${fmtK(pl.net)}</div>
+          <div class="sub">${mMargin}% margin</div>
+        </div>
       </div>
+      <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.6rem;font-weight:600">Expenses by Category</div>
       ${bars || '<p style="color:var(--muted);font-size:0.8rem">No expense data for this month.</p>'}`;
     return;
   }
 
-  // ── Annual table: all months ──
+  // ── Annual table ──
+  const maxIncome = Math.max(...allMonths.map(m => plByMonth[m].income), 1);
+  const maxExpense = Math.max(...allMonths.map(m => plByMonth[m].expenses), 1);
+
   const rows = allMonths.map(m => {
-    const pl = _bankCalcPL(txs, m);
+    const pl = plByMonth[m];
     const label = new Date(m + '-15').toLocaleString('default',{month:'short',year:'numeric'});
     const netColor = pl.net >= 0 ? 'var(--green)' : 'var(--red)';
-    return `<tr style="cursor:pointer" onclick="window._bankPLMonth='${m}';_bankRenderPL()" title="Click to drill down">
-      <td style="font-weight:600;color:var(--text)">${label}</td>
-      <td style="text-align:right;color:var(--green);font-family:'DM Mono',monospace">${fmt(pl.income)}</td>
-      <td style="text-align:right;color:var(--red);font-family:'DM Mono',monospace">${fmt(pl.expenses)}</td>
+    const incPct = Math.round(pl.income / maxIncome * 100);
+    const expPct = Math.round(pl.expenses / maxExpense * 100);
+    const mMargin = pl.income > 0 ? Math.round(pl.net / pl.income * 100) : 0;
+    return `<tr onclick="window._bankPLMonth='${m}';_bankRenderPL()" title="Click for breakdown">
+      <td style="font-weight:600;color:var(--text);white-space:nowrap">${label}</td>
+      <td style="text-align:right;color:var(--green);font-family:'DM Mono',monospace">
+        ${fmt(pl.income)}
+        <span class="bank-pl-sparkbar"><span class="bank-pl-sparkbar-fill" style="width:${incPct}%;background:var(--green)"></span></span>
+      </td>
+      <td style="text-align:right;color:var(--red);font-family:'DM Mono',monospace">
+        ${fmt(pl.expenses)}
+        <span class="bank-pl-sparkbar"><span class="bank-pl-sparkbar-fill" style="width:${expPct}%;background:var(--red)"></span></span>
+      </td>
       <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:700;color:${netColor}">${fmt(pl.net)}</td>
+      <td style="text-align:right;font-size:0.72rem;color:${mMargin>=0?'var(--green)':'var(--red)'};">${mMargin}%</td>
     </tr>`;
   });
 
-  // Totals row
-  const totIncome  = allMonths.reduce((s,m) => s + _bankCalcPL(txs,m).income,   0);
-  const totExpense = allMonths.reduce((s,m) => s + _bankCalcPL(txs,m).expenses, 0);
-  const totNet     = totIncome - totExpense;
-  const totColor   = totNet >= 0 ? 'var(--green)' : 'var(--red)';
+  const totColor = totNet >= 0 ? 'var(--green)' : 'var(--red)';
 
   panel.innerHTML = `
-    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:.75rem;font-family:'DM Mono',monospace">Click any row to see category breakdown</p>
-    <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+    <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1.3rem;">
+      <div class="bank-metric">
+        <div class="label">Total Revenue</div>
+        <div class="value" style="color:var(--green)">${fmtK(totIncome)}</div>
+        <div class="sub">${allMonths.length} months</div>
+      </div>
+      <div class="bank-metric">
+        <div class="label">Total Expenses</div>
+        <div class="value" style="color:var(--red)">${fmtK(totExpense)}</div>
+        <div class="sub">${fmtK(totExpense/allMonths.length)}/mo avg</div>
+      </div>
+      <div class="bank-metric">
+        <div class="label">Net Profit</div>
+        <div class="value" style="color:${totColor}">${fmtK(totNet)}</div>
+        <div class="sub">${margin}% margin</div>
+      </div>
+      <div class="bank-metric">
+        <div class="label">Best Month</div>
+        <div class="value" style="font-size:1.1rem;color:var(--green)">${bestLabel}</div>
+        <div class="sub">${fmtK(plByMonth[bestMonth].net)} profit</div>
+      </div>
+    </div>
+    <p style="font-size:0.68rem;color:var(--muted);margin-bottom:.6rem;letter-spacing:.03em">Click any row to see category breakdown →</p>
+    <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border)">
+      <table class="bank-pl-table">
         <thead>
-          <tr style="border-bottom:2px solid var(--border2)">
-            <th style="text-align:left;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Month</th>
-            <th style="text-align:right;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Income</th>
-            <th style="text-align:right;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Expenses</th>
-            <th style="text-align:right;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Net Profit</th>
+          <tr>
+            <th style="text-align:left">Month</th>
+            <th style="text-align:right">Revenue</th>
+            <th style="text-align:right">Expenses</th>
+            <th style="text-align:right">Net Profit</th>
+            <th style="text-align:right">Margin</th>
           </tr>
         </thead>
-        <tbody>
-          ${rows.join('')}
-        </tbody>
+        <tbody>${rows.join('')}</tbody>
         <tfoot>
-          <tr style="border-top:2px solid var(--border2)">
-            <td style="padding:.5rem .6rem;font-weight:700;color:var(--text)">Total</td>
-            <td style="text-align:right;padding:.5rem .6rem;color:var(--green);font-family:'DM Mono',monospace;font-weight:700">${fmt(totIncome)}</td>
-            <td style="text-align:right;padding:.5rem .6rem;color:var(--red);font-family:'DM Mono',monospace;font-weight:700">${fmt(totExpense)}</td>
-            <td style="text-align:right;padding:.5rem .6rem;font-family:'DM Mono',monospace;font-weight:700;color:${totColor}">${fmt(totNet)}</td>
+          <tr>
+            <td style="color:var(--text)">Total</td>
+            <td style="text-align:right;color:var(--green);font-family:'DM Mono',monospace">${fmt(totIncome)}</td>
+            <td style="text-align:right;color:var(--red);font-family:'DM Mono',monospace">${fmt(totExpense)}</td>
+            <td style="text-align:right;font-family:'DM Mono',monospace;color:${totColor}">${fmt(totNet)}</td>
+            <td style="text-align:right;font-size:0.72rem;color:${margin>=0?'var(--green)':'var(--red)'}">${margin}%</td>
           </tr>
         </tfoot>
       </table>
@@ -11578,14 +11670,45 @@ function _bankRenderSubs() {
   if (!panel) return;
   const recs = _bankDetectRecurring(_bankGetTx());
   if (!recs.length) { panel.innerHTML = '<p style="color:var(--muted);font-size:0.82rem">No recurring payments detected yet.</p>'; return; }
-  panel.innerHTML = recs.map(r =>
-    `<div class="bank-sub-card">
-      <div>
-        <div style="font-weight:600;font-size:0.82rem">${r.description.slice(0,50)}</div>
-        <div style="color:var(--muted);font-size:0.72rem;margin-top:2px">Seen ${r.count}× across ${r.months.length} months (${r.months.join(', ')})</div>
+  const fmtDate = d => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
+  const fmtAmt = n => '$' + n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const totalMonthly = recs.reduce((s,r) => s + r.avgAmount, 0);
+  const totalAnnual  = totalMonthly * 12;
+
+  const cards = recs.map(r => {
+    let statusClass, statusLabel, statusIcon;
+    if (r.daysSince <= 45) {
+      statusClass = 'green'; statusLabel = 'Active'; statusIcon = '●';
+    } else if (r.daysSince <= 90) {
+      statusClass = 'amber'; statusLabel = 'Possibly paused'; statusIcon = '◐';
+    } else {
+      statusClass = 'red'; statusLabel = 'Likely cancelled'; statusIcon = '○';
+    }
+    const lastMonthLabel = new Date(r.lastDate + 'T12:00:00').toLocaleString('default',{month:'short',year:'numeric'});
+    return `<div class="bank-sub-card">
+      <div class="bank-sub-header">
+        <div class="bank-sub-name">${r.description.slice(0,55)}</div>
+        <div class="bank-sub-price">${fmtAmt(r.avgAmount)}<span style="font-size:0.65rem;font-weight:400;color:var(--muted)">/mo avg</span></div>
       </div>
-      <div style="font-family:'DM Mono',monospace;font-size:0.85rem;color:var(--red);font-weight:700">~$${r.avgAmount.toFixed(2)}/mo</div>
-    </div>`).join('');
+      <div class="bank-sub-meta">
+        <span class="bank-sub-pill ${statusClass}">${statusIcon} ${statusLabel}</span>
+        <span class="bank-sub-pill muted">Seen ${r.count}× over ${r.months.length} months</span>
+        <span class="bank-sub-pill muted">~${fmtAmt(r.avgAmount * 12)}/yr</span>
+      </div>
+      <div class="bank-sub-last">
+        Last payment: <strong>${fmtDate(r.lastDate)}</strong> (${lastMonthLabel}) — <strong>${fmtAmt(r.lastAmount)}</strong> &nbsp;·&nbsp; ${r.daysSince} days ago
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    ${cards}
+    <div class="bank-sub-total-bar">
+      <span style="color:var(--muted)">Total detected subscriptions</span>
+      <span style="font-family:'DM Mono',monospace;font-weight:700">
+        ${fmtAmt(totalMonthly)}/mo &nbsp;·&nbsp; <span style="color:var(--red)">${fmtAmt(totalAnnual)}/yr</span>
+      </span>
+    </div>`;
 }
 
 // ── Instant keyword categoriser (no API needed) ──
