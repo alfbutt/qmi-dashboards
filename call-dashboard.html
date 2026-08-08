@@ -10999,7 +10999,7 @@ async function _bankCategoriseWithAI() {
   }
   if (statusEl) statusEl.textContent = 'Done!';
   _bankRenderTxTable();
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
   _bankRenderSubs();
 }
 
@@ -11032,37 +11032,93 @@ function _bankCalcPL(txList, yyyyMM) {
   return { income, expenses, net, byCategory };
 }
 
-// ── P&L Render ──
-window._bankPLOffset = 0;
-function _bankRenderPL(offset) {
-  window._bankPLOffset = offset;
+// ── P&L Render — annual table view ──
+window._bankPLOffset = 0; // kept for compat but unused
+window._bankPLMonth = null; // null = show all; 'YYYY-MM' = drill-down
+function _bankRenderPL() {
   const panel = document.getElementById('bank-pl-panel');
   if (!panel) return;
-  const now = new Date();
-  now.setMonth(now.getMonth() + offset);
-  const yyyyMM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const label = now.toLocaleString('default',{month:'long',year:'numeric'});
-  const pl = _bankCalcPL(_bankGetTx(), yyyyMM);
+  const txs = _bankGetTx();
   const fmt = n => '$' + n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const maxExp = Math.max(...Object.values(pl.byCategory), 1);
-  const bars = Object.entries(pl.byCategory).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([cat,val]) =>
-    `<div class="bank-pl-bar-wrap">
-      <span class="bank-pl-bar-label">${cat}</span>
-      <div class="bank-pl-bar" style="width:${Math.round(val/maxExp*100)}%;background:${BANK_CAT_COLORS[cat]||'#6b7280'}"></div>
-      <span class="bank-pl-bar-amount">${fmt(val)}</span>
-    </div>`).join('');
+
+  // Collect all months that have data
+  const allMonths = [...new Set(txs.map(t => t.date.slice(0,7)))].sort();
+  if (!allMonths.length) {
+    panel.innerHTML = '<p style="color:var(--muted);font-size:0.82rem">No transactions loaded yet. Paste the inject script into your browser console and reload.</p>';
+    return;
+  }
+
+  const selected = window._bankPLMonth;
+
+  // ── Drill-down: single month breakdown ──
+  if (selected) {
+    const pl = _bankCalcPL(txs, selected);
+    const label = new Date(selected + '-15').toLocaleString('default',{month:'long',year:'numeric'});
+    const maxExp = Math.max(...Object.values(pl.byCategory), 1);
+    const bars = Object.entries(pl.byCategory).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([cat,val]) =>
+      `<div class="bank-pl-bar-wrap">
+        <span class="bank-pl-bar-label">${cat}</span>
+        <div class="bank-pl-bar" style="width:${Math.round(val/maxExp*100)}%;background:${BANK_CAT_COLORS[cat]||'#6b7280'}"></div>
+        <span class="bank-pl-bar-amount">${fmt(val)}</span>
+      </div>`).join('');
+    panel.innerHTML = `
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+        <button class="bank-btn" onclick="window._bankPLMonth=null;_bankRenderPL()">← All months</button>
+        <span style="font-weight:600;font-size:0.9rem">${label}</span>
+      </div>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <div class="bank-metric"><div class="label">Income</div><div class="value" style="color:var(--green)">${fmt(pl.income)}</div></div>
+        <div class="bank-metric"><div class="label">Expenses</div><div class="value" style="color:var(--red)">${fmt(pl.expenses)}</div></div>
+        <div class="bank-metric"><div class="label">Net Profit</div><div class="value" style="color:${pl.net>=0?'var(--green)':'var(--red)'}">${fmt(pl.net)}</div></div>
+      </div>
+      ${bars || '<p style="color:var(--muted);font-size:0.8rem">No expense data for this month.</p>'}`;
+    return;
+  }
+
+  // ── Annual table: all months ──
+  const rows = allMonths.map(m => {
+    const pl = _bankCalcPL(txs, m);
+    const label = new Date(m + '-15').toLocaleString('default',{month:'short',year:'numeric'});
+    const netColor = pl.net >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<tr style="cursor:pointer" onclick="window._bankPLMonth='${m}';_bankRenderPL()" title="Click to drill down">
+      <td style="font-weight:600;color:var(--text)">${label}</td>
+      <td style="text-align:right;color:var(--green);font-family:'DM Mono',monospace">${fmt(pl.income)}</td>
+      <td style="text-align:right;color:var(--red);font-family:'DM Mono',monospace">${fmt(pl.expenses)}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:700;color:${netColor}">${fmt(pl.net)}</td>
+    </tr>`;
+  });
+
+  // Totals row
+  const totIncome  = allMonths.reduce((s,m) => s + _bankCalcPL(txs,m).income,   0);
+  const totExpense = allMonths.reduce((s,m) => s + _bankCalcPL(txs,m).expenses, 0);
+  const totNet     = totIncome - totExpense;
+  const totColor   = totNet >= 0 ? 'var(--green)' : 'var(--red)';
+
   panel.innerHTML = `
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
-      <button class="bank-btn" onclick="window._bankNavPL(-1)">←</button>
-      <span style="font-weight:600;font-size:0.9rem">${label}</span>
-      <button class="bank-btn" onclick="window._bankNavPL(1)" ${offset >= 0 ? 'disabled' : ''}>→</button>
-    </div>
-    <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;">
-      <div class="bank-metric"><div class="label">Income</div><div class="value" style="color:var(--green)">${fmt(pl.income)}</div></div>
-      <div class="bank-metric"><div class="label">Expenses</div><div class="value" style="color:var(--red)">${fmt(pl.expenses)}</div></div>
-      <div class="bank-metric"><div class="label">Net Profit</div><div class="value" style="color:${pl.net>=0?'var(--green)':'var(--red)'}">${fmt(pl.net)}</div></div>
-    </div>
-    ${bars || '<p style="color:var(--muted);font-size:0.8rem">No expense data for this month.</p>'}`;
+    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:.75rem;font-family:'DM Mono',monospace">Click any row to see category breakdown</p>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border2)">
+            <th style="text-align:left;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Month</th>
+            <th style="text-align:right;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Income</th>
+            <th style="text-align:right;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Expenses</th>
+            <th style="text-align:right;padding:.4rem .6rem;font-size:0.68rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Net Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.join('')}
+        </tbody>
+        <tfoot>
+          <tr style="border-top:2px solid var(--border2)">
+            <td style="padding:.5rem .6rem;font-weight:700;color:var(--text)">Total</td>
+            <td style="text-align:right;padding:.5rem .6rem;color:var(--green);font-family:'DM Mono',monospace;font-weight:700">${fmt(totIncome)}</td>
+            <td style="text-align:right;padding:.5rem .6rem;color:var(--red);font-family:'DM Mono',monospace;font-weight:700">${fmt(totExpense)}</td>
+            <td style="text-align:right;padding:.5rem .6rem;font-family:'DM Mono',monospace;font-weight:700;color:${totColor}">${fmt(totNet)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
 }
 
 // ── Tx Table Render ──
@@ -11292,7 +11348,7 @@ async function _bankHandleFiles(fileList) {
   _bankSaveTx([...existing, ...newTxs]);
   const dupes = allParsed.length - newTxs.length;
   setStatus(`✅ Done — ${newTxs.length} transactions imported & categorised from ${files.length} statement${files.length > 1 ? 's' : ''}${dupes ? ` · ${dupes} duplicates skipped` : ''}`, '#4ade80');
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
   _bankRenderTxTable();
   _bankRenderSubs();
 }
@@ -11305,7 +11361,7 @@ function _bankImport(parsed) {
   _bankSaveTx([...existing, ...newTxs]);
   const statusEl = document.getElementById('bank-ai-status');
   if (statusEl) statusEl.textContent = `Imported ${newTxs.length} new transactions (${parsed.length - newTxs.length} duplicates skipped).`;
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
   _bankRenderTxTable();
   _bankRenderSubs();
 }
@@ -11329,26 +11385,24 @@ function _bankHandleFile(input) {
 function _bankSetCategory(id, cat) {
   const txs = _bankGetTx().map(t => t.id === id ? { ...t, category: cat } : t);
   _bankSaveTx(txs);
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
   _bankRenderSubs();
 }
 
 function _bankToggleInclude(id) {
   const txs = _bankGetTx().map(t => t.id === id ? { ...t, include: !t.include } : t);
   _bankSaveTx(txs);
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
 }
 
 function _bankDeleteTx(id) {
   _bankSaveTx(_bankGetTx().filter(t => t.id !== id));
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
   _bankRenderTxTable();
   _bankRenderSubs();
 }
 
-function _bankNavPL(delta) {
-  _bankRenderPL((window._bankPLOffset || 0) + delta);
-}
+function _bankNavPL() { _bankRenderPL(); } // legacy compat
 
 function _bankAddManual() {
   const d = document.getElementById('bank-man-date').value;
@@ -11361,7 +11415,7 @@ function _bankAddManual() {
   document.getElementById('bank-man-date').value = '';
   document.getElementById('bank-man-desc').value = '';
   document.getElementById('bank-man-amt').value = '';
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
   _bankRenderTxTable();
   _bankRenderSubs();
 }
@@ -11469,7 +11523,7 @@ function renderFinanceBankPage() {
       <div id="bank-subs-panel"></div>
     </div>`;
 
-  _bankRenderPL(window._bankPLOffset || 0);
+  _bankRenderPL();
   _bankRenderTxTable();
   _bankRenderSubs();
 }
