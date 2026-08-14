@@ -7171,66 +7171,132 @@ async function _setterLoadPerformance() {
 window._setterLoadPerformance = _setterLoadPerformance;
 
 function _renderSetterPerfPanel(panel, calls, appts) {
-  const today = new Date(); today.setHours(23,59,59,999);
+  const now   = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const dayMs = 86400000;
+  const eod   = new Date(now); eod.setHours(23,59,59,999);
 
-  const daysAgo = n => new Date(+today - n * dayMs);
+  const daysAgo = n => new Date(+eod - n * dayMs);
+  const toDateStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-  // Calls in window
-  const callsIn = n => calls.filter(d => d >= daysAgo(n) && d <= today).length;
-  // Appts booked in window (using bookedDate = col E)
-  const apptsIn = n => appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= today).length;
-  // Show rate: appointments BOOKED in the window, apptDate has passed, show Y
+  // ── Group calls by date string ──
+  const callsByDate = {};
+  calls.forEach(d => {
+    const k = toDateStr(d);
+    callsByDate[k] = (callsByDate[k] || 0) + 1;
+  });
+
+  // ── Window helpers ──
+  const callsIn  = n => calls.filter(d => d >= daysAgo(n) && d <= eod).length;
+  const apptsIn  = n => appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= eod).length;
   const showRate = n => {
-    const cohort = appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= today);
-    const happened = cohort.filter(a => a.apptDate && a.apptDate <= today);
+    const cohort   = appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= eod);
+    const happened = cohort.filter(a => a.apptDate && a.apptDate <= eod);
     if (!happened.length) return null;
     return { showed: happened.filter(a => a.showed).length, total: happened.length };
   };
-
-  const fmt = n => n === null ? '—' : n;
-  const fmtRate = r => r === null ? '—' : `${Math.round(r.showed / r.total * 100)}% (${r.showed}/${r.total})`;
   const fmtRatio = (b, c) => c === 0 ? '—' : `${Math.round(b/c*100)}%`;
 
+  const todayCalls = callsByDate[todayStr] || 0;
   const c7=callsIn(7), c14=callsIn(14), c21=callsIn(21), c30=callsIn(30);
   const b7=apptsIn(7), b14=apptsIn(14), b21=apptsIn(21), b30=apptsIn(30);
   const sr7=showRate(7), sr14=showRate(14), sr21=showRate(21), sr30=showRate(30), sr60=showRate(60), sr90=showRate(90);
-
-  const totalCalls   = calls.length;
-  const totalAppts   = appts.length;
+  const totalCalls = calls.length;
+  const totalAppts = appts.length;
   const sr30v = sr30 ? Math.round(sr30.showed/sr30.total*100) : null;
 
-  const statCard = (label, value, sub='', color='var(--accent)') => `
+  // ── Build Mon–Fri weekly grid (last 6 weeks) ──
+  // Find most recent Monday on or before today
+  const getMondayOf = d => {
+    const dt = new Date(d); dt.setHours(0,0,0,0);
+    const day = dt.getDay(); // 0=Sun
+    const diff = day === 0 ? 6 : day - 1;
+    dt.setDate(dt.getDate() - diff);
+    return dt;
+  };
+  const WEEKS = 6;
+  const currentMonday = getMondayOf(now);
+  const weeks = [];
+  for (let w = 0; w < WEEKS; w++) {
+    const mon = new Date(+currentMonday - w * 7 * dayMs);
+    const days = [];
+    for (let d = 0; d < 5; d++) {
+      const dt = new Date(+mon + d * dayMs);
+      const ds = toDateStr(dt);
+      const isFuture = dt > now;
+      const isToday  = ds === todayStr;
+      days.push({ dt, ds, count: callsByDate[ds] || 0, isFuture, isToday });
+    }
+    const weekLabel = `${days[0].dt.getDate()}/${days[0].dt.getMonth()+1}`;
+    const weekTotal = days.reduce((s,d) => s + d.count, 0);
+    weeks.push({ mon, days, weekLabel, weekTotal });
+  }
+  weeks.reverse(); // oldest first
+
+  const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+  // colour a cell by call count
+  const cellStyle = (d) => {
+    if (d.isFuture) return 'color:var(--muted);opacity:0.3';
+    if (d.isToday)  return 'background:var(--accent);color:#fff;border-radius:8px;font-weight:700';
+    if (d.count === 0) return 'color:var(--muted)';
+    const green = Math.min(d.count / 60, 1); // 60 calls = full green
+    return `color:${d.count >= 50 ? 'var(--green)' : d.count >= 30 ? '#f59e0b' : 'var(--text)'}`;
+  };
+
+  const weekRows = weeks.map(w => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.55rem .75rem;font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap">${w.weekLabel}</td>
+      ${w.days.map(d => `
+        <td style="padding:.55rem .65rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.85rem;${cellStyle(d)}">
+          ${d.isFuture ? '' : d.isToday ? `${d.count} <span style="font-size:0.55rem;vertical-align:middle;opacity:0.85">●</span>` : (d.count || '—')}
+        </td>`).join('')}
+      <td style="padding:.55rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;font-weight:700;color:${w.weekTotal >= 200 ? 'var(--green)' : w.weekTotal >= 100 ? '#f59e0b' : 'var(--text)'}">
+        ${w.weekTotal || '—'}
+      </td>
+    </tr>`).join('');
+
+  const statCard = (label, value, sub='', color='var(--accent)', big=false) => `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem;flex:1;min-width:130px">
       <div style="font-size:0.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.3rem">${label}</div>
-      <div style="font-size:1.6rem;font-weight:800;font-family:'DM Mono',monospace;color:${color};line-height:1">${value}</div>
+      <div style="font-size:${big?'2.2':'1.6'}rem;font-weight:800;font-family:'DM Mono',monospace;color:${color};line-height:1">${value}</div>
       ${sub ? `<div style="font-size:0.67rem;color:var(--muted);margin-top:.3rem">${sub}</div>` : ''}
     </div>`;
 
-  const row = (label, v7, v14, v21, v30, extra='') => `
-    <tr>
-      <td style="padding:.6rem .75rem;font-weight:600;font-size:0.82rem;color:var(--text);white-space:nowrap">${label}</td>
-      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v7}</td>
-      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v14}</td>
-      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v21}</td>
-      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v30}</td>
-      ${extra}
-    </tr>`;
-
   panel.innerHTML = `
-    <div style="max-width:960px">
+    <div style="max-width:980px">
 
-      <!-- KPI Summary -->
+      <!-- KPI row -->
       <div style="display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1.5rem">
-        ${statCard('Total Calls (All Time)', totalCalls, 'B2B Quality Jobs calls logged')}
-        ${statCard('Booked (Last 30d)', b30, fmtRatio(b30,c30) + ' call-to-booking')}
-        ${statCard('Show Rate (30d)', sr30v !== null ? sr30v+'%' : '—', sr30 ? `${sr30.showed} showed of ${sr30.total}` : 'No data yet', sr30v >= 60 ? 'var(--green)' : sr30v >= 40 ? '#f59e0b' : 'var(--red)')}
-        ${statCard('Appts (All Time)', totalAppts, 'Total appointments in closer sheet')}
+        ${statCard('Calls Today', todayCalls, now.toLocaleDateString('en-AU',{weekday:'long'}), todayCalls >= 50 ? 'var(--green)' : todayCalls >= 20 ? '#f59e0b' : 'var(--accent)', true)}
+        ${statCard('Total Calls (All Time)', totalCalls, 'QJ B2B calls logged')}
+        ${statCard('Booked (Last 30d)', b30, fmtRatio(b30,c30) + ' call → booking')}
+        ${statCard('Show Rate (30d)', sr30v !== null ? sr30v+'%' : '—', sr30 ? `${sr30.showed}/${sr30.total} showed` : 'No data yet', sr30v >= 60 ? 'var(--green)' : sr30v >= 40 ? '#f59e0b' : 'var(--red)')}
       </div>
 
-      <!-- Windowed breakdown table -->
+      <!-- Daily call volume — Mon–Fri grid -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem">
-        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Performance by Time Window</div>
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Daily Call Volume — Mon to Fri</span>
+          <span style="font-size:0.67rem;color:var(--muted)">Last 6 weeks · Today highlighted</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:var(--surface2)">
+                <th style="padding:.5rem .75rem;text-align:left;font-size:0.63rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600;white-space:nowrap">Week of</th>
+                ${DAY_LABELS.map(d => `<th style="padding:.5rem .65rem;text-align:center;font-size:0.63rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">${d}</th>`).join('')}
+                <th style="padding:.5rem .75rem;text-align:center;font-size:0.63rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Total</th>
+              </tr>
+            </thead>
+            <tbody>${weekRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Windowed performance table -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem">
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Performance by Window</div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
             <thead>
@@ -7243,17 +7309,26 @@ function _renderSetterPerfPanel(panel, calls, appts) {
               </tr>
             </thead>
             <tbody style="border-top:1px solid var(--border)">
-              ${row('📞 Calls Made', c7, c14, c21, c30)}
-              ${row('📅 Appts Booked', b7, b14, b21, b30)}
-              ${row('🎯 Call → Booking', fmtRatio(b7,c7), fmtRatio(b14,c14), fmtRatio(b21,c21), fmtRatio(b30,c30))}
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:.6rem .75rem;font-weight:600;font-size:0.82rem;color:var(--text)">📞 Calls Made</td>
+                ${[c7,c14,c21,c30].map(v=>`<td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v}</td>`).join('')}
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:.6rem .75rem;font-weight:600;font-size:0.82rem;color:var(--text)">📅 Appts Booked</td>
+                ${[b7,b14,b21,b30].map(v=>`<td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v}</td>`).join('')}
+              </tr>
+              <tr>
+                <td style="padding:.6rem .75rem;font-weight:600;font-size:0.82rem;color:var(--text)">🎯 Call → Booking</td>
+                ${[[b7,c7],[b14,c14],[b21,c21],[b30,c30]].map(([b,c])=>`<td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${fmtRatio(b,c)}</td>`).join('')}
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Show rate table — extended windows -->
+      <!-- Show rate table -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
-        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Show Rate by Booking Window <span style="font-weight:400;text-transform:none;letter-spacing:0">(appts booked in window that have already passed)</span></div>
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Show Rate by Booking Window</div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
             <thead>
@@ -7266,34 +7341,24 @@ function _renderSetterPerfPanel(panel, calls, appts) {
               </tr>
             </thead>
             <tbody style="border-top:1px solid var(--border)">
-              ${[
-                ['Last 7 days',  7,  sr7 ],
-                ['Last 14 days', 14, sr14],
-                ['Last 21 days', 21, sr21],
-                ['Last 30 days', 30, sr30],
-                ['Last 60 days', 60, sr60],
-                ['Last 90 days', 90, sr90],
-              ].map(([lbl,n,sr]) => {
-                const booked  = apptsIn(n);
-                const happened = sr ? sr.total : 0;
-                const showed   = sr ? sr.showed : 0;
-                const noshow   = happened - showed;
-                const pct      = sr ? Math.round(sr.showed/sr.total*100) : null;
-                const pctColor = pct === null ? 'var(--muted)' : pct >= 60 ? 'var(--green)' : pct >= 40 ? '#f59e0b' : 'var(--red)';
+              ${[['Last 7 days',7,sr7],['Last 14 days',14,sr14],['Last 21 days',21,sr21],['Last 30 days',30,sr30],['Last 60 days',60,sr60],['Last 90 days',90,sr90]].map(([lbl,n,sr]) => {
+                const booked = apptsIn(n), happened = sr?sr.total:0, showed = sr?sr.showed:0, noshow = happened-showed;
+                const pct = sr ? Math.round(sr.showed/sr.total*100) : null;
+                const pctColor = pct===null?'var(--muted)':pct>=60?'var(--green)':pct>=40?'#f59e0b':'var(--red)';
                 return `<tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:.6rem .75rem;font-weight:600;font-size:0.82rem;color:var(--text)">${lbl}</td>
                   <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${booked}</td>
-                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--green)">${happened ? showed : '—'}</td>
-                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--red)">${happened ? noshow : '—'}</td>
-                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;font-weight:700;color:${pctColor}">${pct !== null ? pct+'%' : '—'}</td>
+                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--green)">${happened?showed:'—'}</td>
+                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--red)">${happened?noshow:'—'}</td>
+                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;font-weight:700;color:${pctColor}">${pct!==null?pct+'%':'—'}</td>
                 </tr>`;
               }).join('')}
             </tbody>
           </table>
         </div>
         <div style="padding:.6rem 1rem;font-size:0.67rem;color:var(--muted);border-top:1px solid var(--border)">
-          Show rate uses Col E (date booked) for the window, Col F (appt date) to confirm it has passed, and Col K (Y/N) for attendance.
-          <a href="https://docs.google.com/spreadsheets/d/${GROWTH_APPT_SHEET}/edit" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:.5rem">↗ Open Closer Sheet</a>
+          Col E = date booked · Col F = appt date · Col K = Y/N showed
+          <a href="https://docs.google.com/spreadsheets/d/${GROWTH_APPT_SHEET}/edit" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:.5rem">↗ Closer Sheet</a>
           &nbsp;·&nbsp;
           <button onclick="_setterLoadPerformance()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.67rem;padding:0">↺ Refresh</button>
         </div>
