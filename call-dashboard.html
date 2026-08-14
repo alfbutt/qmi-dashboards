@@ -6799,11 +6799,12 @@ function renderPMSetterPage() {
   const activeTab = localStorage.getItem('qj_setter_subtab') || 'pipeline';
 
   const TABS = [
-    { id: 'pipeline',  label: '📊 Lead Pipeline'  },
-    { id: 'new-leads', label: '🔔 New Leads'       },
-    { id: 'followups', label: '🔁 Follow Ups'      },
-    { id: 'scripts',   label: '💬 Scripts'          },
-    { id: 'offer',     label: '🎯 Our Offer'        },
+    { id: 'pipeline',    label: '📊 Lead Pipeline'  },
+    { id: 'performance', label: '📈 Performance'    },
+    { id: 'new-leads',   label: '🔔 New Leads'      },
+    { id: 'followups',   label: '🔁 Follow Ups'     },
+    { id: 'scripts',     label: '💬 Scripts'         },
+    { id: 'offer',       label: '🎯 Our Offer'       },
   ];
 
   const tabBar = `
@@ -7091,11 +7092,17 @@ function renderPMSetterPage() {
       </div>
     </div>`;
 
-  const tabContent = activeTab === 'pipeline'  ? tabPipeline()
-                   : activeTab === 'new-leads' ? tabNewLeads()
-                   : activeTab === 'followups' ? tabFollowUps()
-                   : activeTab === 'scripts'   ? tabScripts()
-                   :                             tabOffer();
+  const tabPerformance = () => {
+    setTimeout(() => _setterLoadPerformance(), 0);
+    return `<div id="setter-perf-panel"><div class="loading"><div class="spinner"></div>Loading setter performance…</div></div>`;
+  };
+
+  const tabContent = activeTab === 'pipeline'    ? tabPipeline()
+                   : activeTab === 'performance' ? tabPerformance()
+                   : activeTab === 'new-leads'   ? tabNewLeads()
+                   : activeTab === 'followups'   ? tabFollowUps()
+                   : activeTab === 'scripts'     ? tabScripts()
+                   :                               tabOffer();
 
   el.innerHTML = `
     <div class="pm-header">
@@ -7108,6 +7115,192 @@ function renderPMSetterPage() {
     ${tabContent}`;
 }
 window.renderPMSetterPage = renderPMSetterPage;
+
+// ── Setter Performance — data fetch + render ──────────────────────────────────
+async function _setterLoadPerformance() {
+  const panel = document.getElementById('setter-perf-panel');
+  if (!panel) return;
+  try {
+    const [callsRes, apptRes] = await Promise.all([
+      fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`),
+      fetch(`${PROXY_URL}?id=${GROWTH_APPT_SHEET}&sheet=${encodeURIComponent(GROWTH_APPT_TAB)}`)
+    ]);
+    const callsRows = await callsRes.json();
+    const apptRows  = await apptRes.json();
+
+    // ── Parse QJ calls (col 5 = "Quality Jobs") ──
+    const qjCalls = [];
+    if (Array.isArray(callsRows)) {
+      for (let i = 1; i < callsRows.length; i++) {
+        const row = callsRows[i];
+        const client = String(row[5]||'').trim().toLowerCase();
+        if (client !== 'quality jobs') continue;
+        const d = parseDateStr(String(row[1]||''));
+        if (d) qjCalls.push(d);
+      }
+    }
+
+    // ── Parse appts: col E (idx 4) = dateBooked, col K (idx 10) = showed ──
+    const appts = [];
+    if (Array.isArray(apptRows)) {
+      // Find header row
+      let dataStart = 1;
+      for (let i = 0; i < Math.min(apptRows.length, 8); i++) {
+        const r = apptRows[i]||[];
+        if (String(r[6]||'').toLowerCase().includes('business') ||
+            String(r[10]||'').toLowerCase().includes('show')) { dataStart = i + 1; break; }
+      }
+      for (let i = dataStart; i < apptRows.length; i++) {
+        const r = apptRows[i];
+        if (!r || !String(r[6]||'').trim()) continue;
+        const rawBooked = r[4]; // col E
+        const rawAppt   = r[5]; // col F — actual appt date
+        const showRaw   = String(r[10]||'').trim().toUpperCase();
+        let bookedDate = null, apptDate = null;
+        if (rawBooked) { const d = new Date(rawBooked); if (!isNaN(d)) bookedDate = d; }
+        if (rawAppt)   { const d = new Date(rawAppt);   if (!isNaN(d)) apptDate   = d; }
+        if (!bookedDate) continue;
+        appts.push({ bookedDate, apptDate, showed: showRaw === 'Y', closed: String(r[14]||'').trim().toUpperCase().startsWith('Y') });
+      }
+    }
+    _renderSetterPerfPanel(panel, qjCalls, appts);
+  } catch(e) {
+    if (panel) panel.innerHTML = `<div style="color:var(--red);font-size:0.82rem">Failed to load: ${e.message}</div>`;
+  }
+}
+window._setterLoadPerformance = _setterLoadPerformance;
+
+function _renderSetterPerfPanel(panel, calls, appts) {
+  const today = new Date(); today.setHours(23,59,59,999);
+  const dayMs = 86400000;
+
+  const daysAgo = n => new Date(+today - n * dayMs);
+
+  // Calls in window
+  const callsIn = n => calls.filter(d => d >= daysAgo(n) && d <= today).length;
+  // Appts booked in window (using bookedDate = col E)
+  const apptsIn = n => appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= today).length;
+  // Show rate: appointments BOOKED in the window, apptDate has passed, show Y
+  const showRate = n => {
+    const cohort = appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= today);
+    const happened = cohort.filter(a => a.apptDate && a.apptDate <= today);
+    if (!happened.length) return null;
+    return { showed: happened.filter(a => a.showed).length, total: happened.length };
+  };
+
+  const fmt = n => n === null ? '—' : n;
+  const fmtRate = r => r === null ? '—' : `${Math.round(r.showed / r.total * 100)}% (${r.showed}/${r.total})`;
+  const fmtRatio = (b, c) => c === 0 ? '—' : `${Math.round(b/c*100)}%`;
+
+  const c7=callsIn(7), c14=callsIn(14), c21=callsIn(21), c30=callsIn(30);
+  const b7=apptsIn(7), b14=apptsIn(14), b21=apptsIn(21), b30=apptsIn(30);
+  const sr7=showRate(7), sr14=showRate(14), sr21=showRate(21), sr30=showRate(30), sr60=showRate(60), sr90=showRate(90);
+
+  const totalCalls   = calls.length;
+  const totalAppts   = appts.length;
+  const sr30v = sr30 ? Math.round(sr30.showed/sr30.total*100) : null;
+
+  const statCard = (label, value, sub='', color='var(--accent)') => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem;flex:1;min-width:130px">
+      <div style="font-size:0.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.3rem">${label}</div>
+      <div style="font-size:1.6rem;font-weight:800;font-family:'DM Mono',monospace;color:${color};line-height:1">${value}</div>
+      ${sub ? `<div style="font-size:0.67rem;color:var(--muted);margin-top:.3rem">${sub}</div>` : ''}
+    </div>`;
+
+  const row = (label, v7, v14, v21, v30, extra='') => `
+    <tr>
+      <td style="padding:.6rem .75rem;font-weight:600;font-size:0.82rem;color:var(--text);white-space:nowrap">${label}</td>
+      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v7}</td>
+      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v14}</td>
+      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v21}</td>
+      <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${v30}</td>
+      ${extra}
+    </tr>`;
+
+  panel.innerHTML = `
+    <div style="max-width:960px">
+
+      <!-- KPI Summary -->
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1.5rem">
+        ${statCard('Total Calls (All Time)', totalCalls, 'B2B Quality Jobs calls logged')}
+        ${statCard('Booked (Last 30d)', b30, fmtRatio(b30,c30) + ' call-to-booking')}
+        ${statCard('Show Rate (30d)', sr30v !== null ? sr30v+'%' : '—', sr30 ? `${sr30.showed} showed of ${sr30.total}` : 'No data yet', sr30v >= 60 ? 'var(--green)' : sr30v >= 40 ? '#f59e0b' : 'var(--red)')}
+        ${statCard('Appts (All Time)', totalAppts, 'Total appointments in closer sheet')}
+      </div>
+
+      <!-- Windowed breakdown table -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem">
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Performance by Time Window</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead>
+              <tr style="background:var(--surface2)">
+                <th style="padding:.55rem .75rem;text-align:left;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Metric</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Last 7d</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Last 14d</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Last 21d</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Last 30d</th>
+              </tr>
+            </thead>
+            <tbody style="border-top:1px solid var(--border)">
+              ${row('📞 Calls Made', c7, c14, c21, c30)}
+              ${row('📅 Appts Booked', b7, b14, b21, b30)}
+              ${row('🎯 Call → Booking', fmtRatio(b7,c7), fmtRatio(b14,c14), fmtRatio(b21,c21), fmtRatio(b30,c30))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Show rate table — extended windows -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Show Rate by Booking Window <span style="font-weight:400;text-transform:none;letter-spacing:0">(appts booked in window that have already passed)</span></div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead>
+              <tr style="background:var(--surface2)">
+                <th style="padding:.55rem .75rem;text-align:left;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Window</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Booked</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Showed</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">No-Show</th>
+                <th style="padding:.55rem .75rem;text-align:center;font-size:0.65rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Show Rate</th>
+              </tr>
+            </thead>
+            <tbody style="border-top:1px solid var(--border)">
+              ${[
+                ['Last 7 days',  7,  sr7 ],
+                ['Last 14 days', 14, sr14],
+                ['Last 21 days', 21, sr21],
+                ['Last 30 days', 30, sr30],
+                ['Last 60 days', 60, sr60],
+                ['Last 90 days', 90, sr90],
+              ].map(([lbl,n,sr]) => {
+                const booked  = apptsIn(n);
+                const happened = sr ? sr.total : 0;
+                const showed   = sr ? sr.showed : 0;
+                const noshow   = happened - showed;
+                const pct      = sr ? Math.round(sr.showed/sr.total*100) : null;
+                const pctColor = pct === null ? 'var(--muted)' : pct >= 60 ? 'var(--green)' : pct >= 40 ? '#f59e0b' : 'var(--red)';
+                return `<tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:.6rem .75rem;font-weight:600;font-size:0.82rem;color:var(--text)">${lbl}</td>
+                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem">${booked}</td>
+                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--green)">${happened ? showed : '—'}</td>
+                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--red)">${happened ? noshow : '—'}</td>
+                  <td style="padding:.6rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;font-weight:700;color:${pctColor}">${pct !== null ? pct+'%' : '—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:.6rem 1rem;font-size:0.67rem;color:var(--muted);border-top:1px solid var(--border)">
+          Show rate uses Col E (date booked) for the window, Col F (appt date) to confirm it has passed, and Col K (Y/N) for attendance.
+          <a href="https://docs.google.com/spreadsheets/d/${GROWTH_APPT_SHEET}/edit" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:.5rem">↗ Open Closer Sheet</a>
+          &nbsp;·&nbsp;
+          <button onclick="_setterLoadPerformance()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.67rem;padding:0">↺ Refresh</button>
+        </div>
+      </div>
+    </div>`;
+}
+window._renderSetterPerfPanel = _renderSetterPerfPanel;
 
 // ── AJ (Media Buyer) page ─────────────────────────────────────────────────────
 function _ajGetTasks() {
