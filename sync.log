@@ -4289,3 +4289,12 @@ cp: /Users/admin/Desktop/HTML/Important/call-dashboard (3).html: Operation not p
 cp: /Users/admin/Desktop/HTML/Important/aj-dashboard.html: Operation not permitted
 cp: /Users/admin/Desktop/HTML/Important/agent-dashboard.html: Operation not permitted
 cp: /Users/admin/Desktop/HTML/Important/qj-onboarding.html: Operation not permitted
+To https://github.com/alfbutt/qmi-dashboards.git
+ ! [remote rejected] main -> main (cannot lock ref 'refs/heads/main': is at 6e2781ccaefa94f14e936b91092d2ec879caba23 but expected 9223b16e3e608d1fdded12b46cb924481e2eaea0)
+error: failed to push some refs to 'https://github.com/alfbutt/qmi-dashboards.git'
+[qmi-sync] Done — changes are live.
+[qmi-sync] Change detected: /Users/admin/Desktop/HTML/Important/call-dashboard (3).html — pushing to GitHub...
+cp: /Users/admin/Desktop/HTML/Important/call-dashboard (3).html: Operation not permitted
+cp: /Users/admin/Desktop/HTML/Important/aj-dashboard.html: Operation not permitted
+cp: /Users/admin/Desktop/HTML/Important/agent-dashboard.html: Operation not permitted
+cp: /Users/admin/Desktop/HTML/Important/qj-onboarding.html: Operation not permitted
