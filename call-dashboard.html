@@ -1721,6 +1721,13 @@ const ADS_SHEET_ID       = '1VB_sgg-DvvG7AVKwXrq5wTfnuDWpuc1Vygl7_OcSSkg';
 const WHATSAPP_SHEET_ID  = '1ibvhwNmD0IwcK0LR3LJ77BEdshpXa0-uSjb2adkl7uo';
 const PROXY_URL = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
 
+// Global fetch wrapper: aborts automatically after `ms` ms so no call ever hangs forever
+function fetchWT(url, opts, ms = 12000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(id));
+}
+
 const CLIENTS_SHEET_ID = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
 
 // Fallback hardcoded lists — used if Clients sheet cannot be reached
@@ -1832,7 +1839,7 @@ let AYESSA_ACCOUNTS = AYESSA_FALLBACK.filter(n => !_churnedLocally(n) && !_pause
 
 async function fetchClientsData() {
   try {
-    const res  = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    const res  = await fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
     const rows = await res.json();
     if (!Array.isArray(rows) || rows.length < 2) return;
     const jules = [], ayessa = [];
@@ -1998,7 +2005,7 @@ function syncBadge() {
 // ════════════════════════════════════════════════
 async function fetchCallsData() {
   try {
-    const res = await fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`);
+    const res = await fetchWT(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`);
     if(!res.ok) return null;
     const rows = await res.json();
     if(!Array.isArray(rows) || rows.length < 2) return null;
@@ -2079,7 +2086,7 @@ async function fetchCallsData() {
 
 async function fetchTodayApptCounts() {
   try {
-    const res = await fetch(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Raw%20Data`);
+    const res = await fetchWT(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Raw%20Data`);
     if (!res.ok) throw new Error('no raw tab');
     const rows = await res.json();
     if (!Array.isArray(rows) || rows.length < 2) throw new Error('empty');
@@ -2221,7 +2228,7 @@ function _startApptCountRefresh() {
 // ════════════════════════════════════════════════
 async function fetchAdsData() {
   try {
-    const res = await fetch(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=STATS%20DASHBOARD`);
+    const res = await fetchWT(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=STATS%20DASHBOARD`);
     if(!res.ok) return {};
     const rows = await res.json();
     if(!Array.isArray(rows) || rows.length < 2) return {};
@@ -2261,7 +2268,7 @@ function fmtCurrency(n) {
 // ════════════════════════════════════════════════
 async function fetchClientConfig() {
   try {
-    const res = await fetch(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Client%20Config`);
+    const res = await fetchWT(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Client%20Config`);
     if(!res.ok) return {};
     const rows = await res.json();
     if(!Array.isArray(rows) || rows.length < 2) return {};
@@ -2287,7 +2294,7 @@ async function fetchClientConfig() {
 // ════════════════════════════════════════════════
 async function fetchApptsData() {
   try {
-    const res = await fetch(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Summary`);
+    const res = await fetchWT(`${PROXY_URL}?id=${APPT_SHEET_ID}&sheet=Summary`);
     if(!res.ok) return null;
     const rows = await res.json();
     if(!Array.isArray(rows) || rows.length < 2) return null;
@@ -3156,7 +3163,7 @@ function parseOverviewDoc(text) {
 
 async function fetchAndParseDoc(docId) {
   const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
-  const res  = await fetch(`${PROXY_URL}?scrape=${encodeURIComponent(exportUrl)}`);
+  const res  = await fetchWT(`${PROXY_URL}?scrape=${encodeURIComponent(exportUrl)}`);
   const data = await res.json();
   if (!data.content) throw new Error('empty');
   return parseOverviewDoc(data.content);
@@ -3167,7 +3174,7 @@ async function renderClientsPage() {
   if(window._clientsPageData) { _renderClientsGrid(window._clientsPageData); return; }
   el.innerHTML = '<div class="loading"><div class="spinner"></div>loading clients...</div>';
   try {
-    const res  = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    const res  = await fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
     const rows = await res.json();
     window._clientsPageData = rows;
 
@@ -4570,7 +4577,7 @@ async function loadAll(silent=false) {
   if(adsData && Object.keys(adsData).length > 0) window._adsData = adsData;
   window._waData    = waData  || [];
   window._clientKB  = kbData  || {};
-  window._todayApptsData = await refreshTodayApptCounts();
+  window._todayApptsData = await withTimeout(refreshTodayApptCounts(), 10000).catch(() => computeTodayApptDelta(window._apptsData));
 
   // Build per-client knowledge base index
   window._waByClient = {};
@@ -4955,7 +4962,7 @@ function parseWaTs(ts) {
 async function fetchWhatsAppData() {
   if(!WHATSAPP_SHEET_ID) return [];
   try {
-    const res = await fetch(`${PROXY_URL}?id=${WHATSAPP_SHEET_ID}&sheet=Log`);
+    const res = await fetchWT(`${PROXY_URL}?id=${WHATSAPP_SHEET_ID}&sheet=Log`);
     if(!res.ok) return [];
     const rows = await res.json();
     if(!Array.isArray(rows) || rows.length < 2) return [];
@@ -4979,7 +4986,7 @@ async function fetchWhatsAppData() {
 // ════════════════════════════════════════════════
 async function fetchClientKB() {
   try {
-    const res = await fetch(`${PROXY_URL}?service=client_kb`);
+    const res = await fetchWT(`${PROXY_URL}?service=client_kb`);
     if (!res.ok) return {};
     const rows = await res.json();
     if (!Array.isArray(rows)) return {};
@@ -5313,7 +5320,7 @@ async function scrapeAllClientHistory() {
       if (!formatted.length) continue;
 
       // Save to sheet via proxy
-      const saveRes = await fetch(PROXY_URL, {
+      const saveRes = await fetchWT(PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'saveWhatsAppMessages', messages: formatted })
@@ -5829,7 +5836,7 @@ async function fetchAllOverviewDocs() {
     const docId = (url.match(/\/d\/([^/]+)/) || [])[1];
     if (!docId) return [name, ''];
     try {
-      const res  = await fetch(`${PROXY_URL}?driveDoc=${docId}`);
+      const res  = await fetchWT(`${PROXY_URL}?driveDoc=${docId}`);
       const data = await res.json();
       return [name, data.content || ''];
     } catch(e) { return [name, '']; }
@@ -7340,7 +7347,7 @@ function _ajSaveTasks(list) {
 }
 async function _ajSaveToSheets(list) {
   try {
-    await fetch(PROXY_URL, {
+    await fetchWT(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'saveAJTasks', tasks: list })
@@ -7352,7 +7359,7 @@ async function _ajLoadFromSheets() {
   if (_ajLoadingFromSheets) return;
   _ajLoadingFromSheets = true;
   try {
-    const res = await fetch(PROXY_URL + '?service=aj_tasks');
+    const res = await fetchWT(PROXY_URL + '?service=aj_tasks');
     if (!res.ok) return;
     const tasks = await res.json();
     if (Array.isArray(tasks)) {
@@ -8137,7 +8144,7 @@ async function _pmSaveToSheets() {
     done: [..._pmGetDone('pm-media', p.client)]
   }));
   try {
-    await fetch(PROXY_URL, {
+    await fetchWT(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'savePMProjects', projects: projectsWithDone })
@@ -8150,7 +8157,7 @@ async function _pmLoadFromSheets() {
   if (_pmLoadingFromSheets) return;
   _pmLoadingFromSheets = true;
   try {
-    const res = await fetch(PROXY_URL + '?service=pm_projects');
+    const res = await fetchWT(PROXY_URL + '?service=pm_projects');
     if (!res.ok) return;
     const projects = await res.json();
     if (!Array.isArray(projects)) return;
@@ -8617,7 +8624,7 @@ async function fetchAndRenderCallbacks() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
-    const res  = await fetch(`${PROXY_URL}?service=slack_history&channel=${encodeURIComponent(channel)}&token=${encodeURIComponent(token)}`, { signal: controller.signal });
+    const res  = await fetchWT(`${PROXY_URL}?service=slack_history&channel=${encodeURIComponent(channel)}&token=${encodeURIComponent(token)}`, { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
     if (!data.ok) {
@@ -8643,7 +8650,7 @@ async function saveCallbacksSetup() {
 
   // Resolve channel name → ID via proxy
   try {
-    const res  = await fetch(`${PROXY_URL}?service=slack_channels&token=${encodeURIComponent(token)}`);
+    const res  = await fetchWT(`${PROXY_URL}?service=slack_channels&token=${encodeURIComponent(token)}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
     const ch = (data.channels || []).find(c => c.name === channel || c.id === channel);
@@ -9899,7 +9906,7 @@ async function renderCEOOverview() {
 
   let clients = [], churnedClients = [], pausedClients = [];
   try {
-    const res  = await fetch(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
+    const res  = await fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
     const rows = await res.json();
     for (let i = 1; i < rows.length; i++) {
       const name      = String(rows[i][0] || '').trim();
@@ -10105,7 +10112,7 @@ async function renderCEOOverview() {
 // ── CEO Pause / Make Active ────────────────────────
 async function _updateClientStatusInSheet(clientName, status) {
   try {
-    await fetch(PROXY_URL, {
+    await fetchWT(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'updateClientStatus', clientName, status })
