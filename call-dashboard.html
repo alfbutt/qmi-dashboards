@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quality Jobs · Command Centre</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://fast.wistia.com/player.js" async></script>
+<style>wistia-player:not(:defined){background:center/contain no-repeat url('https://fast.wistia.com/embed/medias/bjtkw786ub/swatch');display:block;filter:blur(5px);padding-top:64.79%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1462,7 +1464,8 @@
   <div id="page-pm-onboarding"  class="page"><div id="app-pm-onboarding"></div></div>
   <div id="page-pm-offboarding" class="page"><div id="app-pm-offboarding"></div></div>
   <div id="page-pm-media"    class="page"><div id="app-pm-media"></div></div>
-  <div id="page-pm-systems"  class="page"><div id="app-pm-systems"></div></div>
+  <div id="page-pm-systems"      class="page"><div id="app-pm-systems"></div></div>
+  <div id="page-pm-media-buyer"  class="page"><div id="app-pm-media-buyer"></div></div>
   <div id="page-pm-onboarder"class="page"><div id="app-pm-onboarder"></div></div>
   <div id="page-pm-csm"      class="page"><div id="app-pm-csm"></div></div>
   <div id="page-pm-setter"   class="page"><div id="app-pm-setter"></div></div>
@@ -2717,7 +2720,8 @@ const NAV_STRUCTURE = {
       { id: 'pm-onboarding',  label: '🆕 New Client Onboarding' },
       { id: 'pm-offboarding', label: '🔴 Client Offboarding' },
       { id: 'pm-media',       label: 'AJ' },
-      { id: 'pm-systems',   label: 'Systems Operator' },
+      { id: 'pm-systems',      label: 'Systems Operator' },
+      { id: 'pm-media-buyer',  label: '🎨 Media Buyer'   },
       { id: 'pm-onboarder', label: 'Onboarder' },
       { id: 'pm-csm',       label: 'CSM' },
       { id: 'pm-setter',    label: 'Setter' },
@@ -6568,6 +6572,38 @@ const PM_ROLES = {
       }
     ]
   },
+  'pm-media-buyer': {
+    title: 'Media Buyer',
+    icon: '🎨',
+    sub: 'Ad strategy, creative management & budget optimisation',
+    sopModule: null,
+    templates: [
+      {
+        trigger: 'New Client Campaign Launch',
+        tasks: [
+          { id: 'mb-1',  label: 'Set up ad account & pixel',            desc: 'Create or access the client\'s Meta/Google ad account and install the pixel on their site' },
+          { id: 'mb-2',  label: 'Define target audience & ICP',         desc: 'Build audience segments based on the onboarding brief and ideal client profile' },
+          { id: 'mb-3',  label: 'Create initial ad creatives',          desc: 'Produce 3–5 ad variations (image/video + copy) for the first test phase' },
+          { id: 'mb-4',  label: 'Set up campaign structure',            desc: 'Build campaigns, ad sets, and ads in the platform with correct bidding and budget' },
+          { id: 'mb-5',  label: 'Connect lead form to GHL',             desc: 'Ensure all ad leads flow into the client\'s GHL pipeline and trigger automations' },
+          { id: 'mb-6',  label: 'Launch & confirm ads are live',        desc: 'Submit for review and confirm all ads are approved and serving' },
+          { id: 'mb-7',  label: 'Share access to Windsor stats sheet',  desc: 'Add the client\'s ad data to the Windsor reporting sheet and confirm data is pulling correctly' },
+          { id: 'mb-8',  label: 'Set up weekly performance review',     desc: 'Schedule recurring weekly review of CPL, ROAS, and creative fatigue' },
+        ]
+      },
+      {
+        trigger: 'Weekly Campaign Review',
+        tasks: [
+          { id: 'mbw-1', label: 'Review CPL vs target',               desc: 'Check cost-per-lead against the agreed benchmark and flag if out of range' },
+          { id: 'mbw-2', label: 'Check for creative fatigue',         desc: 'Review frequency and CTR — pause creatives that are fatiguing' },
+          { id: 'mbw-3', label: 'Scale budget on winning ads',        desc: 'Increase daily budget 20–30% on ad sets hitting CPL target' },
+          { id: 'mbw-4', label: 'Refresh underperforming creatives',  desc: 'Swap out low-performing ads with new variations' },
+          { id: 'mbw-5', label: 'Update Windsor stats sheet',         desc: 'Confirm this week\'s spend, leads, and CPL are logged in the reporting sheet' },
+          { id: 'mbw-6', label: 'Report to client / internal team',   desc: 'Send weekly performance summary with key metrics and next steps' },
+        ]
+      }
+    ]
+  },
   'pm-systems': {
     title: 'Systems Operator',
     icon: '⚙',
@@ -8218,9 +8254,169 @@ function _pmToggleProject(role, clientName, trigger) {
   if (el) el.classList.toggle('open');
 }
 
+// ── Systems Operator — custom page with Client Fulfilment SOPs ───────────────
+function renderPMSystemsPage() {
+  const el = document.getElementById('app-pm-systems');
+  if (!el) return;
+
+  const stored = localStorage.getItem('qj_sys_tab') || 'checklists';
+  const activeTab = window._sysActiveTab || stored;
+
+  const tabs = [
+    { id: 'checklists',   label: '📋 Checklists'        },
+    { id: 'fulfilment',   label: '🖥 Client Fulfilment'  },
+  ];
+
+  const tabBar = tabs.map(t => `
+    <button onclick="window._sysActiveTab='${t.id}';localStorage.setItem('qj_sys_tab','${t.id}');renderPMSystemsPage()"
+      style="padding:6px 16px;border-radius:8px;border:1px solid ${activeTab===t.id?'var(--accent)':'var(--border)'};
+             background:${activeTab===t.id?'rgba(181,135,13,.12)':'transparent'};
+             color:${activeTab===t.id?'var(--accent)':'var(--muted)'};
+             font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+      ${t.label}
+    </button>`).join('');
+
+  // ── Checklists tab (re-uses generic renderPMPage logic) ────────────────────
+  function checklistsHTML() {
+    const cfg      = PM_ROLES['pm-systems'];
+    const projects = _pmGetProjects('pm-systems');
+    const clients  = window._clientsPageData
+      ? window._clientsPageData.slice(1).map(r => String(r[0]||'').trim()).filter(Boolean)
+      : [...(JULES_ACCOUNTS||[]), ...(AYESSA_ACCOUNTS||[])];
+    const projectsHTML = projects.length === 0
+      ? `<div class="pm-empty">No active checklists yet.<br>Select a client and trigger above to generate one.</div>`
+      : `<div class="pm-projects">${projects.map(p => {
+          const tmpl   = cfg.templates[p.tmplIdx] || cfg.templates[0];
+          const done   = _pmGetDone('pm-systems', p.client);
+          const total  = tmpl.tasks.length;
+          const doneN  = tmpl.tasks.filter(t => done.has(t.id)).length;
+          const pct    = Math.round(doneN / total * 100);
+          const openKey= `qj_pm_open_pm-systems_${p.client}_${p.trigger}`.replace(/\s+/g,'_');
+          const created= new Date(p.created).toLocaleDateString('en-AU',{day:'2-digit',month:'short'});
+          return `
+          <div class="pm-project">
+            <div class="pm-project-head" onclick="_pmToggleProject('pm-systems','${p.client}','${p.trigger}')">
+              <div>
+                <div class="pm-project-name">${p.client}</div>
+                <div class="pm-project-meta">${p.trigger} · created ${created}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:1rem;">
+                <div class="pm-project-progress">${doneN}/${total} · ${pct}%</div>
+                <div style="width:60px;height:3px;background:var(--border2);border-radius:2px;">
+                  <div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:2px;transition:width 0.3s;"></div>
+                </div>
+                <button onclick="event.stopPropagation();_pmRemoveProject('pm-systems','${p.client}','${p.trigger}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;opacity:0.4;padding:2px 6px;">✕</button>
+              </div>
+            </div>
+            <div class="pm-project-body${doneN===0?' open':''}" id="${openKey}">
+              ${tmpl.tasks.map(t => {
+                const isDone = done.has(t.id);
+                return `<div class="pm-task${isDone?' done':''}">
+                  <input type="checkbox" ${isDone?'checked':''} onchange="_pmToggleTask('pm-systems','${p.client}','${t.id}',this.checked);renderPMSystemsPage()">
+                  <div><div class="pm-task-label">${t.label}</div>${t.desc?`<div class="pm-task-desc">${t.desc}</div>`:''}</div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        }).join('')}</div>`;
+    return `
+      <div class="pm-new-trigger">
+        <select id="pm-client-sel-pm-systems" class="pm-client-select">
+          <option value="">— Select client —</option>
+          ${clients.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <select id="pm-tmpl-sel-pm-systems" class="pm-client-select" style="flex:0 0 220px;">
+          ${cfg.templates.map((t,i)=>`<option value="${i}">${t.trigger}</option>`).join('')}
+        </select>
+        <button class="pm-trigger-btn" onclick="_pmAddProject('pm-systems')">＋ Generate Checklist</button>
+      </div>
+      ${projectsHTML}`;
+  }
+
+  // ── Client Fulfilment tab ──────────────────────────────────────────────────
+  function fulfilmentHTML() {
+    const watched = _ccSopWatched ? _ccSopWatched() : {};
+    const sops = [
+      {
+        id: 'sys-cf-windsor',
+        title: 'Setting up client fulfilment sheet with Windsor after new client is live',
+        desc: 'Follow this SOP after a new client goes live to connect their ad data to the Windsor fulfilment sheet, ensuring performance metrics pull through correctly.',
+        wistiaId: 'bjtkw786ub',
+        wistiaAspect: '1.5434083601286173',
+      }
+    ];
+    const total = sops.length;
+    const done  = sops.filter(s => watched[s.id]).length;
+    const pct   = total ? Math.round(done/total*100) : 0;
+
+    return `
+      <div style="max-width:820px">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap">
+          <div style="font-size:0.95rem;font-weight:800">🖥 Client Fulfilment SOPs</div>
+          <div style="flex:1"></div>
+          <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted)">${done}/${total} completed</div>
+          <div style="width:100px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px"></div>
+          </div>
+        </div>
+
+        <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">SOPs</div>
+
+        ${sops.map((s,idx) => {
+          const isDone = !!watched[s.id];
+          const panelId = 'sys-sop-panel-' + s.id;
+          return `
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem">
+            <div style="display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.2rem;cursor:pointer"
+                 onclick="const p=document.getElementById('${panelId}');p.style.display=p.style.display==='none'?'block':'none'">
+              <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem;
+                          background:${isDone?'rgba(34,197,94,.15)':'var(--surface2)'};
+                          border:2px solid ${isDone?'#22c55e':'var(--border2)'}">
+                ${isDone ? '✓' : (idx+1)}
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.88rem;font-weight:700;color:var(--text)">${s.title}</div>
+                <div style="font-size:0.72rem;color:var(--muted);margin-top:.3rem;line-height:1.5">${s.desc}</div>
+                <div style="margin-top:.65rem">
+                  <button onclick="event.stopPropagation();if(typeof _ccSopMarkWatched==='function')_ccSopMarkWatched('${s.id}',${!isDone});renderPMSystemsPage()"
+                    style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:${isDone?'#22c55e':'var(--muted)'};font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">
+                    ${isDone ? '✓ Marked complete' : 'Mark as complete'}
+                  </button>
+                </div>
+              </div>
+              <div style="color:var(--muted);font-size:0.75rem;flex-shrink:0;margin-top:4px">▼</div>
+            </div>
+            <div id="${panelId}" style="display:none;padding:0 1.2rem 1.2rem">
+              <div style="border-top:1px solid var(--border);padding-top:1rem">
+                <div style="position:relative;padding-bottom:${(1/parseFloat(s.wistiaAspect)*100).toFixed(2)}%;height:0;overflow:hidden;border-radius:10px;background:#000">
+                  <iframe src="https://fast.wistia.net/embed/iframe/${s.wistiaId}?videoFoam=true"
+                    title="${s.title.replace(/"/g,'&quot;')}" allowtransparency="true" frameborder="0"
+                    scrolling="no" allowfullscreen
+                    style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:10px"></iframe>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="pm-header">
+      <div>
+        <div class="pm-role-title">⚙ Systems Operator</div>
+        <div class="pm-role-sub">GHL builds, automations & tech infrastructure</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem">${tabBar}</div>
+    ${activeTab === 'fulfilment' ? fulfilmentHTML() : checklistsHTML()}
+  `;
+}
+
 function renderPMPage(pageId) {
   const role = pageId.replace('page-', '');
-  if (role === 'pm-media') { renderPMAJPage(); return; }
+  if (role === 'pm-media')    { renderPMAJPage(); return; }
+  if (role === 'pm-systems')  { renderPMSystemsPage(); return; }
   const el   = document.getElementById('app-' + role);
   if (!el) return;
   const cfg      = PM_ROLES[role];
