@@ -6,6 +6,7 @@
 <title>AJ Command Centre</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://fast.wistia.com/player.js" async></script>
 <style>
 :root {
   --bg:       #f4f3ef;
@@ -1444,6 +1445,12 @@ function renderSOPs() {
       link: 'https://docs.google.com/presentation/d/your-deck-link',
       linkText: 'Open Onboarding Deck ↗',
       steps: []
+    },
+    {
+      icon: '🖥', title: 'Setting up client fulfilment sheet with Windsor after new client is live',
+      desc: 'Follow this SOP after a new client goes live to connect their ad data to the Windsor fulfilment sheet so performance metrics pull through correctly.',
+      wistiaId: 'bjtkw786ub',
+      steps: []
     }
   ];
 
@@ -1459,6 +1466,17 @@ function renderSOPs() {
       </button>
       <div class="sop-expand-body" id="sop-${i}">
         ${s.steps.map((st, n) => `<div class="sop-item"><span class="sop-num">${n+1}.</span><span>${st}</span></div>`).join('')}
+      </div>` : ''}
+      ${s.wistiaId ? `
+      <button onclick="toggleSOP(${i})" style="background:none;border:none;color:var(--accent);font-size:0.7rem;font-family:'DM Mono',monospace;cursor:pointer;padding:0;margin-top:0.25rem">
+        ▶ Watch Video
+      </button>
+      <div class="sop-expand-body" id="sop-${i}" style="padding-top:0.75rem">
+        <div style="position:relative;padding-bottom:64.79%;height:0;overflow:hidden;border-radius:8px;background:#000">
+          <iframe src="https://fast.wistia.net/embed/iframe/${s.wistiaId}?videoFoam=true"
+            title="${s.title}" allowtransparency="true" frameborder="0" scrolling="no" allowfullscreen
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:8px"></iframe>
+        </div>
       </div>` : ''}
     </div>`).join('');
 }
