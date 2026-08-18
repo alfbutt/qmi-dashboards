@@ -389,6 +389,17 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text
       </div>
     </div>
 
+    <!-- ── Inspiration Library ─────────────────────────────────────────────── -->
+    <div class="section-title" style="margin-top:1.4rem">📌 Inspiration Library</div>
+    <div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.6rem;line-height:1.55">
+      Paste copy from posts you love — captions, hooks, formats. The AI draws from these when generating to keep every post feeling different.
+    </div>
+    <div style="display:flex;gap:0.4rem;align-items:flex-start">
+      <textarea id="inspirationInput" placeholder="Paste a post caption, hook, or describe a format you like…" style="flex:1;min-height:60px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.62rem;padding:0.5rem 0.65rem;resize:vertical;outline:none;line-height:1.6;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+      <button onclick="addInspiration()" style="flex-shrink:0;padding:0.45rem 0.75rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:2px">＋ Add</button>
+    </div>
+    <div id="inspirationList" style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.35rem"></div>
+
     <button class="generate-btn" id="generateBtn" onclick="generate()">✨ Generate Post</button>
     <div class="gen-status" id="genStatus"></div>
 
@@ -531,9 +542,46 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load saved API key indicator
   const key = localStorage.getItem('qj_social_api_key');
   if (key) document.querySelector('.api-key-btn').textContent = '🔑 API Key ✓';
+
+  // Load inspiration library
+  loadInspirationList();
 });
 
 // ── Client branding ─────────────────────────────────────────────────────────
+// ── Inspiration Library ───────────────────────────────────────────────────────
+function loadInspirationList() {
+  const lib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
+  const el = document.getElementById('inspirationList');
+  if (!el) return;
+  if (!lib.length) {
+    el.innerHTML = `<div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);padding:0.4rem 0;font-style:italic">No inspiration saved yet</div>`;
+    return;
+  }
+  el.innerHTML = lib.map((item, i) => `
+    <div style="display:flex;align-items:flex-start;gap:0.4rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:0.5rem 0.6rem">
+      <div style="flex:1;font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.55;word-break:break-word">${item.replace(/</g,'&lt;').replace(/>/g,'&gt;').substring(0,160)}${item.length>160?'…':''}</div>
+      <button onclick="removeInspiration(${i})" style="flex-shrink:0;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0;opacity:0.5;line-height:1" title="Remove">✕</button>
+    </div>`).join('');
+}
+
+function addInspiration() {
+  const input = document.getElementById('inspirationInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const lib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
+  lib.unshift(text);
+  localStorage.setItem('qj_inspiration_lib', JSON.stringify(lib.slice(0, 50)));
+  input.value = '';
+  loadInspirationList();
+}
+
+function removeInspiration(idx) {
+  const lib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
+  lib.splice(idx, 1);
+  localStorage.setItem('qj_inspiration_lib', JSON.stringify(lib));
+  loadInspirationList();
+}
+
 function loadClientBranding() {
   const name = document.getElementById('clientName').value.trim();
   if (!name) return;
@@ -767,7 +815,19 @@ async function generate() {
     promotion: 'Promotional post / special offer'
   };
 
+  // Pull random inspiration examples from the library
+  const inspirationLib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
+  const inspirationSamples = inspirationLib.length
+    ? inspirationLib.sort(() => Math.random() - 0.5).slice(0, 3)
+    : [];
+
   const systemPrompt = `You are an expert social media content creator specialising in the home renovation and construction industry in Australia. You create high-performing organic social media posts for renovation companies that attract homeowners who are thinking about getting work done.
+
+CRITICAL RULE — IMAGE ACCURACY:
+You will receive a photo. Before writing a single word of copy, you must identify exactly what is shown in the image. Your imageDescription field must be filled first and must be specific (e.g. "aluminium-framed sliding window being installed on a brick home", NOT "home renovation work"). Every piece of copy — especially the headline — must be grounded in and consistent with your imageDescription. If the image shows windows, the copy must reference windows. If it shows tiling, reference tiling. Never write copy that contradicts or misrepresents what is visually present.
+
+CREATIVE VARIETY RULE:
+Each post must feel structurally distinct. Vary the headline approach (question / statement / number / command / surprising fact). Vary the caption opening. Avoid starting every caption the same way. Think about what angle would make someone stop scrolling and feel something — curiosity, recognition, urgency, or aspiration.
 
 Your posts are:
 - Specific and authentic — never generic or salesy
@@ -778,8 +838,9 @@ Your posts are:
 
 You always return responses in valid JSON format with exactly these fields:
 {
-  "headline": "Short punchy headline for the image overlay (max 8 words, ALL CAPS)",
-  "subtext": "One supporting line for image overlay (max 12 words)",
+  "imageDescription": "Precise description of what is physically visible in the photo — subject, materials, setting, stage of work. This is filled FIRST before any copy.",
+  "headline": "Short punchy headline for the image overlay (max 8 words, ALL CAPS) — MUST match imageDescription exactly",
+  "subtext": "One supporting line for image overlay (max 12 words) — must be consistent with imageDescription",
   "caption": "Full Instagram/Facebook caption with line breaks, emojis, call to action",
   "hashtags": "25-30 relevant hashtags for renovation/construction in Australia",
   "story": "Short punchy Stories version of the caption (2-3 sentences max)",
@@ -793,13 +854,12 @@ Post type: ${postTypeLabels[postType]}
 ${testimonial ? `Client testimonial to feature: "${testimonial}"` : ''}
 ${extraCtx ? `Additional context: ${extraCtx}` : ''}
 
-Look at the attached photo and write copy that specifically references what you can see — the type of renovation, the quality, specific design elements, materials, or finishes visible. Do not be generic.
+STEP 1 — Describe the image: Look carefully at the photo. Fill imageDescription with an exact, specific description of what you see — the actual type of work, materials, products, setting. Be precise.
 
-The caption should provide value to homeowners thinking about getting similar work done. Include:
-- A specific insight or tip related to what's shown
-- Social proof or credibility
-- A clear but soft call to action
-- Natural, conversational Australian English
+STEP 2 — Write copy grounded in that description: Every word of your headline and copy must be consistent with imageDescription. If you described windows, write about windows. If you described tiling, write about tiling. Never contradict what you described.
+
+STEP 3 — Make it feel different: Vary your approach. Don't use the same headline structure or caption opening as you normally would.
+${inspirationSamples.length ? `\nFor creative inspiration and variety, here are some post styles/formats to draw from (don't copy — use as creative direction):\n${inspirationSamples.map((s,i) => `Example ${i+1}: ${s}`).join('\n\n')}` : ''}
 
 Return only valid JSON, no markdown, no explanation.`;
 
