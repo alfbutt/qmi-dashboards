@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QJ · Social Post Agent</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f3ef; --surface: #fff; --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
+  --text: #1a1917; --muted: #78746a; --accent: #b5870d; --green: #16a34a; --red: #dc2626;
+}
+body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header { background: #27231f; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.header-title { font-size: 0.95rem; font-weight: 800; color: #f5f2ea; letter-spacing: -0.02em; }
+.header-sub { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: #9a9280; margin-top: 2px; letter-spacing: 0.05em; text-transform: uppercase; }
+.api-key-btn { background: rgba(181,135,13,0.15); border: 1px solid rgba(181,135,13,0.3); color: var(--accent); border-radius: 8px; padding: 6px 14px; font-size: 0.68rem; font-family: 'DM Mono', monospace; cursor: pointer; transition: all 0.15s; }
+.api-key-btn:hover { background: rgba(181,135,13,0.25); }
+
+/* ── LAYOUT ── */
+.wrap { display: grid; grid-template-columns: 420px 1fr; gap: 0; min-height: calc(100vh - 58px); }
+
+/* ── CONTROLS PANEL ── */
+.controls { background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; overflow-y: auto; max-height: calc(100vh - 58px); }
+.controls::-webkit-scrollbar { width: 3px; }
+.controls::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+.section-title { font-size: 0.65rem; font-family: 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; margin-top: 1.4rem; }
+.section-title:first-child { margin-top: 0; }
+
+/* Inputs */
+.field { margin-bottom: 0.85rem; }
+.field label { display: block; font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.3rem; }
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 9px;
+  padding: 0.55rem 0.85rem; font-size: 0.78rem; font-family: 'Syne', sans-serif; color: var(--text);
+  outline: none; transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: vertical; min-height: 70px; }
+
+/* Upload zones */
+.upload-zone {
+  border: 2px dashed var(--border2); border-radius: 12px; padding: 1.2rem;
+  text-align: center; cursor: pointer; transition: all 0.2s; position: relative; background: var(--bg);
+}
+.upload-zone:hover { border-color: var(--accent); background: rgba(181,135,13,0.03); }
+.upload-zone.has-files { border-color: var(--green); border-style: solid; background: rgba(22,163,74,0.03); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+.upload-label { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+.upload-label strong { color: var(--accent); }
+.upload-count { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--green); margin-top: 0.25rem; font-weight: 600; }
+
+/* Photo thumbs */
+.photo-thumbs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.photo-thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 2px solid var(--border); cursor: pointer; transition: all 0.15s; }
+.photo-thumb.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(181,135,13,0.3); }
+.photo-thumb:hover { border-color: var(--accent); }
+
+/* Logo preview */
+.logo-preview { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+.logo-thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: contain; border: 1px solid var(--border); background: #fff; padding: 4px; }
+
+/* Post type grid */
+.post-types { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+.post-type-btn {
+  padding: 0.65rem 0.75rem; border: 2px solid var(--border2); border-radius: 10px;
+  background: var(--bg); cursor: pointer; transition: all 0.15s; text-align: left;
+}
+.post-type-btn:hover { border-color: var(--accent); background: rgba(181,135,13,0.04); }
+.post-type-btn.active { border-color: var(--accent); background: rgba(181,135,13,0.08); }
+.post-type-icon { font-size: 1.1rem; margin-bottom: 0.2rem; }
+.post-type-label { font-size: 0.7rem; font-weight: 700; color: var(--text); }
+.post-type-sub { font-size: 0.58rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 1px; }
+
+/* Format selector */
+.format-tabs { display: flex; gap: 0.4rem; }
+.format-tab {
+  flex: 1; padding: 0.5rem; border: 2px solid var(--border2); border-radius: 8px;
+  background: var(--bg); cursor: pointer; text-align: center; transition: all 0.15s;
+  font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted);
+}
+.format-tab:hover { border-color: var(--accent); }
+.format-tab.active { border-color: var(--accent); background: rgba(181,135,13,0.08); color: var(--accent); font-weight: 600; }
+.format-tab .fmt-icon { font-size: 1rem; display: block; margin-bottom: 3px; }
+
+/* Color picker */
+.color-row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; flex-shrink: 0; }
+.color-swatch:hover, .color-swatch.active { border-color: var(--text); transform: scale(1.15); }
+.color-custom input[type=color] { width: 28px; height: 28px; border: none; cursor: pointer; border-radius: 50%; padding: 0; background: none; }
+
+/* Generate button */
+.generate-btn {
+  width: 100%; padding: 0.9rem; background: var(--accent); color: #fff; border: none;
+  border-radius: 12px; font-size: 0.85rem; font-weight: 800; font-family: 'Syne', sans-serif;
+  cursor: pointer; transition: all 0.2s; margin-top: 1.2rem; letter-spacing: -0.01em;
+}
+.generate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.generate-btn.loading { background: var(--muted); }
+
+/* Status */
+.gen-status { text-align: center; font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 0.6rem; min-height: 1.2rem; }
+.gen-status.error { color: var(--red); font-weight: 600; background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2); border-radius: 8px; padding: 0.5rem 0.75rem; }
+.gen-status.success { color: var(--green); font-weight: 600; }
+
+/* Step indicators */
+.steps { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1.2rem; }
+.step { display: flex; align-items: center; gap: 0.5rem; font-size: 0.67rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+.step-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border2); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--muted); flex-shrink: 0; }
+.step.done .step-dot { background: var(--green); border-color: var(--green); color: #fff; }
+.step.active .step-dot { background: var(--accent); border-color: var(--accent); color: #fff; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* ── PREVIEW PANEL ── */
+.preview-panel { padding: 2rem; display: flex; flex-direction: column; align-items: center; background: #eceae5; }
+.preview-header { width: 100%; max-width: 700px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.preview-title { font-size: 0.9rem; font-weight: 800; letter-spacing: -0.02em; }
+.preview-actions { display: flex; gap: 0.5rem; }
+.action-btn {
+  padding: 7px 16px; border-radius: 8px; font-size: 0.68rem; font-family: 'DM Mono', monospace;
+  cursor: pointer; border: none; transition: all 0.15s; font-weight: 600;
+}
+.action-btn.primary { background: var(--accent); color: #fff; }
+.action-btn.primary:hover { opacity: 0.88; }
+.action-btn.secondary { background: var(--surface); border: 1px solid var(--border2); color: var(--text); }
+.action-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.canvas-wrap { background: var(--surface); border-radius: 16px; box-shadow: 0 4px 32px rgba(0,0,0,0.10); overflow: hidden; }
+#postCanvas { display: block; max-width: 100%; }
+
+/* Caption output */
+.caption-output { width: 100%; max-width: 700px; margin-top: 1.25rem; background: var(--surface); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+.caption-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.caption-tab { padding: 0.65rem 1.1rem; font-size: 0.68rem; font-family: 'DM Mono', monospace; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); transition: all 0.15s; background: none; border-left: none; border-right: none; border-top: none; }
+.caption-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.caption-body { padding: 1rem 1.25rem; }
+.caption-text { font-size: 0.82rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; min-height: 60px; }
+.caption-text.empty { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+.copy-caption-btn { margin-top: 0.75rem; padding: 6px 14px; background: var(--bg); border: 1px solid var(--border2); border-radius: 7px; font-size: 0.65rem; font-family: 'DM Mono', monospace; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+.copy-caption-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Placeholder state */
+.canvas-placeholder { width: 540px; height: 540px; background: linear-gradient(135deg, #e8e6e0, #d8d5cd); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; }
+.placeholder-icon { font-size: 3rem; opacity: 0.35; }
+.placeholder-text { font-size: 0.78rem; font-family: 'DM Mono', monospace; color: var(--muted); text-align: center; line-height: 1.6; }
+
+/* API key modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; display: flex; align-items: center; justify-content: center; display: none; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: 16px; padding: 2rem; width: 440px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal-title { font-size: 1rem; font-weight: 800; margin-bottom: 0.35rem; }
+.modal-sub { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 1.25rem; line-height: 1.6; }
+.modal input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 9px; padding: 0.65rem 1rem; font-size: 0.82rem; font-family: 'DM Mono', monospace; color: var(--text); outline: none; margin-bottom: 1rem; }
+.modal input:focus { border-color: var(--accent); }
+.modal-btns { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+
+/* Batch generate button */
+.batch-btn {
+  width: 100%; padding: 0.9rem; background: #27231f; color: #f5f2ea; border: none;
+  border-radius: 12px; font-size: 0.85rem; font-weight: 800; font-family: 'Syne', sans-serif;
+  cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; letter-spacing: -0.01em;
+}
+.batch-btn:hover { background: #3a342e; }
+.batch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Batch progress */
+.batch-progress { margin-top: 0.75rem; display: none; }
+.batch-progress-bar-wrap { background: var(--border); border-radius: 99px; height: 6px; margin-bottom: 0.4rem; }
+.batch-progress-bar { height: 6px; background: var(--accent); border-radius: 99px; width: 0%; transition: width 0.4s; }
+.batch-progress-label { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); text-align: center; }
+
+/* Post grid */
+.post-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; width: 100%; max-width: 780px; }
+.post-grid-item { background: var(--surface); border-radius: 12px; overflow: hidden; border: 2px solid transparent; cursor: pointer; transition: all 0.2s; position: relative; }
+.post-grid-item:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.post-grid-item.selected { border-color: var(--accent); }
+.post-grid-item canvas { display: block; width: 100%; }
+.post-grid-item .item-status { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; }
+.post-grid-item .item-status.generating { }
+.post-grid-item .item-status.done { display: none; }
+.post-grid-item .item-num { position: absolute; top: 6px; left: 8px; background: rgba(0,0,0,0.55); color: #fff; font-size: 0.6rem; font-family: 'DM Mono', monospace; border-radius: 4px; padding: 2px 6px; }
+.post-grid-item .item-dl { position: absolute; bottom: 6px; right: 6px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 0.6rem; font-family: 'DM Mono', monospace; padding: 4px 8px; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
+.post-grid-item:hover .item-dl { opacity: 1; }
+
+/* Lightbox */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+.lightbox.open { display: flex; }
+.lightbox canvas { max-width: 90vw; max-height: 80vh; border-radius: 12px; }
+.lightbox-close { position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255,255,255,0.1); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; }
+.lightbox-actions { display: flex; gap: 0.75rem; }
+.lightbox-caption { max-width: 560px; background: rgba(255,255,255,0.08); border-radius: 10px; padding: 0.85rem 1rem; font-size: 0.75rem; color: rgba(255,255,255,0.8); line-height: 1.6; max-height: 120px; overflow-y: auto; font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-title">✨ Social Post Agent</div>
+    <div class="header-sub">Quality Jobs · AI-Powered Content Creation</div>
+  </div>
+  <button class="api-key-btn" onclick="openApiModal()">🔑 API Key</button>
+</div>
+
+<div class="wrap">
+  <!-- ── CONTROLS ── -->
+  <div class="controls">
+
+    <div class="section-title">Client</div>
+    <div class="field">
+      <label>Client name</label>
+      <input type="text" id="clientName" placeholder="e.g. Streamline Building Projects" oninput="loadClientBranding()" list="client-list">
+      <datalist id="client-list"></datalist>
+    </div>
+    <div class="field">
+      <label>Client niche / specialty</label>
+      <input type="text" id="clientNiche" placeholder="e.g. Bathroom & Kitchen Renovations, Sydney">
+    </div>
+    <div class="field">
+      <label>Client website <span style="font-size:0.6rem;color:var(--muted);font-weight:400">(used to match brand colours)</span></label>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <input type="url" id="clientWebsite" placeholder="e.g. https://streamlinebuilding.com.au" style="flex:1">
+        <button onclick="detectBrandColor()" id="detectColorBtn" title="Detect brand colour from website" style="flex-shrink:0;padding:0.45rem 0.75rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;font-size:0.7rem;font-family:'DM Mono',monospace;cursor:pointer;color:var(--muted);white-space:nowrap;transition:all 0.15s" onmouseenter="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.color='var(--muted)';this.style.borderColor='var(--border2)'">🎨 Detect</button>
+      </div>
+      <div id="detectStatus" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:0.3rem;min-height:0.9rem"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+      <div class="field" style="margin-bottom:0">
+        <label>Phone number</label>
+        <input type="tel" id="clientPhone" placeholder="e.g. 0416 630 334">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Email address</label>
+        <input type="email" id="clientEmail" placeholder="e.g. info@kbg.com.au">
+      </div>
+    </div>
+
+    <div class="section-title">Brand Colours</div>
+    <div class="color-row" id="colorSwatches">
+      <div class="color-swatch active" style="background:#1a1917" data-color="#1a1917" onclick="selectColor(this)"></div>
+      <div class="color-swatch" style="background:#2563eb" data-color="#2563eb" onclick="selectColor(this)"></div>
+      <div class="color-swatch" style="background:#16a34a" data-color="#16a34a" onclick="selectColor(this)"></div>
+      <div class="color-swatch" style="background:#dc2626" data-color="#dc2626" onclick="selectColor(this)"></div>
+      <div class="color-swatch" style="background:#7c3aed" data-color="#7c3aed" onclick="selectColor(this)"></div>
+      <div class="color-swatch" style="background:#b5870d" data-color="#b5870d" onclick="selectColor(this)"></div>
+      <div class="color-swatch" style="background:#0f172a" data-color="#0f172a" onclick="selectColor(this)"></div>
+      <div class="color-custom">
+        <input type="color" id="customColor" value="#1a1917" oninput="selectCustomColor(this.value)" title="Custom colour">
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:1.2rem">Client Logo</div>
+    <div class="upload-zone" id="logoZone" onclick="document.getElementById('logoInput').click()">
+      <input type="file" id="logoInput" accept="image/*" onchange="loadLogo(event)" style="display:none">
+      <div class="upload-icon">🏷️</div>
+      <div class="upload-label">Click to upload <strong>logo</strong></div>
+      <div class="upload-label" style="font-size:0.6rem;margin-top:3px">PNG with transparency works best</div>
+    </div>
+    <div class="logo-preview" id="logoPreview" style="display:none">
+      <img id="logoThumb" class="logo-thumb" alt="Logo">
+      <div>
+        <div style="font-size:0.72rem;font-weight:700">Logo loaded</div>
+        <button onclick="clearLogo()" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--red);background:none;border:none;cursor:pointer;padding:0;margin-top:2px">✕ Remove</button>
+      </div>
+    </div>
+
+    <div class="section-title">Photos</div>
+    <div class="upload-zone" id="photoZone">
+      <input type="file" id="photoInput" accept="image/*" multiple onchange="loadPhotos(event)">
+      <div class="upload-icon">📸</div>
+      <div class="upload-label">Click or drag to upload <strong>photos</strong></div>
+      <div class="upload-label" style="font-size:0.6rem;margin-top:3px">Multiple photos supported · select one to use</div>
+    </div>
+    <div class="photo-thumbs" id="photoThumbs"></div>
+
+    <div class="section-title">Post Type</div>
+    <div class="post-types">
+      <button class="post-type-btn active" data-type="showcase" onclick="selectPostType(this)">
+        <div class="post-type-icon">🏠</div>
+        <div class="post-type-label">Showcase</div>
+        <div class="post-type-sub">Full bleed · gradient</div>
+      </button>
+      <button class="post-type-btn" data-type="value" onclick="selectPostType(this)">
+        <div class="post-type-icon">💡</div>
+        <div class="post-type-label">Value / Tip</div>
+        <div class="post-type-sub">Photo top · colour block</div>
+      </button>
+      <button class="post-type-btn" data-type="magazine" onclick="selectPostType(this)">
+        <div class="post-type-icon">📰</div>
+        <div class="post-type-label">Magazine</div>
+        <div class="post-type-sub">Colour left · photo right</div>
+      </button>
+      <button class="post-type-btn" data-type="editorial" onclick="selectPostType(this)">
+        <div class="post-type-icon">✦</div>
+        <div class="post-type-label">Editorial</div>
+        <div class="post-type-sub">Clean card overlay</div>
+      </button>
+      <button class="post-type-btn" data-type="beforeafter" onclick="selectPostType(this)">
+        <div class="post-type-icon">🔄</div>
+        <div class="post-type-label">Before & After</div>
+        <div class="post-type-sub">Side by side split</div>
+      </button>
+      <button class="post-type-btn" data-type="testimonial" onclick="selectPostType(this)">
+        <div class="post-type-icon">⭐</div>
+        <div class="post-type-label">Testimonial</div>
+        <div class="post-type-sub">Quote overlay · stars</div>
+      </button>
+      <button class="post-type-btn" data-type="process" onclick="selectPostType(this)">
+        <div class="post-type-icon">🔨</div>
+        <div class="post-type-label">Process / WIP</div>
+        <div class="post-type-sub">Behind the scenes</div>
+      </button>
+      <button class="post-type-btn" data-type="promotion" onclick="selectPostType(this)">
+        <div class="post-type-icon">🎯</div>
+        <div class="post-type-label">Promotion</div>
+        <div class="post-type-sub">Offer or special deal</div>
+      </button>
+    </div>
+
+    <!-- Auto-vary toggle (batch only) -->
+    <label style="display:flex;align-items:center;gap:0.6rem;margin-top:0.85rem;cursor:pointer;padding:0.65rem 0.85rem;background:rgba(181,135,13,0.06);border:1px solid rgba(181,135,13,0.18);border-radius:10px">
+      <input type="checkbox" id="autoVaryToggle" checked style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text)">🔀 Auto-vary formats for batch</div>
+        <div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:1px">Claude picks the best layout for each photo</div>
+      </div>
+    </label>
+
+    <!-- Testimonial quote field (shown for testimonial type) -->
+    <div class="field" id="testimonialField" style="display:none;margin-top:0.8rem">
+      <label>Client quote / testimonial text</label>
+      <textarea id="testimonialText" placeholder="e.g. 'The team transformed our bathroom completely. We couldn't be happier with the result!' – Sarah M."></textarea>
+    </div>
+
+    <!-- Before photo (shown for before/after type) -->
+    <div id="beforeAfterField" style="display:none;margin-top:0.8rem">
+      <div class="section-title">Before Photo</div>
+      <div class="upload-zone" id="beforeZone">
+        <input type="file" id="beforeInput" accept="image/*" onchange="loadBeforePhoto(event)">
+        <div class="upload-icon">📷</div>
+        <div class="upload-label">Upload <strong>before</strong> photo</div>
+      </div>
+      <div class="photo-thumbs" id="beforeThumb"></div>
+    </div>
+
+    <div class="section-title" style="margin-top:1.1rem">Format</div>
+    <div class="format-tabs">
+      <button class="format-tab active" data-fmt="square" onclick="selectFormat(this)">
+        <span class="fmt-icon">⬛</span>Square<br><span style="font-size:0.55rem">1080×1080</span>
+      </button>
+      <button class="format-tab" data-fmt="portrait" onclick="selectFormat(this)">
+        <span class="fmt-icon">📱</span>Portrait<br><span style="font-size:0.55rem">1080×1350</span>
+      </button>
+      <button class="format-tab" data-fmt="story" onclick="selectFormat(this)">
+        <span class="fmt-icon">🔲</span>Story<br><span style="font-size:0.55rem">1080×1920</span>
+      </button>
+    </div>
+
+    <div class="field" style="margin-top:1rem">
+      <label>Extra context for AI (optional)</label>
+      <textarea id="extraContext" placeholder="e.g. This is a $45k bathroom renovation in Mosman. The clients wanted a spa-like feel with freestanding bath..." style="min-height:55px"></textarea>
+    </div>
+
+    <div class="steps" id="stepsChecklist">
+      <div class="step" id="step-photo">
+        <div class="step-dot">1</div>
+        <span>Upload at least one photo</span>
+      </div>
+      <div class="step done" id="step-key">
+        <div class="step-dot">✓</div>
+        <span>API key saved</span>
+      </div>
+      <div class="step" id="step-type">
+        <div class="step-dot">✓</div>
+        <span>Choose a post type</span>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" onclick="generate()">✨ Generate Post</button>
+    <div class="gen-status" id="genStatus"></div>
+
+    <button class="batch-btn" id="batchBtn" style="display:none" onclick="generateAll()">⚡ Generate All Posts</button>
+    <div class="batch-progress" id="batchProgress">
+      <div class="batch-progress-bar-wrap"><div class="batch-progress-bar" id="batchBar"></div></div>
+      <div class="batch-progress-label" id="batchLabel">Generating…</div>
+    </div>
+
+  </div>
+
+  <!-- ── PREVIEW PANEL ── -->
+  <div class="preview-panel">
+
+    <!-- Single post view -->
+    <div id="singleView" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:1.5rem">
+      <div class="preview-header">
+        <div>
+          <div class="preview-title">Post Preview</div>
+          <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px" id="previewMeta">Upload photos and click Generate to create your post</div>
+        </div>
+        <div class="preview-actions">
+          <button class="action-btn secondary" id="regenerateBtn" onclick="regenerateCaption()" disabled>↺ New Caption</button>
+          <button class="action-btn primary" id="downloadBtn" onclick="downloadPost()" disabled>⬇ Download PNG</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <div class="canvas-placeholder" id="placeholder">
+          <div class="placeholder-icon">✨</div>
+          <div class="placeholder-text">Upload photos, choose a post type<br>and click Generate Post</div>
+        </div>
+        <canvas id="postCanvas" style="display:none"></canvas>
+      </div>
+
+      <!-- Caption output -->
+      <div class="caption-output" id="captionOutput" style="display:none">
+        <div class="caption-tabs">
+          <button class="caption-tab active" data-tab="caption" onclick="switchCapTab(this)">Caption</button>
+          <button class="caption-tab" data-tab="hashtags" onclick="switchCapTab(this)">Hashtags</button>
+          <button class="caption-tab" data-tab="story" onclick="switchCapTab(this)">Stories Copy</button>
+          <button class="caption-tab" data-tab="hook" onclick="switchCapTab(this)">Hook</button>
+        </div>
+        <div class="caption-body">
+          <div class="caption-text" id="captionDisplay"></div>
+          <button class="copy-caption-btn" onclick="copyCaption()">📋 Copy to clipboard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch grid view -->
+    <div id="batchView" style="display:none;width:100%;flex-direction:column;align-items:center;gap:1.25rem">
+      <div class="preview-header" style="width:100%;max-width:780px">
+        <div>
+          <div class="preview-title">Batch Posts</div>
+          <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px" id="batchMeta">Click any post to expand — hover to download individually</div>
+        </div>
+        <div class="preview-actions">
+          <button class="action-btn secondary" onclick="showSingleView()">← Single View</button>
+          <button class="action-btn primary" id="downloadZipBtn" onclick="downloadAllZip()">⬇ Download All ZIP</button>
+        </div>
+      </div>
+      <div class="post-grid" id="postGrid"></div>
+
+      <!-- Per-post caption panel (batch view) -->
+      <div id="batchCaptionPanel" style="display:none;width:100%;max-width:780px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid var(--border)">
+          <span style="font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted)" id="batchCapLabel">Post 1 caption</span>
+          <div style="display:flex;gap:0.4rem">
+            <button class="caption-tab active" data-btab="caption" onclick="switchBatchCapTab(this)">Caption</button>
+            <button class="caption-tab" data-btab="hashtags" onclick="switchBatchCapTab(this)">Hashtags</button>
+            <button class="caption-tab" data-btab="story" onclick="switchBatchCapTab(this)">Stories</button>
+            <button class="caption-tab" data-btab="hook" onclick="switchBatchCapTab(this)">Hook</button>
+          </div>
+        </div>
+        <div style="padding:1rem">
+          <div class="caption-text" id="batchCaptionText" style="min-height:60px"></div>
+          <button class="copy-caption-btn" onclick="copyBatchCaption()">📋 Copy to clipboard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <canvas id="lightboxCanvas"></canvas>
+  <div class="lightbox-actions">
+    <button class="action-btn secondary" onclick="lightboxPrev()">← Prev</button>
+    <button class="action-btn primary" onclick="lightboxDownload()">⬇ Download PNG</button>
+    <button class="action-btn secondary" onclick="lightboxNext()">Next →</button>
+  </div>
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <div class="modal-title">🔑 Anthropic API Key</div>
+    <div class="modal-sub">Your API key is stored locally in this browser only — never sent anywhere except directly to Anthropic's servers to generate your posts.</div>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+    <div class="modal-btns">
+      <button class="action-btn secondary" onclick="closeApiModal()">Cancel</button>
+      <button class="action-btn primary" onclick="saveApiKey()">Save Key</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let photos = [];          // Array of { file, dataUrl, img }
+let beforePhoto = null;   // Before photo for before/after
+let logoImg = null;       // Logo image element
+let selectedPhotoIdx = 0;
+let brandColor = '#1a1917';
+let postType = 'showcase';
+let format = 'square';    // square | portrait | story
+let generatedData = null; // { caption, hashtags, story, hook, headline, subtext }
+
+const FORMATS = {
+  square:   { w: 1080, h: 1080, label: '1080×1080' },
+  portrait: { w: 1080, h: 1350, label: '1080×1350' },
+  story:    { w: 1080, h: 1920, label: '1080×1920' }
+};
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Populate client list from main dashboard localStorage
+  try {
+    const manual = JSON.parse(localStorage.getItem('qj_manual_clients') || '[]');
+    const churned = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
+    const JULES_FB = ["PrimeBuild Solutions","L2 Homes","Quality Custom Homes","Spa Space","Streamline Building Projects","Imperial Renovations","Quality Custom Homes PTY LTD","Elegance Tiles and Bath"];
+    const AYESSA_FB = ["Buildavate","Allspec Homes","Silk Touch Joinery","Barco Build","Renovate Right Homes"];
+    const all = [...new Set([...JULES_FB, ...AYESSA_FB, ...manual.map(c=>c.name)])].filter(n => !churned.includes(n));
+    const dl = document.getElementById('client-list');
+    all.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  } catch(e) {}
+
+  // Load saved API key indicator
+  const key = localStorage.getItem('qj_social_api_key');
+  if (key) document.querySelector('.api-key-btn').textContent = '🔑 API Key ✓';
+});
+
+// ── Client branding ─────────────────────────────────────────────────────────
+function loadClientBranding() {
+  const name = document.getElementById('clientName').value.trim();
+  if (!name) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem('qj_social_branding') || '{}');
+    if (saved[name]) {
+      if (saved[name].color) { brandColor = saved[name].color; document.getElementById('customColor').value = brandColor; }
+      if (saved[name].niche) document.getElementById('clientNiche').value = saved[name].niche;
+      if (saved[name].website) document.getElementById('clientWebsite').value = saved[name].website;
+      if (saved[name].logo) {
+        const img = new Image(); img.src = saved[name].logo;
+        img.onload = () => { logoImg = img; showLogoPreview(saved[name].logo); };
+      }
+    }
+  } catch(e) {}
+}
+
+function saveClientBranding() {
+  const name = document.getElementById('clientName').value.trim();
+  if (!name) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem('qj_social_branding') || '{}');
+    saved[name] = {
+      color: brandColor,
+      niche: document.getElementById('clientNiche').value.trim(),
+      website: document.getElementById('clientWebsite').value.trim(),
+      logo: logoImg ? document.getElementById('logoThumb').src : null
+    };
+    localStorage.setItem('qj_social_branding', JSON.stringify(saved));
+  } catch(e) {}
+}
+
+// ── Colour picker ──────────────────────────────────────────────────────────
+function selectColor(el) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  brandColor = el.dataset.color;
+  document.getElementById('customColor').value = brandColor;
+  if (generatedData) renderCanvas();
+}
+function selectCustomColor(val) {
+  brandColor = val;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  if (generatedData) renderCanvas();
+}
+
+// ── Logo upload ────────────────────────────────────────────────────────────
+function loadLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      logoImg = img;
+      showLogoPreview(e.target.result);
+      if (generatedData) renderCanvas();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function showLogoPreview(src) {
+  document.getElementById('logoThumb').src = src;
+  document.getElementById('logoPreview').style.display = 'flex';
+  document.getElementById('logoZone').style.display = 'none';
+}
+function clearLogo() {
+  logoImg = null;
+  document.getElementById('logoInput').value = '';
+  document.getElementById('logoPreview').style.display = 'none';
+  document.getElementById('logoZone').style.display = 'block';
+  if (generatedData) renderCanvas();
+}
+
+// ── Photo upload ───────────────────────────────────────────────────────────
+function loadPhotos(event) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  photos = [];
+  selectedPhotoIdx = 0;
+  const thumbsEl = document.getElementById('photoThumbs');
+  thumbsEl.innerHTML = '';
+  let loaded = 0;
+  files.forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        photos[i] = { file, dataUrl: e.target.result, img };
+        loaded++;
+        if (loaded === files.length) renderThumbs();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('photoZone').classList.add('has-files');
+}
+
+function renderThumbs() {
+  const el = document.getElementById('photoThumbs');
+  el.innerHTML = '';
+  photos.forEach((p, i) => {
+    if (!p) return;
+    const img = document.createElement('img');
+    img.className = 'photo-thumb' + (i === selectedPhotoIdx ? ' selected' : '');
+    img.src = p.dataUrl;
+    img.onclick = () => { selectedPhotoIdx = i; renderThumbs(); if (generatedData) renderCanvas(); };
+    el.appendChild(img);
+  });
+  // Update step indicator
+  const step = document.getElementById('step-photo');
+  if (step) {
+    if (photos.filter(Boolean).length > 0) {
+      step.className = 'step done';
+      step.querySelector('.step-dot').textContent = '✓';
+      step.querySelector('span').textContent = `${photos.filter(Boolean).length} photo${photos.filter(Boolean).length>1?'s':''} ready`;
+    } else {
+      step.className = 'step';
+      step.querySelector('.step-dot').textContent = '1';
+      step.querySelector('span').textContent = 'Upload at least one photo';
+    }
+  }
+  // Show batch button when multiple photos uploaded
+  const batchBtn = document.getElementById('batchBtn');
+  const validPhotos = photos.filter(Boolean);
+  if (batchBtn) {
+    if (validPhotos.length > 1) {
+      batchBtn.style.display = 'block';
+      batchBtn.textContent = `⚡ Generate All ${validPhotos.length} Posts`;
+    } else {
+      batchBtn.style.display = 'none';
+    }
+  }
+}
+
+function loadBeforePhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      beforePhoto = { file, dataUrl: e.target.result, img };
+      const el = document.getElementById('beforeThumb');
+      el.innerHTML = '';
+      const thumb = document.createElement('img');
+      thumb.className = 'photo-thumb selected';
+      thumb.src = e.target.result;
+      el.appendChild(thumb);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Post type & format ─────────────────────────────────────────────────────
+function selectPostType(btn) {
+  document.querySelectorAll('.post-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  postType = btn.dataset.type;
+  document.getElementById('testimonialField').style.display = postType === 'testimonial' ? 'block' : 'none';
+  document.getElementById('beforeAfterField').style.display = postType === 'beforeafter' ? 'block' : 'none';
+}
+function selectFormat(btn) {
+  document.querySelectorAll('.format-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  format = btn.dataset.fmt;
+  if (generatedData) renderCanvas();
+}
+function switchCapTab(btn) {
+  document.querySelectorAll('.caption-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  const d = generatedData;
+  if (!d) return;
+  const texts = { caption: d.caption, hashtags: d.hashtags, story: d.story, hook: d.hook };
+  document.getElementById('captionDisplay').textContent = texts[tab] || '';
+}
+
+// ── API Key ────────────────────────────────────────────────────────────────
+function openApiModal() {
+  const key = localStorage.getItem('qj_social_api_key') || '';
+  document.getElementById('apiKeyInput').value = key;
+  document.getElementById('apiModal').classList.add('open');
+}
+function closeApiModal() { document.getElementById('apiModal').classList.remove('open'); }
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) {
+    localStorage.setItem('qj_social_api_key', key);
+    document.querySelector('.api-key-btn').textContent = '🔑 API Key ✓';
+  }
+  closeApiModal();
+}
+
+// ── Generate ───────────────────────────────────────────────────────────────
+async function generate() {
+  const apiKey = localStorage.getItem('qj_social_api_key');
+  if (!apiKey) { openApiModal(); return; }
+  if (!photos.length || !photos[selectedPhotoIdx]) {
+    const s = document.getElementById('genStatus');
+    s.textContent = '⚠ Upload a photo first — click the Photos section above';
+    s.className = 'gen-status error';
+    document.getElementById('photoZone').style.borderColor = 'var(--red)';
+    document.getElementById('step-photo').className = 'step active';
+    setTimeout(() => { s.className = 'gen-status'; s.textContent = ''; document.getElementById('photoZone').style.borderColor = ''; }, 4000);
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analysing photos & writing copy…';
+  setStatus('Sending to Claude Vision AI…');
+
+  const clientName = document.getElementById('clientName').value.trim() || 'our client';
+  const niche     = document.getElementById('clientNiche').value.trim() || 'renovation';
+  const website   = document.getElementById('clientWebsite').value.trim();
+  const extraCtx  = document.getElementById('extraContext').value.trim();
+  const testimonial = document.getElementById('testimonialText').value.trim();
+  const photo = photos[selectedPhotoIdx];
+  const compressed = await compressForAPI(photo);
+
+  const postTypeLabels = {
+    showcase: 'Showcase (finished job highlight)',
+    value: 'Value/Tip post (advice for homeowners thinking about renovating)',
+    beforeafter: 'Before & After transformation',
+    testimonial: 'Testimonial/social proof post',
+    process: 'Behind the scenes / work in progress',
+    promotion: 'Promotional post / special offer'
+  };
+
+  const systemPrompt = `You are an expert social media content creator specialising in the home renovation and construction industry in Australia. You create high-performing organic social media posts for renovation companies that attract homeowners who are thinking about getting work done.
+
+Your posts are:
+- Specific and authentic — never generic or salesy
+- Written to provide GENUINE VALUE to homeowners (tips, education, inspiration, social proof)
+- Warm, professional, and trustworthy in tone
+- Designed to generate saves, shares, and comments — not just likes
+- Tailored to the Australian renovation market
+
+You always return responses in valid JSON format with exactly these fields:
+{
+  "headline": "Short punchy headline for the image overlay (max 8 words, ALL CAPS)",
+  "subtext": "One supporting line for image overlay (max 12 words)",
+  "caption": "Full Instagram/Facebook caption with line breaks, emojis, call to action",
+  "hashtags": "25-30 relevant hashtags for renovation/construction in Australia",
+  "story": "Short punchy Stories version of the caption (2-3 sentences max)",
+  "hook": "The first line hook only — must stop the scroll (under 10 words)",
+  "brandColor": "The single most prominent brand hex colour for this company (e.g. #2563eb). If you can infer it from their website URL or company name, use it. Otherwise suggest a colour that fits a professional ${niche} business."
+}`;
+
+  const userPrompt = `Create a social media post for ${clientName}, a ${niche} company.${website ? `\nWebsite: ${website}` : ''}
+
+Post type: ${postTypeLabels[postType]}
+${testimonial ? `Client testimonial to feature: "${testimonial}"` : ''}
+${extraCtx ? `Additional context: ${extraCtx}` : ''}
+
+Look at the attached photo and write copy that specifically references what you can see — the type of renovation, the quality, specific design elements, materials, or finishes visible. Do not be generic.
+
+The caption should provide value to homeowners thinking about getting similar work done. Include:
+- A specific insight or tip related to what's shown
+- Social proof or credibility
+- A clear but soft call to action
+- Natural, conversational Australian English
+
+Return only valid JSON, no markdown, no explanation.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-8',
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: compressed.mediaType, data: compressed.base64 }
+            },
+            { type: 'text', text: userPrompt }
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.content[0].text;
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch(e) {
+      // Try to extract JSON from response
+      const match = raw.match(/\{[\s\S]+\}/);
+      if (match) parsed = JSON.parse(match[0]);
+      else throw new Error('Could not parse AI response');
+    }
+
+    generatedData = parsed;
+    if (parsed.brandColor && /^#[0-9a-fA-F]{3,6}$/.test(parsed.brandColor)) {
+      applyBrandColor(parsed.brandColor);
+      document.getElementById('detectStatus').textContent = `✓ Brand colour detected: ${parsed.brandColor}`;
+    }
+    saveClientBranding();
+    renderCanvas();
+    showCaptionOutput();
+    const s = document.getElementById('genStatus');
+    s.textContent = '✓ Post generated — download your PNG below';
+    s.className = 'gen-status success';
+    document.getElementById('downloadBtn').disabled = false;
+    document.getElementById('regenerateBtn').disabled = false;
+    btn.disabled = false;
+    btn.innerHTML = '✨ Generate Post';
+
+  } catch(err) {
+    const s = document.getElementById('genStatus');
+    s.textContent = '⚠ ' + (err.message || 'Something went wrong — check your API key');
+    s.className = 'gen-status error';
+    btn.disabled = false;
+    btn.innerHTML = '✨ Generate Post';
+  }
+}
+
+async function regenerateCaption() {
+  if (!generatedData) return;
+  const btn = document.getElementById('regenerateBtn');
+  btn.disabled = true; btn.textContent = '…generating';
+  const apiKey = localStorage.getItem('qj_social_api_key');
+  if (!apiKey) { openApiModal(); btn.disabled = false; return; }
+
+  const clientName = document.getElementById('clientName').value.trim() || 'the client';
+  const niche = document.getElementById('clientNiche').value.trim() || 'renovation';
+  const photo = photos[selectedPhotoIdx];
+  const compressed = await compressForAPI(photo);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-8',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: compressed.mediaType, data: compressed.base64 } },
+            { type: 'text', text: `Write a completely different version of a social media post for ${clientName} (${niche}). Different angle, different hook, different structure. Still valuable and specific to this photo. Return JSON with: headline, subtext, caption, hashtags, story, hook. No markdown.` }
+          ]
+        }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content[0].text;
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch(e) { const m = raw.match(/\{[\s\S]+\}/); if (m) parsed = JSON.parse(m[0]); else throw e; }
+    generatedData = parsed;
+    renderCanvas();
+    showCaptionOutput();
+    setStatus('✓ New version generated!');
+  } catch(err) {
+    setStatus('⚠ ' + err.message);
+  }
+  btn.disabled = false; btn.textContent = '↺ New Caption';
+}
+
+// ── Canvas rendering ───────────────────────────────────────────────────────
+function renderCanvas() {
+  if (!generatedData || !photos[selectedPhotoIdx]) return;
+
+  const { w, h } = FORMATS[format];
+  const canvas = document.getElementById('postCanvas');
+  canvas.width = w; canvas.height = h;
+
+  // Scale canvas for display (max 540px wide)
+  const displayW = Math.min(540, window.innerWidth - 500);
+  const displayH = Math.round(displayW * h / w);
+  canvas.style.width = displayW + 'px';
+  canvas.style.height = displayH + 'px';
+
+  document.getElementById('placeholder').style.display = 'none';
+  canvas.style.display = 'block';
+  document.getElementById('previewMeta').textContent = `${FORMATS[format].label} · ${postType} post`;
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+
+  dispatchTemplate(ctx, w, h, postType);
+}
+
+function dispatchTemplate(ctx, w, h, type) {
+  if      (type === 'beforeafter' && beforePhoto) renderBeforeAfter(ctx, w, h);
+  else if (type === 'value')       renderValueTemplate(ctx, w, h);
+  else if (type === 'testimonial') renderTestimonialTemplate(ctx, w, h);
+  else if (type === 'magazine')    renderMagazineTemplate(ctx, w, h);
+  else if (type === 'editorial')   renderEditorialTemplate(ctx, w, h);
+  else if (type === 'process')     renderProcessTemplate(ctx, w, h);
+  else if (type === 'promotion')   renderPromotionTemplate(ctx, w, h);
+  else                             renderShowcaseTemplate(ctx, w, h);
+}
+
+function drawPhotoFill(ctx, img, x, y, w, h) {
+  const scale = Math.max(w / img.width, h / img.height);
+  const sw = img.width * scale, sh = img.height * scale;
+  const sx = x + (w - sw) / 2, sy = y + (h - sh) / 2;
+  ctx.drawImage(img, sx, sy, sw, sh);
+}
+
+// Template 1: Diagonal Slash — photo with angled brand-colour band cutting across
+function renderShowcaseTemplate(ctx, w, h) {
+  const photo = photos[selectedPhotoIdx].img;
+  const name  = document.getElementById('clientName').value.trim();
+
+  // Full bleed photo
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+  drawPhotoFill(ctx, photo, 0, 0, w, h);
+  ctx.restore();
+
+  // Dark scrim bottom half
+  const scrim = ctx.createLinearGradient(0, h * 0.35, 0, h);
+  scrim.addColorStop(0, 'rgba(0,0,0,0)'); scrim.addColorStop(1, 'rgba(0,0,0,0.72)');
+  ctx.fillStyle = scrim; ctx.fillRect(0, 0, w, h);
+
+  // Diagonal parallelogram band
+  const y1 = h * 0.56, y2 = h * 0.47, bh = h * 0.115;
+  ctx.beginPath();
+  ctx.moveTo(0, y1); ctx.lineTo(w, y2);
+  ctx.lineTo(w, y2 + bh); ctx.lineTo(0, y1 + bh);
+  ctx.closePath();
+  ctx.fillStyle = brandColor; ctx.fill();
+
+  // White edge lines on band
+  ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(w, y2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Headline above band
+  const headline = (generatedData.headline || '').toUpperCase();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${Math.round(w * 0.072)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  wrapText(ctx, headline, 55, y1 - Math.round(w * 0.088), w - 110, Math.round(w * 0.086));
+
+  // Subtext below band
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.font = `400 ${Math.round(w * 0.03)}px 'DM Mono', monospace`;
+  wrapText(ctx, generatedData.subtext || '', 55, y1 + bh + Math.round(h * 0.038), w - 110, Math.round(w * 0.037));
+
+  if (logoImg) drawLogo(ctx, w, h, 'top-right');
+  if (!logoImg && name) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = `500 ${Math.round(w * 0.025)}px 'DM Mono', monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText(name, w - 55, h - 42);
+  }
+}
+
+// Template 2: Circle Hero — solid brand-colour bg, circle-cropped photo
+function renderValueTemplate(ctx, w, h) {
+  const photo = photos[selectedPhotoIdx].img;
+  const name  = document.getElementById('clientName').value.trim();
+
+  // Solid brand colour background
+  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, w, h);
+
+  // Decorative ghost circles
+  ctx.globalAlpha = 0.07; ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(w * 0.06, h * 0.06, w * 0.28, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(w * 0.92, h * 0.85, w * 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Large circle photo — offset right
+  const cr = Math.round(Math.min(w, h) * 0.37);
+  const cx = Math.round(w * 0.64), cy = Math.round(h * 0.42);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 32; ctx.shadowOffsetY = 12;
+  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fillStyle = '#000'; ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.clip();
+  drawPhotoFill(ctx, photo, cx - cr, cy - cr, cr * 2, cr * 2);
+  ctx.restore();
+
+  // Circle border
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.stroke();
+
+  // Headline left side
+  const headline = (generatedData.headline || '').toUpperCase();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${Math.round(w * 0.082)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  wrapText(ctx, headline, 50, h * 0.26, cx - cr - 40, Math.round(w * 0.096));
+
+  // Accent bar
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(50, h * 0.64, 55, 3);
+
+  // Subtext
+  ctx.fillStyle = 'rgba(255,255,255,0.72)';
+  ctx.font = `400 ${Math.round(w * 0.03)}px 'DM Mono', monospace`;
+  wrapText(ctx, generatedData.subtext || '', 50, h * 0.7, cx - cr - 40, Math.round(w * 0.037));
+
+  if (logoImg) drawLogo(ctx, w, h, 'bottom-right');
+  if (!logoImg && name) {
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = `500 ${Math.round(w * 0.024)}px 'DM Mono', monospace`;
+    ctx.textAlign = 'left'; ctx.fillText(name, 50, h - 42);
+  }
+}
+
+// Template 7: Vertical Rotated Text — photo bg + brand strip left with 90° text
+function renderProcessTemplate(ctx, w, h) {
+  const photo = photos[selectedPhotoIdx].img;
+  const name  = document.getElementById('clientName').value.trim();
+  const stripW = Math.round(w * 0.17);
+
+  // Full bleed photo
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+  drawPhotoFill(ctx, photo, 0, 0, w, h);
+  ctx.restore();
+
+  // Dark scrim on right portion only
+  const scrim = ctx.createLinearGradient(0, h * 0.5, 0, h);
+  scrim.addColorStop(0, 'rgba(0,0,0,0)'); scrim.addColorStop(1, 'rgba(0,0,0,0.7)');
+  ctx.fillStyle = scrim; ctx.fillRect(stripW, 0, w - stripW, h);
+
+  // Left brand-colour strip
+  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, stripW, h);
+
+  // Thin white right-edge of strip
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(stripW - 2, 0, 2, h);
+
+  // Rotated headline text in strip
+  const headline = (generatedData.headline || '').toUpperCase();
+  ctx.save();
+  ctx.translate(stripW * 0.52, h * 0.96);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${Math.round(stripW * 0.55)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.fillText(headline, 0, 0);
+  ctx.restore();
+
+  // Subtext bottom-right of photo
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = `400 ${Math.round(w * 0.031)}px 'DM Mono', monospace`;
+  ctx.textAlign = 'left';
+  wrapText(ctx, generatedData.subtext || '', stripW + 40, h * 0.84, w - stripW - 80, Math.round(w * 0.038));
+
+  if (logoImg) drawLogo(ctx, w, h, 'top-right');
+  if (!logoImg && name) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = `500 ${Math.round(w * 0.024)}px 'DM Mono', monospace`;
+    ctx.textAlign = 'right'; ctx.fillText(name, w - 50, h - 40);
+  }
+}
+
+// Template 8: Bold Type — white bg, massive headline, circle photo right
+function renderPromotionTemplate(ctx, w, h) {
+  const photo = photos[selectedPhotoIdx].img;
+  const name  = document.getElementById('clientName').value.trim();
+
+  // Clean cream background
+  ctx.fillStyle = '#f7f4ef'; ctx.fillRect(0, 0, w, h);
+
+  // Brand top bar + bottom bar
+  const barH = Math.round(h * 0.012);
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(0, 0, w, barH);
+  const botBarY = Math.round(h * 0.87);
+  ctx.fillRect(0, botBarY, w, h - botBarY);
+
+  // Brand accent stroke (left side, vertical)
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(50, Math.round(h * 0.06), 6, Math.round(h * 0.55));
+
+  // Massive headline
+  const headline = (generatedData.headline || '').toUpperCase();
+  ctx.fillStyle = '#111111';
+  ctx.font = `800 ${Math.round(w * 0.1)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  wrapText(ctx, headline, 80, h * 0.14, w * 0.56, Math.round(w * 0.115));
+
+  // Subtext in brand colour
+  ctx.fillStyle = brandColor;
+  ctx.font = `600 ${Math.round(w * 0.034)}px 'DM Mono', monospace`;
+  wrapText(ctx, generatedData.subtext || '', 80, h * 0.66, w * 0.52, Math.round(w * 0.042));
+
+  // Circle photo right side
+  const cr = Math.round(Math.min(w, h) * 0.28);
+  const cx = Math.round(w * 0.79), cy = Math.round(h * 0.44);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.12)'; ctx.shadowBlur = 28;
+  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fillStyle = '#ddd'; ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.clip();
+  drawPhotoFill(ctx, photo, cx - cr, cy - cr, cr * 2, cr * 2);
+  ctx.restore();
+
+  // Brand ring around circle
+  ctx.strokeStyle = brandColor; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.arc(cx, cy, cr + 6, 0, Math.PI * 2); ctx.stroke();
+
+  // Client name in bottom bar
+  if (name) {
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(w * 0.03)}px 'DM Mono', monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText(name, 80, botBarY + Math.round((h - botBarY) * 0.65));
+  }
+  if (logoImg) drawLogo(ctx, w, h, 'top-right');
+}
+
+// Template 3: Before/After
+function renderBeforeAfter(ctx, w, h) {
+  const afterPhoto = photos[selectedPhotoIdx].img;
+  const mid = Math.round(w / 2);
+
+  // Before (left)
+  if (beforePhoto) {
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, mid, h); ctx.clip();
+    drawPhotoFill(ctx, beforePhoto.img, 0, 0, mid, h); ctx.restore();
+    // Dark overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, 0, mid, h);
+  } else {
+    ctx.fillStyle = '#333'; ctx.fillRect(0, 0, mid, h);
+  }
+
+  // After (right)
+  ctx.save(); ctx.beginPath(); ctx.rect(mid, 0, mid, h); ctx.clip();
+  drawPhotoFill(ctx, afterPhoto, mid, 0, mid, h); ctx.restore();
+
+  // Top accent
+  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, w, 8);
+
+  // Divider line
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(mid - 2, 0, 4, h);
+
+  // BEFORE label
+  ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, h * 0.05, mid * 0.42, h * 0.065);
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(w * 0.028)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('BEFORE', mid * 0.21, h * 0.095);
+
+  // AFTER label
+  ctx.fillStyle = brandColor; ctx.fillRect(mid + mid * 0.58, h * 0.05, mid * 0.42, h * 0.065);
+  ctx.fillStyle = '#fff';
+  ctx.fillText('AFTER', mid + mid * 0.79, h * 0.095);
+
+  // Bottom gradient
+  const grad = ctx.createLinearGradient(0, h * 0.75, 0, h);
+  grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+  // Headline
+  ctx.fillStyle = '#fff';
+  ctx.font = `800 ${Math.round(w * 0.058)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'center';
+  wrapText(ctx, generatedData.headline || 'TRANSFORMATION', w/2, h * 0.83, w - 120, Math.round(w * 0.07), 'center');
+
+  // Logo
+  if (logoImg) drawLogo(ctx, w, h, 'top-right');
+
+  // Client name
+  if (document.getElementById('clientName').value.trim()) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = `500 ${Math.round(w * 0.025)}px 'DM Mono', monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText(document.getElementById('clientName').value.trim(), w - 55, h - 45);
+  }
+}
+
+// Template 4: Testimonial
+function renderTestimonialTemplate(ctx, w, h) {
+  const photo = photos[selectedPhotoIdx].img;
+
+  // Photo background (desaturated / darkened)
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+  drawPhotoFill(ctx, photo, 0, 0, w, h);
+  ctx.restore();
+
+  // Strong overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(0, 0, w, h);
+
+  // Brand accent
+  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, w, 8);
+  ctx.fillRect(0, h - 8, w, 8);
+
+  // Large quote marks
+  ctx.fillStyle = brandColor; ctx.globalAlpha = 0.35;
+  ctx.font = `800 ${Math.round(w * 0.28)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.fillText('"', 40, Math.round(h * 0.38));
+  ctx.globalAlpha = 1;
+
+  // Quote text
+  const quote = document.getElementById('testimonialText').value.trim() || generatedData.headline || '';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `600 ${Math.round(w * 0.048)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'center';
+  wrapText(ctx, quote, w/2, h * 0.38, w * 0.8, Math.round(w * 0.058), 'center');
+
+  // Stars
+  ctx.fillStyle = brandColor;
+  ctx.font = `${Math.round(w * 0.048)}px serif`;
+  ctx.fillText('★★★★★', w/2 - Math.round(w * 0.12), h * 0.72);
+
+  // Logo
+  if (logoImg) drawLogo(ctx, w, h, 'bottom-center');
+}
+
+// Template 5: Magazine (vertical split — brand left, photo right)
+function renderMagazineTemplate(ctx, w, h) {
+  const photo = photos[selectedPhotoIdx].img;
+  const splitX = Math.round(w * 0.42);
+
+  // Left colour panel
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(0, 0, splitX, h);
+
+  // Right photo panel
+  ctx.save();
+  ctx.beginPath(); ctx.rect(splitX, 0, w - splitX, h); ctx.clip();
+  drawPhotoFill(ctx, photo, splitX, 0, w - splitX, h);
+  ctx.restore();
+
+  // Thin divider line
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fillRect(splitX, 0, 2, h);
+
+  // Top accent stripe on left panel
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(0, 0, splitX, 6);
+
+  // Category label (top)
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = `500 ${Math.round(w * 0.022)}px 'DM Mono', monospace`;
+  ctx.textAlign = 'left';
+  ctx.fillText('PROJECT FEATURE', 32, Math.round(h * 0.1));
+
+  // Headline — rotated 90° option skipped for legibility; stack vertically
+  const headline = (generatedData.headline || '').toUpperCase();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${Math.round(w * 0.068)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  wrapText(ctx, headline, 32, Math.round(h * 0.32), splitX - 52, Math.round(w * 0.082));
+
+  // Subtext
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.font = `400 ${Math.round(w * 0.028)}px 'DM Mono', monospace`;
+  wrapText(ctx, generatedData.subtext || '', 32, Math.round(h * 0.68), splitX - 52, Math.round(w * 0.036));
+
+  // Logo (bottom-left of colour panel)
+  if (logoImg) drawLogo(ctx, splitX, h, 'bottom-right', 24);
+
+  // Client name bottom-left
+  if (!logoImg && document.getElementById('clientName').value.trim()) {
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = `500 ${Math.round(w * 0.022)}px 'DM Mono', monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText(document.getElementById('clientName').value.trim(), 32, h - 40);
+  }
+}
+
+// Template 6: Editorial (full bleed photo + clean white card bottom)
+function renderEditorialTemplate(ctx, w, h) {
+  const photo = photos[selectedPhotoIdx].img;
+
+  // Full bleed photo
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+  drawPhotoFill(ctx, photo, 0, 0, w, h);
+  ctx.restore();
+
+  // White card anchored at bottom
+  const cardH = Math.round(h * 0.36);
+  const cardY = h - cardH;
+  const cardPad = 48;
+
+  // Card shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur = 32;
+  ctx.shadowOffsetY = -6;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(0, cardY + 20);
+  ctx.quadraticCurveTo(0, cardY, 20, cardY);
+  ctx.lineTo(w - 20, cardY);
+  ctx.quadraticCurveTo(w, cardY, w, cardY + 20);
+  ctx.lineTo(w, h); ctx.lineTo(0, h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Brand accent strip at top of card
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(cardPad, cardY + 18, Math.round(w * 0.1), 4);
+
+  // Headline in dark text
+  const headline = (generatedData.headline || '').toUpperCase();
+  ctx.fillStyle = '#111111';
+  ctx.font = `800 ${Math.round(w * 0.062)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  wrapText(ctx, headline, cardPad, cardY + Math.round(cardH * 0.28), w - cardPad * 2, Math.round(w * 0.075));
+
+  // Subtext
+  ctx.fillStyle = '#555555';
+  ctx.font = `400 ${Math.round(w * 0.027)}px 'DM Mono', monospace`;
+  wrapText(ctx, generatedData.subtext || '', cardPad, cardY + Math.round(cardH * 0.66), w - cardPad * 2 - 100, Math.round(w * 0.034));
+
+  // Logo top-right of photo (above card)
+  if (logoImg) drawLogo(ctx, w, h, 'top-right');
+
+  // Client name bottom-right inside card
+  if (document.getElementById('clientName').value.trim()) {
+    ctx.fillStyle = '#999999';
+    ctx.font = `500 ${Math.round(w * 0.023)}px 'DM Mono', monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText(document.getElementById('clientName').value.trim(), w - cardPad, h - 38);
+  }
+}
+
+// Logo drawing
+function drawLogo(ctx, w, h, position, padOverride) {
+  if (!logoImg) return;
+  const maxW = Math.round(w * 0.18), maxH = Math.round(h * 0.08);
+  const scale = Math.min(maxW / logoImg.width, maxH / logoImg.height);
+  const lw = logoImg.width * scale, lh = logoImg.height * scale;
+  const pad = padOverride !== undefined ? padOverride : 48;
+  let lx, ly;
+  if (position === 'top-right') { lx = w - lw - pad; ly = pad; }
+  else if (position === 'top-left') { lx = pad; ly = pad; }
+  else if (position === 'bottom-center') { lx = (w - lw) / 2; ly = h - lh - pad - 12; }
+  else if (position === 'bottom-right') { lx = w - lw - pad; ly = h - lh - pad; }
+  else { lx = w - lw - pad; ly = h - lh - pad; }
+
+  // White backing pill
+  ctx.save();
+  const pillPad = 10;
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  roundRect(ctx, lx - pillPad, ly - pillPad, lw + pillPad*2, lh + pillPad*2, 10);
+  ctx.fill();
+  ctx.drawImage(logoImg, lx, ly, lw, lh);
+  ctx.restore();
+}
+
+// Text wrap utility
+function wrapText(ctx, text, x, y, maxW, lineH, align = 'left') {
+  if (!text) return;
+  const words = text.split(' ');
+  let line = '';
+  let currY = y;
+  ctx.textAlign = align;
+  for (let i = 0; i < words.length; i++) {
+    const test = line + words[i] + ' ';
+    if (ctx.measureText(test).width > maxW && i > 0) {
+      ctx.fillText(line.trim(), x, currY);
+      line = words[i] + ' ';
+      currY += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line.trim()) ctx.fillText(line.trim(), x, currY);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ── Caption output ─────────────────────────────────────────────────────────
+function showCaptionOutput() {
+  document.getElementById('captionOutput').style.display = 'block';
+  document.getElementById('captionDisplay').textContent = generatedData.caption || '';
+  document.querySelectorAll('.caption-tab')[0].click();
+}
+function copyCaption() {
+  const activeTab = document.querySelector('.caption-tab.active').dataset.tab;
+  const texts = { caption: generatedData.caption, hashtags: generatedData.hashtags, story: generatedData.story, hook: generatedData.hook };
+  navigator.clipboard.writeText(texts[activeTab] || '').then(() => {
+    const btn = document.querySelector('.copy-caption-btn');
+    btn.textContent = '✓ Copied!'; btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = '📋 Copy to clipboard'; btn.style.color = ''; }, 2000);
+  });
+}
+
+// ── Download ───────────────────────────────────────────────────────────────
+function downloadPost() {
+  const canvas = document.getElementById('postCanvas');
+  const clientName = (document.getElementById('clientName').value.trim() || 'post').replace(/\s+/g, '-').toLowerCase();
+  const ts = new Date().toISOString().slice(0,10);
+  const a = document.createElement('a');
+  a.download = `${clientName}-${postType}-${format}-${ts}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ── Brand colour detection ─────────────────────────────────────────────────
+async function detectBrandColor() {
+  const apiKey = localStorage.getItem('qj_social_api_key');
+  if (!apiKey) { openApiModal(); return; }
+  const url = document.getElementById('clientWebsite').value.trim();
+  if (!url) { document.getElementById('detectStatus').textContent = '⚠ Enter a website URL first'; return; }
+
+  const btn = document.getElementById('detectColorBtn');
+  const status = document.getElementById('detectStatus');
+  btn.textContent = '⏳ Detecting…'; btn.disabled = true;
+  status.textContent = 'Asking Claude to identify brand colours…';
+
+  const clientName = document.getElementById('clientName').value.trim() || 'this company';
+  const niche      = document.getElementById('clientNiche').value.trim() || 'renovation';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-8',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: `The company is "${clientName}", a ${niche} business. Their website is ${url}.\n\nBased on what you know about this company or similar companies in this industry, what is their primary brand colour? If you don't know the exact company, suggest a professional colour that fits a ${niche} business.\n\nReturn ONLY a JSON object with one field: { "brandColor": "#hexcode" }. No explanation, no markdown.` }]
+      })
+    });
+    const d = await res.json();
+    if (d.error) throw new Error(d.error.message);
+    const raw = d.content[0].text;
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch(_) { const m = raw.match(/\{[\s\S]+\}/); parsed = m ? JSON.parse(m[0]) : null; }
+    if (parsed && parsed.brandColor && /^#[0-9a-fA-F]{3,6}$/.test(parsed.brandColor)) {
+      applyBrandColor(parsed.brandColor);
+      saveClientBranding();
+      status.textContent = `✓ Brand colour applied: ${parsed.brandColor}`;
+    } else {
+      status.textContent = '⚠ Could not detect colour — pick one manually below';
+    }
+  } catch(err) {
+    status.textContent = '⚠ ' + (err.message || 'Detection failed');
+  }
+  btn.textContent = '🎨 Detect'; btn.disabled = false;
+}
+
+function applyBrandColor(hex) {
+  brandColor = hex;
+  const colorInput = document.getElementById('customColor');
+  if (colorInput) colorInput.value = hex;
+  // Deselect preset swatches
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  // Re-render canvas if we have content
+  if (generatedData && photos[selectedPhotoIdx]) renderCanvas();
+}
+
+// ── Batch caption panel ────────────────────────────────────────────────────
+let activeBatchIdx = -1;
+let activeBatchCapTab = 'caption';
+
+function showBatchCaption(idx) {
+  const r = batchResults[idx];
+  if (!r || !r.data) return;
+  activeBatchIdx = idx;
+  const panel = document.getElementById('batchCaptionPanel');
+  panel.style.display = 'block';
+  document.getElementById('batchCapLabel').textContent = `Post ${idx + 1} — caption`;
+  renderBatchCapText();
+  // Highlight selected grid item
+  document.querySelectorAll('.post-grid-item').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+}
+
+function renderBatchCapText() {
+  if (activeBatchIdx < 0 || !batchResults[activeBatchIdx]?.data) return;
+  const data = batchResults[activeBatchIdx].data;
+  const map = { caption: data.caption, hashtags: data.hashtags, story: data.story, hook: data.hook };
+  document.getElementById('batchCaptionText').textContent = map[activeBatchCapTab] || '';
+}
+
+function switchBatchCapTab(btn) {
+  document.querySelectorAll('[data-btab]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeBatchCapTab = btn.dataset.btab;
+  renderBatchCapText();
+}
+
+function copyBatchCaption() {
+  const text = document.getElementById('batchCaptionText').textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('#batchCaptionPanel .copy-caption-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+
+// ── Image compression helper ───────────────────────────────────────────────
+// Resizes to max 1500px on longest side and encodes as JPEG ~0.82 quality
+// Returns { base64, mediaType } safe to send to Claude API (<5MB typical)
+function compressForAPI(photo) {
+  return new Promise(resolve => {
+    const img = photo.img;
+    const MAX = 1500;
+    let sw = img.width, sh = img.height;
+    if (sw > MAX || sh > MAX) {
+      if (sw > sh) { sh = Math.round(sh * MAX / sw); sw = MAX; }
+      else          { sw = Math.round(sw * MAX / sh); sh = MAX; }
+    }
+    const c = document.createElement('canvas');
+    c.width = sw; c.height = sh;
+    c.getContext('2d').drawImage(img, 0, 0, sw, sh);
+    const dataUrl = c.toDataURL('image/jpeg', 0.82);
+    resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
+  });
+}
+
+// ── Batch Generation ───────────────────────────────────────────────────────
+let batchResults = []; // Array of { canvas, data, photoIdx }
+let lightboxIdx   = 0;
+
+async function callClaudeVision(photo, clientName, niche, extraCtx, testimonial, website, assignedType) {
+  const apiKey = localStorage.getItem('qj_social_api_key');
+  const typeForCopy = assignedType || postType;
+  const postTypeLabels = {
+    showcase:    'Full-bleed showcase — strong visual impact, minimal text',
+    value:       'Value/Tip post — educate homeowners, provide genuine insight',
+    magazine:    'Magazine editorial — left panel text, right panel photo',
+    editorial:   'Editorial card — clean minimal card at bottom of photo',
+    beforeafter: 'Before & After transformation story',
+    testimonial: 'Testimonial — feature a client quote or review',
+    process:     'Behind the scenes / process — show the work in progress',
+    promotion:   'Bold promotional — large headline, strong call to action'
+  };
+  const systemPrompt = `You are an expert social media content creator specialising in the home renovation and construction industry in Australia. You create high-performing organic social media posts for renovation companies that attract homeowners who are thinking about getting work done.\n\nYour posts are:\n- Specific and authentic — never generic or salesy\n- Written to provide GENUINE VALUE to homeowners (tips, education, inspiration, social proof)\n- Warm, professional, and trustworthy in tone\n- Designed to generate saves, shares, and comments — not just likes\n- Tailored to the Australian renovation market\n\nYou always return responses in valid JSON format with exactly these fields:\n{\n  "headline": "Short punchy headline (max 6 words, ALL CAPS — written specifically for the ${postTypeLabels[typeForCopy]} layout)",\n  "subtext": "One supporting line (max 12 words)",\n  "caption": "Full Instagram/Facebook caption with line breaks, emojis, call to action",\n  "hashtags": "25-30 relevant hashtags for renovation/construction in Australia",\n  "story": "Short punchy Stories version of the caption (2-3 sentences max)",\n  "hook": "The first line hook only — must stop the scroll (under 10 words)",\n  "brandColor": "The single most prominent brand hex colour for this company. If you can infer it from their website URL or company name, use it. Otherwise suggest a colour that fits a professional ${niche} business."\n}`;
+  const userPrompt = `Create a social media post for ${clientName}, a ${niche} company.${website ? `\nWebsite: ${website}` : ''}\n\nLayout style: ${postTypeLabels[typeForCopy]}\n${testimonial ? `Client testimonial to feature: "${testimonial}"` : ''}\n${extraCtx ? `Additional context: ${extraCtx}` : ''}\n\nLook at the attached photo and write copy that specifically references what you can see. Do not be generic.\n\nThe caption should provide value to homeowners. Include a specific insight, social proof, and a soft call to action in natural Australian English.\n\nReturn only valid JSON, no markdown, no explanation.`;
+
+  const compressed = await compressForAPI(photo);
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-8',
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: compressed.mediaType, data: compressed.base64 } },
+        { type: 'text', text: userPrompt }
+      ]}]
+    })
+  });
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message);
+  const raw = d.content[0].text;
+  try { return JSON.parse(raw); }
+  catch(_) {
+    const m = raw.match(/\{[\s\S]+\}/);
+    if (m) return JSON.parse(m[0]);
+    throw new Error('Could not parse AI response');
+  }
+}
+
+function renderCanvasOffscreen(parsed, photoObj, typeOverride) {
+  const c = document.createElement('canvas');
+  const { w, h } = FORMATS[format] || FORMATS.square;
+  c.width = w; c.height = h;
+  // Temporarily swap global state to render
+  const prevGenData = generatedData;
+  const prevPhoto   = photos[selectedPhotoIdx];
+  generatedData = parsed;
+  photos[selectedPhotoIdx] = photoObj;
+  const ctx = c.getContext('2d');
+  dispatchTemplate(ctx, c.width, c.height, typeOverride || postType);
+  generatedData = prevGenData;
+  photos[selectedPhotoIdx] = prevPhoto;
+  return c;
+}
+
+async function generateAll() {
+  const apiKey = localStorage.getItem('qj_social_api_key');
+  if (!apiKey) { openApiModal(); return; }
+  const validPhotos = photos.filter(Boolean);
+  if (!validPhotos.length) return;
+
+  const btn = document.getElementById('batchBtn');
+  const genBtn = document.getElementById('generateBtn');
+  btn.disabled = true; genBtn.disabled = true;
+  btn.textContent = '⚡ Generating…';
+
+  const progressWrap  = document.getElementById('batchProgress');
+  const progressBar   = document.getElementById('batchBar');
+  const progressLabel = document.getElementById('batchLabel');
+  progressWrap.style.display = 'block';
+  batchResults = [];
+
+  const clientName  = document.getElementById('clientName').value.trim() || 'our client';
+  const niche       = document.getElementById('clientNiche').value.trim() || 'renovation';
+  const website     = document.getElementById('clientWebsite').value.trim();
+  const extraCtx    = document.getElementById('extraContext').value.trim();
+  const testimonial = document.getElementById('testimonialText').value.trim();
+  let brandColorApplied = false;
+
+  // Round-robin template list — guaranteed variety regardless of photo content
+  const VARY_TYPES = ['showcase', 'value', 'magazine', 'editorial', 'process', 'promotion', 'testimonial'];
+  const autoVary = document.getElementById('autoVaryToggle')?.checked;
+  // Shuffle so the order is different each batch run
+  const shuffled = autoVary
+    ? [...VARY_TYPES].sort(() => Math.random() - 0.5)
+    : null;
+
+  for (let i = 0; i < validPhotos.length; i++) {
+    const pct = Math.round((i / validPhotos.length) * 100);
+    progressBar.style.width = pct + '%';
+    const assignedType = shuffled ? shuffled[i % shuffled.length] : postType;
+    progressLabel.textContent = `Generating post ${i + 1} of ${validPhotos.length} · ${TYPE_LABELS[assignedType] || assignedType}…`;
+
+    renderBatchGridPlaceholders(validPhotos.length, i);
+
+    try {
+      const parsed = await callClaudeVision(validPhotos[i], clientName, niche, extraCtx, testimonial, website, assignedType);
+      if (!brandColorApplied && parsed.brandColor && /^#[0-9a-fA-F]{3,6}$/.test(parsed.brandColor)) {
+        applyBrandColor(parsed.brandColor);
+        document.getElementById('detectStatus').textContent = `✓ Brand colour detected: ${parsed.brandColor}`;
+        saveClientBranding();
+        brandColorApplied = true;
+      }
+      const canvas = renderCanvasOffscreen(parsed, validPhotos[i], assignedType);
+      batchResults.push({ canvas, data: parsed, photoIdx: i, usedType: assignedType });
+    } catch(err) {
+      batchResults.push({ canvas: null, data: null, photoIdx: i, error: err.message });
+    }
+
+    renderBatchGrid();
+    if (i < validPhotos.length - 1) await new Promise(r => setTimeout(r, 800));
+  }
+
+  progressBar.style.width = '100%';
+  progressLabel.textContent = `✓ ${batchResults.filter(r=>r.canvas).length} posts ready — click to expand, or download ZIP`;
+
+  btn.disabled = false;
+  genBtn.disabled = false;
+  btn.textContent = `⚡ Regenerate All ${validPhotos.length} Posts`;
+
+  showBatchView();
+}
+
+function renderBatchGridPlaceholders(total, currentlyGenerating) {
+  const grid = document.getElementById('postGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const item = document.createElement('div');
+    item.className = 'post-grid-item';
+    item.id = `grid-item-${i}`;
+    if (i < currentlyGenerating && batchResults[i]) {
+      // already done
+      if (batchResults[i].canvas) {
+        const thumb = document.createElement('canvas');
+        const ratio = batchResults[i].canvas.height / batchResults[i].canvas.width;
+        thumb.width  = 240;
+        thumb.height = Math.round(240 * ratio);
+        thumb.getContext('2d').drawImage(batchResults[i].canvas, 0, 0, thumb.width, thumb.height);
+        item.appendChild(thumb);
+        item.innerHTML += `<span class="item-num">${i+1}</span>`;
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'item-dl';
+        dlBtn.textContent = '⬇ Save';
+        dlBtn.onclick = e => { e.stopPropagation(); downloadSingle(i); };
+        item.appendChild(dlBtn);
+        item.onclick = () => openLightbox(i);
+      }
+    } else if (i === currentlyGenerating) {
+      item.innerHTML = `<div style="width:240px;height:240px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.5rem;color:var(--muted);font-size:0.7rem;font-family:'DM Mono',monospace"><span class="spinner" style="border-top-color:var(--accent)"></span>Generating…</div><span class="item-num">${i+1}</span>`;
+    } else {
+      item.innerHTML = `<div style="width:240px;height:240px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.5rem">⋯</div><span class="item-num">${i+1}</span>`;
+    }
+    grid.appendChild(item);
+  }
+  showBatchView();
+}
+
+const TYPE_LABELS = { showcase:'Showcase', value:'Value/Tip', magazine:'Magazine', editorial:'Editorial', beforeafter:'Before/After', testimonial:'Testimonial', process:'Process', promotion:'Promo' };
+
+function renderBatchGrid() {
+  const grid = document.getElementById('postGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  batchResults.forEach((r, i) => {
+    const item = document.createElement('div');
+    item.className = 'post-grid-item';
+    if (r.canvas) {
+      const thumb = document.createElement('canvas');
+      const ratio = r.canvas.height / r.canvas.width;
+      thumb.width  = 240;
+      thumb.height = Math.round(240 * ratio);
+      thumb.getContext('2d').drawImage(r.canvas, 0, 0, thumb.width, thumb.height);
+      item.appendChild(thumb);
+
+      // Post number
+      const numEl = document.createElement('span');
+      numEl.className = 'item-num';
+      numEl.textContent = i + 1;
+      item.appendChild(numEl);
+
+      // Template type badge
+      if (r.usedType) {
+        const badge = document.createElement('span');
+        badge.style.cssText = 'position:absolute;bottom:30px;left:6px;background:rgba(0,0,0,0.6);color:rgba(255,255,255,0.85);font-size:0.55rem;font-family:"DM Mono",monospace;border-radius:4px;padding:2px 6px;pointer-events:none';
+        badge.textContent = TYPE_LABELS[r.usedType] || r.usedType;
+        item.appendChild(badge);
+      }
+
+      // Download button
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'item-dl';
+      dlBtn.textContent = '⬇ Save';
+      dlBtn.onclick = e => { e.stopPropagation(); downloadSingle(i); };
+      item.appendChild(dlBtn);
+
+      // Expand button
+      const expBtn = document.createElement('button');
+      expBtn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:5px;font-size:0.6rem;padding:3px 7px;cursor:pointer;opacity:0;transition:opacity 0.2s;font-family:"DM Mono",monospace';
+      expBtn.textContent = '⤢ Expand';
+      item.onmouseenter = () => { expBtn.style.opacity = '1'; dlBtn.style.opacity = '1'; };
+      item.onmouseleave = () => { expBtn.style.opacity = '0'; dlBtn.style.opacity = '0'; };
+      expBtn.onclick = e => { e.stopPropagation(); openLightbox(i); };
+      item.appendChild(expBtn);
+
+      item.onclick = () => showBatchCaption(i);
+    } else {
+      item.innerHTML = `<div style="width:240px;height:240px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.4rem;color:var(--red);font-size:0.65rem;font-family:'DM Mono',monospace;text-align:center;padding:1rem">⚠<br>${r.error||'Failed'}</div><span class="item-num">${i+1}</span>`;
+    }
+    grid.appendChild(item);
+  });
+}
+
+function showBatchView() {
+  document.getElementById('singleView').style.display = 'none';
+  const bv = document.getElementById('batchView');
+  bv.style.display = 'flex';
+}
+function showSingleView() {
+  document.getElementById('batchView').style.display = 'none';
+  document.getElementById('singleView').style.display = 'flex';
+}
+
+function openLightbox(idx) {
+  const r = batchResults[idx];
+  if (!r || !r.canvas) return;
+  lightboxIdx = idx;
+  const lb = document.getElementById('lightbox');
+  const lc = document.getElementById('lightboxCanvas');
+  const ratio = r.canvas.height / r.canvas.width;
+  const maxW  = Math.min(window.innerWidth * 0.88, 900);
+  lc.width    = maxW;
+  lc.height   = Math.round(maxW * ratio);
+  lc.getContext('2d').drawImage(r.canvas, 0, 0, lc.width, lc.height);
+  const cap = document.getElementById('lightboxCaption');
+  cap.textContent = r.data ? (r.data.caption || '') : '';
+  lb.classList.add('open');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+function lightboxPrev() { const idx = (lightboxIdx - 1 + batchResults.length) % batchResults.length; openLightbox(idx); }
+function lightboxNext() { const idx = (lightboxIdx + 1) % batchResults.length; openLightbox(idx); }
+function lightboxDownload() { downloadSingle(lightboxIdx); }
+
+function downloadSingle(idx) {
+  const r = batchResults[idx];
+  if (!r || !r.canvas) return;
+  const clientName = (document.getElementById('clientName').value.trim() || 'post').replace(/\s+/g,'-').toLowerCase();
+  const ts = new Date().toISOString().slice(0,10);
+  const a = document.createElement('a');
+  a.download = `${clientName}-${postType}-post${idx+1}-${ts}.png`;
+  a.href = r.canvas.toDataURL('image/png');
+  a.click();
+}
+
+async function downloadAllZip() {
+  const ready = batchResults.filter(r => r.canvas);
+  if (!ready.length) return;
+  const btn = document.getElementById('downloadZipBtn');
+  btn.disabled = true; btn.textContent = '⏳ Packaging…';
+  const zip = new JSZip();
+  const clientName = (document.getElementById('clientName').value.trim() || 'posts').replace(/\s+/g,'-').toLowerCase();
+  const ts = new Date().toISOString().slice(0,10);
+  batchResults.forEach((r, i) => {
+    if (!r.canvas) return;
+    const dataUrl = r.canvas.toDataURL('image/png');
+    const base64  = dataUrl.split(',')[1];
+    zip.file(`${clientName}-${postType}-post${i+1}-${ts}.png`, base64, { base64: true });
+    if (r.data) {
+      const txt = [r.data.caption, '', '— Hashtags —', r.data.hashtags, '', '— Stories Copy —', r.data.story, '', '— Hook —', r.data.hook].join('\n');
+      zip.file(`${clientName}-post${i+1}-captions.txt`, txt);
+    }
+  });
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.download = `${clientName}-social-posts-${ts}.zip`;
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  btn.disabled = false; btn.textContent = '⬇ Download All ZIP';
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function setStatus(msg) { document.getElementById('genStatus').textContent = msg; }
+</script>
+</body>
+</html>
