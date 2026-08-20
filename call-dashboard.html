@@ -10261,6 +10261,73 @@ async function renderCEOOverview() {
         </div>
       </div>
 
+      <!-- ── Add-On Packages ──────────────────────────────────────────────── -->
+      <div style="margin-top:2rem">
+        <div class="ceo-section-title">📦 Add-On Packages</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+
+          <!-- Website Package column -->
+          <div>
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid #6366f1">
+              <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6366f1">🌐 Website Package</span>
+            </div>
+            ${(() => {
+              const webClients = [
+                { name: 'Generational Bathrooms',  mrr: 49  },
+                { name: 'Quality Custom Homes',     mrr: 274 },
+                { name: 'Integra Renovations',      mrr: 142 },
+                { name: 'Established Renovations',  mrr: 99  },
+                { name: 'Marco Build',              mrr: 109 },
+              ];
+              const total = webClients.reduce((s,c) => s + c.mrr, 0);
+              return `
+              <div style="display:flex;flex-direction:column;gap:0.5rem">
+                ${webClients.map(c => `
+                  <div class="ceo-client-row" style="border-color:rgba(99,102,241,0.2)">
+                    <div style="flex:1;min-width:0">
+                      <div class="ceo-client-name">${c.name}</div>
+                    </div>
+                    <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:#6366f1;font-weight:700">$${c.mrr}/mo</div>
+                  </div>`).join('')}
+                <div style="margin-top:0.35rem;padding-top:0.5rem;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Total MRR</span>
+                  <span style="font-size:0.85rem;font-weight:800;color:#6366f1">$${total}/mo</span>
+                </div>
+              </div>`;
+            })()}
+          </div>
+
+          <!-- Social Posts column -->
+          <div>
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid #ec4899">
+              <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#ec4899">📸 Social Posts</span>
+            </div>
+            ${(() => {
+              const socialClients = JSON.parse(localStorage.getItem('qj_social_post_clients') || '[]');
+              const allActive = clients.map(c => c.name);
+              const rows = socialClients.length
+                ? socialClients.map(n => `
+                  <div class="ceo-client-row" style="border-color:rgba(236,72,153,0.2)">
+                    <div class="ceo-client-name" style="flex:1">${n}</div>
+                    <button onclick="_ceoToggleSocialClient('${n.replace(/'/g,"\\'")}',false);renderCEOOverview()" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;opacity:0.5" title="Remove from Social Posts">✕</button>
+                  </div>`).join('')
+                : `<div style="color:var(--muted);font-size:0.75rem;font-family:'DM Mono',monospace;padding:0.5rem 0">No clients added yet</div>`;
+              const notOn = allActive.filter(n => !socialClients.includes(n));
+              const addDropdown = notOn.length ? `
+                <div style="margin-top:0.5rem;display:flex;gap:0.4rem;align-items:center">
+                  <select id="socialAddSel" style="flex:1;padding:0.35rem 0.5rem;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:0.65rem;font-family:'DM Mono',monospace;outline:none">
+                    <option value="">— Add client —</option>
+                    ${notOn.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('')}
+                  </select>
+                  <button onclick="_ceoToggleSocialClient(document.getElementById('socialAddSel').value,true);renderCEOOverview()" style="padding:0.35rem 0.65rem;background:#ec4899;color:#fff;border:none;border-radius:7px;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">＋</button>
+                </div>` : '';
+              return `<div style="display:flex;flex-direction:column;gap:0.5rem">${rows}${addDropdown}</div>`;
+            })()}
+          </div>
+
+        </div>
+      </div>
+
       ${pausedClients.length ? `
       <div>
         <div class="ceo-section-title" style="color:var(--amber)">⏸ Paused Clients</div>
@@ -10301,6 +10368,16 @@ async function renderCEOOverview() {
 
     </div>
   </div>`;
+}
+
+// ── CEO Social Posts toggle ───────────────────────
+function _ceoToggleSocialClient(name, add) {
+  if (!name) return;
+  const key = 'qj_social_post_clients';
+  let list = JSON.parse(localStorage.getItem(key) || '[]');
+  if (add) { if (!list.includes(name)) list.push(name); }
+  else { list = list.filter(n => n !== name); }
+  localStorage.setItem(key, JSON.stringify(list));
 }
 
 // ── CEO Pause / Make Active ────────────────────────
