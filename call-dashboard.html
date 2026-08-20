@@ -10099,16 +10099,38 @@ async function renderCEOOverview() {
   el.innerHTML = `<div class="main" style="padding-top:1.5rem"><div class="ceo-page"><div style="text-align:center;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.78rem;padding:3rem">Loading clients…</div></div></div>`;
 
   let clients = [], churnedClients = [], pausedClients = [];
+  let mrrByClient = {};   // name (lower) → mrr number
   try {
-    const res  = await fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`);
-    const rows = await res.json();
+    const [clientsRes, payLogRes] = await Promise.all([
+      fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`),
+      fetchWT(`${PROXY_URL}?id=${PAYMENT_LOG_ID}&sheet=02%3A%20Payment%20Log`).catch(() => null)
+    ]);
+
+    // ── Parse payment log for MRR per client ──────────────────────────────
+    if (payLogRes) {
+      try {
+        const plRows = await payLogRes.json();
+        for (let i = 5; i < plRows.length; i++) {
+          const r = plRows[i];
+          const rawName = String(r[1]||'').trim();
+          if (!rawName) continue;
+          const mrr = parseFloat(String(r[5]||'').replace(/[^0-9.-]/g,'')) || 0;
+          const key = rawName.toLowerCase();
+          if (!mrrByClient[key] || mrr > mrrByClient[key]) mrrByClient[key] = mrr;
+        }
+      } catch(_) {}
+    }
+
+    const rows = await clientsRes.json();
     for (let i = 1; i < rows.length; i++) {
-      const name      = String(rows[i][0] || '').trim();
-      const agent     = String(rows[i][1] || '').trim();
-      const statsUrl  = String(rows[i][3] || '').trim();
-      const ovField   = String(rows[i][7] || '').trim();
-      const status    = String(rows[i][8] || '').trim();
-      const churnDate = String(rows[i][29] || '').trim();
+      const name             = String(rows[i][0]  || '').trim();
+      const agent            = String(rows[i][1]  || '').trim();
+      const statsUrl         = String(rows[i][3]  || '').trim();
+      const liveDate         = String(rows[i][4]  || '').trim();
+      const ovField          = String(rows[i][7]  || '').trim();
+      const status           = String(rows[i][8]  || '').trim();
+      const billingStartDate = String(rows[i][26] || '').trim();
+      const churnDate        = String(rows[i][29] || '').trim();
       if (!name) continue;
       const overviewDocUrl = ovField.includes('docs.google.com/document') ? ovField : (CLIENT_OVERVIEW_DOCS[name] || '');
       if (status === 'Churned' || _churnedLocally(name)) {
@@ -10120,25 +10142,38 @@ async function renderCEOOverview() {
         pausedClients.push({ name, agent, pausedAt: pauseInfo.pausedAt || '', reason: pauseInfo.reason || '' });
         continue;
       }
-      clients.push({ name, agent, overviewDocUrl, hasCC: !!(statsUrl && statsUrl.length > 4 && !statsUrl.toLowerCase().includes('not yet')) });
+      const mrr = mrrByClient[name.toLowerCase()] || 0;
+      clients.push({ name, agent, overviewDocUrl, liveDate, billingStartDate, mrr,
+        hasCC: !!(statsUrl && statsUrl.length > 4 && !statsUrl.toLowerCase().includes('not yet')) });
     }
-    // Also catch any locally churned clients not yet reflected in the sheet
     const localChurned = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
     localChurned.forEach(n => {
-      if (!churnedClients.some(c => c.name.toLowerCase() === n.toLowerCase())) {
+      if (!churnedClients.some(c => c.name.toLowerCase() === n.toLowerCase()))
         churnedClients.push({ name: n, agent: '—', churnDate: '' });
-      }
     });
-    // Also catch any locally paused clients not yet reflected in the sheet
     const localPaused = JSON.parse(localStorage.getItem('qj_paused_clients') || '[]');
     localPaused.forEach(p => {
       if (!pausedClients.some(c => c.name.toLowerCase() === p.name.toLowerCase()) &&
-          !churnedClients.some(c => c.name.toLowerCase() === p.name.toLowerCase())) {
+          !churnedClients.some(c => c.name.toLowerCase() === p.name.toLowerCase()))
         pausedClients.push({ name: p.name, agent: '—', pausedAt: p.pausedAt || '', reason: p.reason || '' });
-      }
     });
   } catch(e) {
     clients = [];
+  }
+
+  // ── Next-payment countdown helper ────────────────────────────────────────
+  function nextPaymentInfo(billingStartDate) {
+    if (!billingStartDate) return null;
+    const parsed = parseDateStr(billingStartDate) || (billingStartDate ? new Date(billingStartDate) : null);
+    if (!parsed || isNaN(parsed)) return null;
+    const billingDay = parsed.getDate();
+    const today = new Date(); today.setHours(0,0,0,0);
+    let next = new Date(today.getFullYear(), today.getMonth(), billingDay);
+    if (next <= today) next = new Date(today.getFullYear(), today.getMonth() + 1, billingDay);
+    const days = Math.round((next - today) / 864e5);
+    const ordinal = billingDay + (billingDay===1||billingDay===21||billingDay===31?'st':billingDay===2||billingDay===22?'nd':billingDay===3||billingDay===23?'rd':'th');
+    const urgency = days <= 3 ? '#f87171' : days <= 7 ? '#fbbf24' : 'var(--green)';
+    return { days, ordinal, urgency };
   }
 
   const ccClients    = clients.filter(c => c.hasCC && !isNonCC(c.name));
@@ -10150,19 +10185,31 @@ async function renderCEOOverview() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const makeCard = c => `
-    <div class="ceo-client-row">
-      <div style="flex:1;min-width:0">
-        <div class="ceo-client-name">${c.name}</div>
-        ${c.overviewDocUrl ? `<a href="${c.overviewDocUrl}" target="_blank" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">📄 Overview Doc</a>` : ''}
+  const makeCard = c => {
+    const pmt = nextPaymentInfo(c.billingStartDate);
+    const mrrFmt = c.mrr > 0 ? '$' + (c.mrr >= 1000 ? (c.mrr/1000).toFixed(1).replace(/\.0$/,'') + 'k' : Math.round(c.mrr)) + '/mo' : null;
+    return `
+    <div class="ceo-client-row" style="flex-direction:column;align-items:stretch;gap:0.55rem">
+      <div style="display:flex;align-items:flex-start;gap:0.5rem">
+        <div style="flex:1;min-width:0">
+          <div class="ceo-client-name">${c.name}</div>
+          ${c.overviewDocUrl ? `<a href="${c.overviewDocUrl}" target="_blank" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">📄 Overview Doc</a>` : ''}
+        </div>
+        <div class="ceo-client-badges" style="flex-shrink:0">
+          ${mrrFmt ? `<span style="font-size:0.68rem;font-family:'DM Mono',monospace;font-weight:800;color:var(--green)">${mrrFmt}</span>` : ''}
+          ${c.hasCC && !isNonCC(c.name) ? `<span class="ceo-badge cc">CC</span>` : `<span class="ceo-badge no-cc">Ads</span>`}
+          <button class="ceo-action-btn pause" onclick="_ceoPauseClient('${c.name.replace(/'/g,"\\'")}')">⏸ Pause</button>
+        </div>
       </div>
-      <div class="ceo-client-badges">
-        ${c.hasCC && !isNonCC(c.name)
-          ? `<span class="ceo-badge cc">CC</span>`
-          : `<span class="ceo-badge no-cc">Ads</span>`}
-        <button class="ceo-action-btn pause" onclick="_ceoPauseClient('${c.name.replace(/'/g,"\\'")}')">⏸ Pause</button>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
+        ${c.liveDate ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 7px">🚀 Live ${c.liveDate}</span>` : ''}
+        ${pmt ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 7px;display:inline-flex;align-items:center;gap:4px">
+            <span style="color:${pmt.urgency};font-weight:700">💳 ${pmt.days}d</span>
+            <span style="color:var(--muted)">· ${pmt.ordinal} each month</span>
+          </span>` : (c.billingStartDate ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">💳 Billing: ${c.billingStartDate}</span>` : '')}
       </div>
     </div>`;
+  };
 
   const julesCC    = clients.filter(c => (c.agent||'').toLowerCase()==='jules' && !isNonCC(c.name));
   const julesAds   = clients.filter(c => (c.agent||'').toLowerCase()==='jules' && isNonCC(c.name));
