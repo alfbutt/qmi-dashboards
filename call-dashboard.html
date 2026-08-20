@@ -10372,13 +10372,7 @@ async function renderCEOOverview() {
               <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">${julesAds.length + ayessaAds.length} clients</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:0.5rem">
-              ${[...julesAds, ...ayessaAds].map(c => `
-                <div class="ceo-client-row" style="opacity:0.8">
-                  <div style="flex:1;min-width:0">
-                    <div class="ceo-client-name">${c.name}</div>
-                    <div class="ceo-client-meta">${c.agent}</div>
-                  </div>
-                </div>`).join('')}
+              ${[...julesAds, ...ayessaAds].map(makeCard).join('')}
             </div>
           </div>` : '<div></div>'}
 
