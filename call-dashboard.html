@@ -9990,6 +9990,34 @@ function renderAdClientsPage() {
 
 const GHL_URL = 'https://app.gohighlevel.com/';
 
+// ── Per-client package data (hardcoded source of truth) ─────────────────────
+const CEO_CLIENT_PACKAGES = {
+  'streamline building projects':    { type: 'monthly',   mrr: 1666 },
+  'silk touch joinery':              { type: 'monthly',   mrr: 1100 },
+  'spa space':                       { type: 'monthly',   mrr: 1800 },
+  'barco build':                     { type: 'monthly',   mrr: 1500 },
+  'quality custom homes':            { type: 'monthly',   mrr: 2500 },
+  'quality custom homes pty ltd':    { type: 'monthly',   mrr: 2500 },
+  'rapid bathroom specialists':      { type: 'monthly',   mrr: 2442 },
+  'rapid bathroom specialist':       { type: 'monthly',   mrr: 2442 },
+  'boss carpentry group':            { type: 'monthly',   mrr: 1500 },
+  'woodstock building services':     { type: 'monthly',   mrr: 2442 },
+  'woodstock building services (vic)':{ type: 'monthly',  mrr: 2442 },
+  'mkcb renovations':                { type: 'monthly',   mrr: 1400 },
+  'performance building solutions':  { type: 'monthly',   mrr: 1750 },
+  'dws building co':                 { type: 'monthly',   mrr: 2000 },
+  'citiwide group':                  { type: 'monthly',   mrr: 1800 },
+  'mk1 renovations':                 { type: 'monthly',   mrr: 0    },
+  'kbg renovations':                 { type: 'monthly',   mrr: 0    },
+  'favourite home':                  { type: 'weekly',    weeklyRate: 330 },
+  'moonlight doors & windows':       { type: 'monthly',   mrr: 2000 },
+  'moonlight doors and windows':     { type: 'monthly',   mrr: 2000 },
+  // ── 3-month programmes ──────────────────────────────────────────────────
+  'bisdaq build':                    { type: 'programme', total: 5000,  months: 3, start: '2026-07-12', end: '2026-10-12' },
+  'integra renovations':             { type: 'programme', total: 7500,  months: 3, start: '2026-08-02', end: '2026-11-02' },
+  'betterbuilding and construction': { type: 'programme', total: 5000,  months: 3, start: '2026-08-24', end: '2026-11-24' },
+};
+
 // ── CEO Overview ─────────────────────────────────
 // Tracks which month offset the CEO metrics panel is viewing (0 = current month, -1 = last month, etc.)
 window._ceoMetricsOffset = 0;
@@ -10185,10 +10213,63 @@ async function renderCEOOverview() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const makeCard = c => {
+  // ── Date formatter ──────────────────────────────────────────────────────────
+  function fmtDate(raw) {
+    if (!raw) return '';
+    const d = parseDateStr(raw) || new Date(raw);
+    if (!d || isNaN(d)) return raw;
+    return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  // ── Package-aware countdown chip ────────────────────────────────────────────
+  function packageChip(c) {
+    const pkg = CEO_CLIENT_PACKAGES[c.name.toLowerCase()];
+
+    if (pkg && pkg.type === 'programme') {
+      const end   = new Date(pkg.end);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const days  = Math.max(0, Math.round((end - today) / 864e5));
+      const endFmt = end.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+      const urgency = days <= 14 ? '#f87171' : days <= 30 ? '#fbbf24' : '#a78bfa';
+      const totalFmt = '$' + (pkg.total >= 1000 ? (pkg.total/1000).toFixed(pkg.total%1000===0?0:1) + 'k' : pkg.total);
+      return `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:5px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px">
+        <span style="color:${urgency};font-weight:700">⏳ ${days}d left</span>
+        <span style="color:var(--muted)">· 3-mo programme ends ${endFmt}</span>
+      </span>`;
+    }
+
     const pmt = nextPaymentInfo(c.billingStartDate);
-    const mrrFmt = c.mrr > 0 ? '$' + (c.mrr >= 1000 ? (c.mrr/1000).toFixed(1).replace(/\.0$/,'') + 'k' : Math.round(c.mrr)) + '/mo' : null;
-    return `
+    if (!pmt) return '';
+    return `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px">
+      <span style="color:${pmt.urgency};font-weight:700">💳 ${pmt.days}d</span>
+      <span style="color:var(--muted)">· bills ${pmt.ordinal} each month</span>
+    </span>`;
+  }
+
+  // ── MRR / value badge ────────────────────────────────────────────────────────
+  function valueBadge(c) {
+    const pkg = CEO_CLIENT_PACKAGES[c.name.toLowerCase()];
+    if (pkg) {
+      if (pkg.type === 'programme') {
+        const total = '$' + (pkg.total >= 1000 ? (pkg.total/1000).toFixed(pkg.total%1000===0?0:1) + 'k' : pkg.total);
+        return `<span style="font-size:0.68rem;font-family:'DM Mono',monospace;font-weight:800;color:#a78bfa">${total} prog</span>`;
+      }
+      if (pkg.type === 'weekly' && pkg.weeklyRate)
+        return `<span style="font-size:0.68rem;font-family:'DM Mono',monospace;font-weight:800;color:var(--green)">$${pkg.weeklyRate}/wk</span>`;
+      if (pkg.mrr > 0) {
+        const fmt = '$' + (pkg.mrr >= 1000 ? (pkg.mrr/1000).toFixed(pkg.mrr%1000===0?0:1)+'k' : pkg.mrr) + '/mo';
+        return `<span style="font-size:0.68rem;font-family:'DM Mono',monospace;font-weight:800;color:var(--green)">${fmt}</span>`;
+      }
+    }
+    // Fallback to sheet MRR
+    if (c.mrr > 0) {
+      const fmt = '$' + (c.mrr >= 1000 ? (c.mrr/1000).toFixed(1).replace(/\.0$/,'')+'k' : Math.round(c.mrr)) + '/mo';
+      return `<span style="font-size:0.68rem;font-family:'DM Mono',monospace;font-weight:800;color:var(--green)">${fmt}</span>`;
+    }
+    return '';
+  }
+
+  const makeCard = c => `
     <div class="ceo-client-row" style="flex-direction:column;align-items:stretch;gap:0.55rem">
       <div style="display:flex;align-items:flex-start;gap:0.5rem">
         <div style="flex:1;min-width:0">
@@ -10196,20 +10277,16 @@ async function renderCEOOverview() {
           ${c.overviewDocUrl ? `<a href="${c.overviewDocUrl}" target="_blank" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">📄 Overview Doc</a>` : ''}
         </div>
         <div class="ceo-client-badges" style="flex-shrink:0">
-          ${mrrFmt ? `<span style="font-size:0.68rem;font-family:'DM Mono',monospace;font-weight:800;color:var(--green)">${mrrFmt}</span>` : ''}
+          ${valueBadge(c)}
           ${c.hasCC && !isNonCC(c.name) ? `<span class="ceo-badge cc">CC</span>` : `<span class="ceo-badge no-cc">Ads</span>`}
           <button class="ceo-action-btn pause" onclick="_ceoPauseClient('${c.name.replace(/'/g,"\\'")}')">⏸ Pause</button>
         </div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
-        ${c.liveDate ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 7px">🚀 Live ${c.liveDate}</span>` : ''}
-        ${pmt ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 7px;display:inline-flex;align-items:center;gap:4px">
-            <span style="color:${pmt.urgency};font-weight:700">💳 ${pmt.days}d</span>
-            <span style="color:var(--muted)">· ${pmt.ordinal} each month</span>
-          </span>` : (c.billingStartDate ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">💳 Billing: ${c.billingStartDate}</span>` : '')}
+        ${c.liveDate ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px">🚀 Live ${fmtDate(c.liveDate)}</span>` : ''}
+        ${packageChip(c)}
       </div>
     </div>`;
-  };
 
   const julesCC    = clients.filter(c => (c.agent||'').toLowerCase()==='jules' && !isNonCC(c.name));
   const julesAds   = clients.filter(c => (c.agent||'').toLowerCase()==='jules' && isNonCC(c.name));
