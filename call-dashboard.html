@@ -554,6 +554,11 @@
   .bank-cat-tx-amt { font-family:'DM Mono',monospace;font-size:0.85rem;font-weight:700;text-align:right;white-space:nowrap; }
   .bank-cat-tx-del { background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;padding:0;line-height:1;opacity:.5;transition:opacity .1s; }
   .bank-cat-tx-del:hover { opacity:1;color:var(--red); }
+  /* ── Month filter pills ── */
+  .bank-month-filter-row { display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1rem; }
+  .bank-month-pill { background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:0.72rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap; }
+  .bank-month-pill:hover { border-color:var(--accent);color:var(--text); }
+  .bank-month-pill.active { color:#fff;border-color:transparent; }
   .bank-pl-sparkbar-fill { height:4px;border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1); }
   .bank-sub-card { background:var(--surface2);border-radius:14px;padding:1rem 1.1rem;margin:.55rem 0;border:1px solid var(--border);transition:border-color .15s; }
   .bank-sub-card:hover { border-color:var(--accent); }
@@ -12737,7 +12742,11 @@ function _bankToggleManual() {
 // ── Main Render ──
 // ── Category tab helpers ──
 function _bankSwitchTab(cat, el) {
-  document.querySelectorAll('.bank-cat-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bank-cat-tab').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '';
+    b.style.boxShadow = '';
+  });
   if (el) {
     el.classList.add('active');
     const color = cat === '_subs' ? '#f59e0b' : (BANK_CAT_COLORS[cat] || 'var(--accent)');
@@ -12745,7 +12754,13 @@ function _bankSwitchTab(cat, el) {
     el.style.boxShadow = `0 2px 8px ${color}55`;
   }
   window._bankActiveCatTab = cat;
+  window._bankActiveMonth = '';  // reset month filter on tab switch
   _bankRenderCatTab(cat);
+}
+
+function _bankSwitchMonth(month) {
+  window._bankActiveMonth = month;
+  _bankRenderCatTab(window._bankActiveCatTab || '');
 }
 
 function _bankRenderCatTab(cat) {
@@ -12759,13 +12774,27 @@ function _bankRenderCatTab(cat) {
 
   const fmt = n => '$' + Math.abs(n).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
   const color = BANK_CAT_COLORS[cat] || '#6b7280';
-  const allTxs = _bankGetTx();
-  const txs = allTxs.filter(t => t.category === cat).sort((a,b) => b.date.localeCompare(a.date));
+  const activeMonth = window._bankActiveMonth || '';
+  const allCatTxs = _bankGetTx().filter(t => t.category === cat).sort((a,b) => b.date.localeCompare(a.date));
 
-  if (!txs.length) {
+  if (!allCatTxs.length) {
     content.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;padding:1.5rem 0;text-align:center">No transactions in this category yet.</p>`;
     return;
   }
+
+  // Build month list from all transactions in this category
+  const allMonths = [...new Set(allCatTxs.map(t => t.date.slice(0,7)))].sort().reverse();
+  const monthPills = [
+    `<button class="bank-month-pill${activeMonth===''?' active':''}" style="${activeMonth===''?`background:${color};color:#fff;border-color:transparent`:''}" onclick="window._bankSwitchMonth('')">All</button>`,
+    ...allMonths.map(m => {
+      const label = new Date(m+'-15').toLocaleString('default',{month:'short',year:'numeric'});
+      const isActive = activeMonth === m;
+      return `<button class="bank-month-pill${isActive?' active':''}" style="${isActive?`background:${color};color:#fff;border-color:transparent`:''}" onclick="window._bankSwitchMonth('${m}')">${label}</button>`;
+    })
+  ].join('');
+
+  // Filter by active month
+  const txs = activeMonth ? allCatTxs.filter(t => t.date.slice(0,7) === activeMonth) : allCatTxs;
 
   const byMonth = {};
   txs.forEach(t => {
@@ -12773,7 +12802,6 @@ function _bankRenderCatTab(cat) {
     (byMonth[m] = byMonth[m] || []).push(t);
   });
 
-  const catOpts = BANK_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
   const monthHtml = Object.entries(byMonth).sort((a,b) => b[0].localeCompare(a[0])).map(([m, mtxs]) => {
     const label = new Date(m + '-15').toLocaleString('default',{month:'long',year:'numeric'});
     const monthTotal = mtxs.reduce((s,t) => s + Math.abs(t.amount), 0);
@@ -12800,6 +12828,7 @@ function _bankRenderCatTab(cat) {
 
   const total = txs.reduce((s,t) => s + Math.abs(t.amount), 0);
   content.innerHTML = `
+    <div class="bank-month-filter-row">${monthPills}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <span style="font-size:0.75rem;color:var(--muted)">${txs.length} transaction${txs.length!==1?'s':''}</span>
       <span style="font-family:'DM Mono',monospace;font-weight:700;color:${color}">${fmt(total)} total</span>
@@ -12967,6 +12996,7 @@ window._bankAddManual        = _bankAddManual;
 window._bankToggleManual     = _bankToggleManual;
 window._bankCategoriseWithAI = _bankCategoriseWithAI;
 window._bankSwitchTab        = _bankSwitchTab;
+window._bankSwitchMonth      = _bankSwitchMonth;
 window._bankRenderCatTab     = _bankRenderCatTab;
 window._bankSetCatAndRefresh = _bankSetCatAndRefresh;
 window._bankDelAndRefresh    = _bankDelAndRefresh;
