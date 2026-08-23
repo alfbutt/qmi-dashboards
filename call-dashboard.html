@@ -11610,7 +11610,7 @@ function _bankSaveTx(list) { localStorage.setItem('qj_bank_tx', JSON.stringify(l
 
 // ── Seed data: auto-loads all 10 ANZ statements — v4 forces clean re-seed to eliminate duplicates ──
 (function _seedBankData() {
-  const SEED_VERSION = 'v6';
+  const SEED_VERSION = 'v7';
   if (localStorage.getItem('qj_bank_seed') === SEED_VERSION) return;
   const tx = [
     {id:'s1_r01',date:'2025-10-15',description:'Alfie Butler Opening Deposit',amount:10.00,category:'Revenue',type:'income',include:true},
@@ -11948,7 +11948,6 @@ function _bankSaveTx(list) { localStorage.setItem('qj_bank_tx', JSON.stringify(l
     {id:'s9_e08',date:'2026-06-15',description:'EFTPOS — QualityJobs.com.au Platform Fee',amount:-14.24,category:'Business Expenses',type:'expense',include:true},
     {id:'s9_e09',date:'2026-06-15',description:'HighLevel Inc. GOHIGHLEVEL.C',amount:-147.63,category:'Business Expenses',type:'expense',include:true},
     {id:'s9_e10',date:'2026-06-15',description:'Facebook Ads — 14x$20',amount:-280.00,category:'Ad Spend',type:'expense',include:true},
-    {id:'s9_e11',date:'2026-06-15',description:'ANZ Mobile — Allspec Homes Pty Ltd',amount:-2500.00,category:'Salaries',type:'expense',include:true},
     {id:'s9_e12',date:'2026-06-16',description:'HighLevel Inc. GOHIGHLEVEL.C',amount:-146.74,category:'Business Expenses',type:'expense',include:true},
     {id:'s9_e13',date:'2026-06-16',description:'Facebook Ads — 6x$20',amount:-120.00,category:'Ad Spend',type:'expense',include:true},
     {id:'s9_e14',date:'2026-06-17',description:'Facebook Ads — 5x$20 + $19.76',amount:-119.76,category:'Ad Spend',type:'expense',include:true},
@@ -12099,7 +12098,6 @@ function _bankSaveTx(list) { localStorage.setItem('qj_bank_tx', JSON.stringify(l
     {id:'s10_c02',date:'2026-07-29',description:'Wise Sydney (Contractor Payment)',amount:-2131.16,category:'Salaries',type:'expense',include:true},
     {id:'s10_c03',date:'2026-08-05',description:'Wise Sydney (Contractor Payment)',amount:-936.53,category:'Salaries',type:'expense',include:true},
     // Expenses — ANZ Mobile Banking Payments (Business)
-    {id:'s10_b01',date:'2026-07-15',description:'ANZ Mobile — Allspec Homes Pty Ltd',amount:-2500.00,category:'Salaries',type:'expense',include:true},
     {id:'s10_b02',date:'2026-07-17',description:'ANZ Mobile — Allspec Homes Pty Ltd',amount:-2500.00,category:'Salaries',type:'expense',include:true},
     {id:'s10_b03',date:'2026-07-24',description:'ANZ Mobile — S Naylor',amount:-40.00,category:'Business Expenses',type:'expense',include:true},
     {id:'s10_b04',date:'2026-07-28',description:'ANZ Mobile — Property Trio Co Rent Trust (PERSONAL)',amount:-2477.00,category:'Personal Expenses',type:'expense',include:true},
