@@ -12607,8 +12607,6 @@ function _bankToggleManual() {
 function renderFinanceBankPage() {
   const el = document.getElementById('app-finance-bank');
   if (!el) return;
-  const unlocked = sessionStorage.getItem('qj_finance_unlocked') === '1';
-  if (!unlocked) { showFinanceLock(el, localStorage.getItem('qj_finance_pw')); return; }
 
   // Get months for filter dropdown
   const txs = _bankGetTx();
@@ -12619,7 +12617,6 @@ function renderFinanceBankPage() {
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
       <h2 style="margin:0;font-size:1.1rem;font-weight:700">Bank & P&L Tracker</h2>
-      <button class="finance-relock" onclick="sessionStorage.removeItem('qj_finance_unlocked');renderFinanceBankPage()">🔒 Lock</button>
     </div>
 
     <!-- API Key -->
