@@ -3399,10 +3399,6 @@ const FINANCE_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','O
 
 
 function renderFinancePage() {
-  const el = document.getElementById('app-finance');
-  const stored = localStorage.getItem('qj_finance_pw');
-  const unlocked = sessionStorage.getItem('qj_finance_unlocked') === '1';
-  if (!unlocked) { showFinanceLock(el, stored); return; }
   loadFinanceData();
 }
 
