@@ -1,0 +1,98 @@
+<svg width="560" height="592" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+
+  <!-- Main background -->
+  <rect width="560" height="592" rx="14" fill="#1a1a1a"/>
+
+  <!-- Header block -->
+  <rect width="560" height="72" rx="14" fill="#222222"/>
+  <rect y="58" width="560" height="14" fill="#222222"/>
+  <text x="280" y="31" text-anchor="middle" font-size="16" font-weight="bold" fill="#c9960c" letter-spacing="0.5">CSR DAILY SCHEDULE</text>
+  <text x="280" y="54" text-anchor="middle" font-size="10" fill="#666666" letter-spacing="2">MELBOURNE TIME  ·  AEST</text>
+
+  <!-- Column header row -->
+  <rect y="72" width="560" height="26" fill="#1e1e1e"/>
+  <text x="80" y="88" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#555555" letter-spacing="1.5">TIME SLOT</text>
+  <line x1="160" y1="72" x2="160" y2="98" stroke="#2a2a2a" stroke-width="1"/>
+  <text x="360" y="88" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#555555" letter-spacing="1.5">ACTIVITY</text>
+  <line x1="0" y1="98" x2="560" y2="98" stroke="#2a2a2a" stroke-width="1"/>
+
+  <!-- ─── BLOCK 1: Check Messages  y=98  h=45 ─── -->
+  <rect x="0" y="98" width="560" height="45" fill="#1c2233"/>
+  <rect x="0" y="98" width="5" height="45" fill="#3b82f6"/>
+  <line x1="160" y1="98" x2="160" y2="143" stroke="#252525" stroke-width="1"/>
+  <!-- Time -->
+  <text x="80" y="116" text-anchor="middle" font-size="12" font-weight="bold" fill="#e0e0e0">9:30 AM</text>
+  <text x="80" y="133" text-anchor="middle" font-size="10" fill="#505050">9:30 – 9:40 AM</text>
+  <!-- Activity -->
+  <text x="176" y="113" font-size="9" fill="#606060" letter-spacing="1">10 MINUTES</text>
+  <text x="176" y="131" font-size="13" font-weight="bold" fill="#93c5fd">📩  Check &amp; Reply to Messages</text>
+
+  <!-- ─── BLOCK 2: Morning Calls  y=143  h=134 ─── -->
+  <rect x="0" y="143" width="560" height="134" fill="#1c1608"/>
+  <rect x="0" y="143" width="5" height="134" fill="#c9960c"/>
+  <line x1="160" y1="143" x2="160" y2="277" stroke="#252525" stroke-width="1"/>
+  <!-- Time -->
+  <text x="80" y="196" text-anchor="middle" font-size="12" font-weight="bold" fill="#e0e0e0">9:40 AM</text>
+  <text x="80" y="212" text-anchor="middle" font-size="10" fill="#505050">9:40 AM – 12:30 PM</text>
+  <!-- Activity -->
+  <text x="176" y="183" font-size="9" fill="#606060" letter-spacing="1">2 HOURS 50 MINUTES</text>
+  <text x="176" y="203" font-size="14" font-weight="bold" fill="#c9960c">☎  Making Calls</text>
+  <text x="176" y="222" font-size="11" fill="#7a6020">Morning calling block</text>
+
+  <!-- ─── BLOCK 3: Lunch Break  y=277  h=45 ─── -->
+  <rect x="0" y="277" width="560" height="45" fill="#181e27"/>
+  <rect x="0" y="277" width="5" height="45" fill="#475569"/>
+  <line x1="160" y1="277" x2="160" y2="322" stroke="#252525" stroke-width="1"/>
+  <!-- Time -->
+  <text x="80" y="295" text-anchor="middle" font-size="12" font-weight="bold" fill="#e0e0e0">12:30 PM</text>
+  <text x="80" y="312" text-anchor="middle" font-size="10" fill="#505050">12:30 – 1:00 PM</text>
+  <!-- Activity -->
+  <text x="176" y="292" font-size="9" fill="#606060" letter-spacing="1">30 MINUTES</text>
+  <text x="176" y="311" font-size="13" font-weight="bold" fill="#8fa3be">🍽  Lunch Break</text>
+
+  <!-- ─── BLOCK 4: Afternoon Calls  y=322  h=119 ─── -->
+  <rect x="0" y="322" width="560" height="119" fill="#1c1608"/>
+  <rect x="0" y="322" width="5" height="119" fill="#c9960c"/>
+  <line x1="160" y1="322" x2="160" y2="441" stroke="#252525" stroke-width="1"/>
+  <!-- Time -->
+  <text x="80" y="373" text-anchor="middle" font-size="12" font-weight="bold" fill="#e0e0e0">1:00 PM</text>
+  <text x="80" y="389" text-anchor="middle" font-size="10" fill="#505050">1:00 – 3:30 PM</text>
+  <!-- Activity -->
+  <text x="176" y="360" font-size="9" fill="#606060" letter-spacing="1">2 HOURS 30 MINUTES</text>
+  <text x="176" y="380" font-size="14" font-weight="bold" fill="#c9960c">☎  Making Calls</text>
+  <text x="176" y="399" font-size="11" fill="#7a6020">Afternoon calling block</text>
+
+  <!-- ─── BLOCK 5: Short Break  y=441  h=40 ─── -->
+  <rect x="0" y="441" width="560" height="40" fill="#181e27"/>
+  <rect x="0" y="441" width="5" height="40" fill="#475569"/>
+  <line x1="160" y1="441" x2="160" y2="481" stroke="#252525" stroke-width="1"/>
+  <!-- Time -->
+  <text x="80" y="457" text-anchor="middle" font-size="12" font-weight="bold" fill="#e0e0e0">3:30 PM</text>
+  <text x="80" y="473" text-anchor="middle" font-size="10" fill="#505050">3:30 – 3:45 PM</text>
+  <!-- Activity -->
+  <text x="176" y="455" font-size="9" fill="#606060" letter-spacing="1">15 MINUTES</text>
+  <text x="176" y="473" font-size="13" font-weight="bold" fill="#8fa3be">☕  Short Break</text>
+
+  <!-- ─── BLOCK 6: Evening Calls  y=481  h=83 ─── -->
+  <rect x="0" y="481" width="560" height="83" fill="#1c1608"/>
+  <rect x="0" y="481" width="5" height="83" fill="#c9960c"/>
+  <line x1="160" y1="481" x2="160" y2="564" stroke="#252525" stroke-width="1"/>
+  <!-- Time -->
+  <text x="80" y="516" text-anchor="middle" font-size="12" font-weight="bold" fill="#e0e0e0">3:45 PM</text>
+  <text x="80" y="532" text-anchor="middle" font-size="10" fill="#505050">3:45 – 5:30 PM</text>
+  <!-- Activity -->
+  <text x="176" y="503" font-size="9" fill="#606060" letter-spacing="1">1 HOUR 45 MINUTES</text>
+  <text x="176" y="523" font-size="14" font-weight="bold" fill="#c9960c">☎  Making Calls</text>
+  <text x="176" y="542" font-size="11" fill="#7a6020">End of day calling block</text>
+
+  <!-- Footer -->
+  <rect y="564" width="560" height="28" fill="#161616"/>
+  <rect y="564" width="560" height="28" rx="0" fill="#161616"/>
+  <!-- Bottom radius fix -->
+  <rect x="0" y="578" width="560" height="14" rx="14" fill="#161616"/>
+  <rect x="0" y="564" width="560" height="14" fill="#161616"/>
+
+  <!-- Total hours summary -->
+  <text x="280" y="582" text-anchor="middle" font-size="9.5" fill="#444444" letter-spacing="1">TOTAL CALLING TIME: 6 HRS 5 MINS  ·  LOG IN 9:30 AM  ·  LOG OFF 5:30 PM</text>
+
+</svg>
