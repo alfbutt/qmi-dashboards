@@ -3,1928 +3,1981 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QJ · Social Post Agent</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<title>Social Post Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── Tokens ── */
 :root {
-  --bg: #f4f3ef; --surface: #fff; --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
-  --text: #1a1917; --muted: #78746a; --accent: #b5870d; --green: #16a34a; --red: #dc2626;
+  --bg:#f0ebe0; --surface:#fff; --surface2:#f7f4ee; --border:rgba(0,0,0,0.08); --border2:rgba(0,0,0,0.14);
+  --text:#1e1b18; --muted:#7a7268; --accent:#c9a847; --accent-dim:rgba(201,168,71,0.12);
+  --green:#16a34a; --red:#dc2626; --sidebar:#fff; --preview:#e8e4db;
+  --card:#fff; --pill:rgba(0,0,0,0.06);
 }
-body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-/* ── HEADER ── */
-.header { background: #27231f; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.header-title { font-size: 0.95rem; font-weight: 800; color: #f5f2ea; letter-spacing: -0.02em; }
-.header-sub { font-size: 0.6rem; font-family: 'DM Mono', monospace; color: #9a9280; margin-top: 2px; letter-spacing: 0.05em; text-transform: uppercase; }
-.api-key-btn { background: rgba(181,135,13,0.15); border: 1px solid rgba(181,135,13,0.3); color: var(--accent); border-radius: 8px; padding: 6px 14px; font-size: 0.68rem; font-family: 'DM Mono', monospace; cursor: pointer; transition: all 0.15s; }
-.api-key-btn:hover { background: rgba(181,135,13,0.25); }
-
-/* ── LAYOUT ── */
-.wrap { display: grid; grid-template-columns: 420px 1fr; gap: 0; min-height: calc(100vh - 58px); }
-
-/* ── CONTROLS PANEL ── */
-.controls { background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; overflow-y: auto; max-height: calc(100vh - 58px); }
-.controls::-webkit-scrollbar { width: 3px; }
-.controls::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
-
-.section-title { font-size: 0.65rem; font-family: 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; margin-top: 1.4rem; }
-.section-title:first-child { margin-top: 0; }
-
-/* Inputs */
-.field { margin-bottom: 0.85rem; }
-.field label { display: block; font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.3rem; }
-.field input, .field select, .field textarea {
-  width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 9px;
-  padding: 0.55rem 0.85rem; font-size: 0.78rem; font-family: 'Syne', sans-serif; color: var(--text);
-  outline: none; transition: border-color 0.15s;
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1e1b18; --surface:#2a2722; --surface2:#332f2a; --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+    --text:#f0ebe0; --muted:#7a7268; --sidebar:#242019; --preview:#171410;
+    --card:#2a2722; --pill:rgba(255,255,255,0.07);
+  }
 }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
-.field textarea { resize: vertical; min-height: 70px; }
+:root[data-theme="dark"]{
+  --bg:#1e1b18; --surface:#2a2722; --surface2:#332f2a; --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+  --text:#f0ebe0; --muted:#7a7268; --sidebar:#242019; --preview:#171410;
+  --card:#2a2722; --pill:rgba(255,255,255,0.07);
+}
+
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Header ── */
+.hdr{background:#1e1b18;padding:0.9rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.hdr-title{font-size:0.9rem;font-weight:800;color:#f0ebe0;letter-spacing:-0.02em}
+.hdr-sub{font-size:0.58rem;font-family:'DM Mono',monospace;color:#635e57;margin-top:1px;letter-spacing:0.06em;text-transform:uppercase}
+.hdr-actions{display:flex;gap:0.5rem;align-items:center}
+.hdr-btn{background:rgba(201,168,71,0.12);border:1px solid rgba(201,168,71,0.28);color:#c9a847;border-radius:7px;padding:5px 13px;font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;transition:all 0.15s}
+.hdr-btn:hover{background:rgba(201,168,71,0.22)}
+.hdr-link{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9a9280;border-radius:7px;padding:5px 13px;font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;text-decoration:none;transition:all 0.15s}
+.hdr-link:hover{color:#f0ebe0;border-color:rgba(255,255,255,0.2)}
+
+/* ── Layout ── */
+.app{display:grid;grid-template-columns:380px 1fr;flex:1;min-height:0;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--sidebar);border-right:1px solid var(--border);overflow-y:auto;height:calc(100vh - 52px)}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+.sb-inner{padding:1.25rem 1.25rem 2rem}
+
+.sec-lbl{font-size:0.6rem;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.55rem;margin-top:1.3rem;display:flex;align-items:center;gap:0.4rem}
+.sec-lbl:first-child{margin-top:0}
+.sec-lbl .sec-tag{background:var(--pill);border-radius:4px;padding:1px 6px;font-size:0.55rem;letter-spacing:0.05em}
+
+.field{margin-bottom:0.75rem}
+.field label{display:block;font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.28rem}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.75rem;font-family:'Syne',sans-serif;color:var(--text);outline:none;transition:border-color 0.15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:65px;line-height:1.55;font-family:'DM Mono',monospace;font-size:0.68rem}
+.field select{cursor:pointer}
 
 /* Upload zones */
-.upload-zone {
-  border: 2px dashed var(--border2); border-radius: 12px; padding: 1.2rem;
-  text-align: center; cursor: pointer; transition: all 0.2s; position: relative; background: var(--bg);
-}
-.upload-zone:hover { border-color: var(--accent); background: rgba(181,135,13,0.03); }
-.upload-zone.has-files { border-color: var(--green); border-style: solid; background: rgba(22,163,74,0.03); }
-.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.upload-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
-.upload-label { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); }
-.upload-label strong { color: var(--accent); }
-.upload-count { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--green); margin-top: 0.25rem; font-weight: 600; }
+.upz{border:2px dashed var(--border2);border-radius:10px;padding:1rem;text-align:center;cursor:pointer;transition:all 0.18s;position:relative;background:var(--surface2)}
+.upz:hover{border-color:var(--accent);background:var(--accent-dim)}
+.upz.filled{border-color:var(--green);border-style:solid;background:rgba(22,163,74,0.05)}
+.upz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upz-icon{font-size:1.3rem;margin-bottom:0.25rem}
+.upz-lbl{font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted)}
+.upz-lbl strong{color:var(--accent)}
+.upz-note{font-size:0.58rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:3px;opacity:0.7}
 
 /* Photo thumbs */
-.photo-thumbs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
-.photo-thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 2px solid var(--border); cursor: pointer; transition: all 0.15s; }
-.photo-thumb.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(181,135,13,0.3); }
-.photo-thumb:hover { border-color: var(--accent); }
+.thumbs{display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem}
+.thumb{width:52px;height:52px;border-radius:7px;object-fit:cover;border:2px solid var(--border);cursor:pointer;transition:all 0.15s}
+.thumb.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(201,168,71,0.35)}
+.thumb:hover{border-color:var(--accent)}
+.thumb-add{width:52px;height:52px;border-radius:7px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;color:var(--muted);transition:all 0.15s;flex-shrink:0}
+.thumb-add:hover{border-color:var(--accent);color:var(--accent)}
+.drive-thumb{width:52px;height:52px;border-radius:7px;object-fit:cover;border:2px solid var(--border);cursor:pointer;transition:all 0.15s}
+.drive-thumb.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(201,168,71,0.35)}
 
-/* Logo preview */
-.logo-preview { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
-.logo-thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: contain; border: 1px solid var(--border); background: #fff; padding: 4px; }
+/* Color row */
+.color-row{display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap}
+.swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s;flex-shrink:0}
+.swatch:hover,.swatch.active{border-color:var(--text);transform:scale(1.15)}
+.swatch-custom input[type=color]{width:26px;height:26px;border:2px solid var(--border2);cursor:pointer;border-radius:50%;padding:0;background:none;outline:none}
 
-/* Post type grid */
-.post-types { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-.post-type-btn {
-  padding: 0.65rem 0.75rem; border: 2px solid var(--border2); border-radius: 10px;
-  background: var(--bg); cursor: pointer; transition: all 0.15s; text-align: left;
-}
-.post-type-btn:hover { border-color: var(--accent); background: rgba(181,135,13,0.04); }
-.post-type-btn.active { border-color: var(--accent); background: rgba(181,135,13,0.08); }
-.post-type-icon { font-size: 1.1rem; margin-bottom: 0.2rem; }
-.post-type-label { font-size: 0.7rem; font-weight: 700; color: var(--text); }
-.post-type-sub { font-size: 0.58rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 1px; }
+/* Post type pills */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}
+.type-btn{padding:0.55rem 0.65rem;border:1.5px solid var(--border2);border-radius:9px;background:var(--surface2);cursor:pointer;transition:all 0.15s;text-align:left}
+.type-btn:hover{border-color:var(--accent)}
+.type-btn.active{border-color:var(--accent);background:var(--accent-dim)}
+.type-icon{font-size:1rem;margin-bottom:0.15rem}
+.type-name{font-size:0.68rem;font-weight:700;color:var(--text)}
+.type-sub{font-size:0.55rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:1px}
 
-/* Format selector */
-.format-tabs { display: flex; gap: 0.4rem; }
-.format-tab {
-  flex: 1; padding: 0.5rem; border: 2px solid var(--border2); border-radius: 8px;
-  background: var(--bg); cursor: pointer; text-align: center; transition: all 0.15s;
-  font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted);
-}
-.format-tab:hover { border-color: var(--accent); }
-.format-tab.active { border-color: var(--accent); background: rgba(181,135,13,0.08); color: var(--accent); font-weight: 600; }
-.format-tab .fmt-icon { font-size: 1rem; display: block; margin-bottom: 3px; }
+/* Format tabs */
+.fmt-row{display:flex;gap:0.35rem}
+.fmt-btn{flex:1;padding:0.45rem;border:1.5px solid var(--border2);border-radius:8px;background:var(--surface2);cursor:pointer;text-align:center;font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);transition:all 0.15s}
+.fmt-btn:hover{border-color:var(--accent)}
+.fmt-btn.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:600}
+.fmt-btn .fi{font-size:0.9rem;display:block;margin-bottom:2px}
 
-/* Color picker */
-.color-row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
-.color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; flex-shrink: 0; }
-.color-swatch:hover, .color-swatch.active { border-color: var(--text); transform: scale(1.15); }
-.color-custom input[type=color] { width: 28px; height: 28px; border: none; cursor: pointer; border-radius: 50%; padding: 0; background: none; }
+/* Buttons */
+.gen-btn{width:100%;padding:0.85rem;background:var(--accent);color:#1e1b18;border:none;border-radius:11px;font-size:0.82rem;font-weight:800;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.18s;margin-top:1rem;letter-spacing:-0.01em}
+.gen-btn:hover{opacity:0.9;transform:translateY(-1px)}
+.gen-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
+.sec-btn{width:100%;padding:0.75rem;background:var(--surface2);color:var(--text);border:1.5px solid var(--border2);border-radius:11px;font-size:0.78rem;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.18s;margin-top:0.5rem;letter-spacing:-0.01em}
+.sec-btn:hover{border-color:var(--accent);color:var(--accent)}
 
-/* Generate button */
-.generate-btn {
-  width: 100%; padding: 0.9rem; background: var(--accent); color: #fff; border: none;
-  border-radius: 12px; font-size: 0.85rem; font-weight: 800; font-family: 'Syne', sans-serif;
-  cursor: pointer; transition: all 0.2s; margin-top: 1.2rem; letter-spacing: -0.01em;
-}
-.generate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-.generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.generate-btn.loading { background: var(--muted); }
+.status-line{text-align:center;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:0.55rem;min-height:1.1rem}
+.status-line.err{color:var(--red)}
+.status-line.ok{color:var(--green)}
 
-/* Status */
-.gen-status { text-align: center; font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 0.6rem; min-height: 1.2rem; }
-.gen-status.error { color: var(--red); font-weight: 600; background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2); border-radius: 8px; padding: 0.5rem 0.75rem; }
-.gen-status.success { color: var(--green); font-weight: 600; }
+/* Rule notice */
+.rule-box{background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.2);border-radius:9px;padding:0.65rem 0.8rem;margin-bottom:0.75rem}
+.rule-box p{font-size:0.62rem;font-family:'DM Mono',monospace;color:#dc2626;line-height:1.6}
+.rule-box p strong{font-weight:600}
 
-/* Step indicators */
-.steps { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1.2rem; }
-.step { display: flex; align-items: center; gap: 0.5rem; font-size: 0.67rem; font-family: 'DM Mono', monospace; color: var(--muted); }
-.step-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border2); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--muted); flex-shrink: 0; }
-.step.done .step-dot { background: var(--green); border-color: var(--green); color: #fff; }
-.step.active .step-dot { background: var(--accent); border-color: var(--accent); color: #fff; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+/* Progress */
+.prog-wrap{margin-top:0.6rem;display:none}
+.prog-track{height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.prog-bar{height:5px;background:var(--accent);border-radius:99px;width:0;transition:width 0.4s}
+.prog-lbl{font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);text-align:center;margin-top:0.3rem}
 
-/* ── PREVIEW PANEL ── */
-.preview-panel { padding: 2rem; display: flex; flex-direction: column; align-items: center; background: #eceae5; }
-.preview-header { width: 100%; max-width: 700px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-.preview-title { font-size: 0.9rem; font-weight: 800; letter-spacing: -0.02em; }
-.preview-actions { display: flex; gap: 0.5rem; }
-.action-btn {
-  padding: 7px 16px; border-radius: 8px; font-size: 0.68rem; font-family: 'DM Mono', monospace;
-  cursor: pointer; border: none; transition: all 0.15s; font-weight: 600;
-}
-.action-btn.primary { background: var(--accent); color: #fff; }
-.action-btn.primary:hover { opacity: 0.88; }
-.action-btn.secondary { background: var(--surface); border: 1px solid var(--border2); color: var(--text); }
-.action-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
-.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Drive section */
+.drive-files{display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem;max-height:180px;overflow-y:auto}
 
-.canvas-wrap { background: var(--surface); border-radius: 16px; box-shadow: 0 4px 32px rgba(0,0,0,0.10); overflow: hidden; }
-#postCanvas { display: block; max-width: 100%; }
+/* ── Main panel ── */
+.main{background:var(--preview);height:calc(100vh - 52px);overflow-y:auto;display:flex;flex-direction:column}
 
-/* Caption output */
-.caption-output { width: 100%; max-width: 700px; margin-top: 1.25rem; background: var(--surface); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
-.caption-tabs { display: flex; border-bottom: 1px solid var(--border); }
-.caption-tab { padding: 0.65rem 1.1rem; font-size: 0.68rem; font-family: 'DM Mono', monospace; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); transition: all 0.15s; background: none; border-left: none; border-right: none; border-top: none; }
-.caption-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.caption-body { padding: 1rem 1.25rem; }
-.caption-text { font-size: 0.82rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; min-height: 60px; }
-.caption-text.empty { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.72rem; }
-.copy-caption-btn { margin-top: 0.75rem; padding: 6px 14px; background: var(--bg); border: 1px solid var(--border2); border-radius: 7px; font-size: 0.65rem; font-family: 'DM Mono', monospace; cursor: pointer; color: var(--muted); transition: all 0.15s; }
-.copy-caption-btn:hover { color: var(--accent); border-color: var(--accent); }
+/* Tabs */
+.tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:0.8rem 1.25rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;background:none;border-left:none;border-right:none;border-top:none;letter-spacing:0.03em}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
 
-/* Placeholder state */
-.canvas-placeholder { width: 540px; height: 540px; background: linear-gradient(135deg, #e8e6e0, #d8d5cd); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; }
-.placeholder-icon { font-size: 3rem; opacity: 0.35; }
-.placeholder-text { font-size: 0.78rem; font-family: 'DM Mono', monospace; color: var(--muted); text-align: center; line-height: 1.6; }
+.panel{flex:1;padding:2rem;display:none;flex-direction:column;align-items:center;gap:1.5rem}
+.panel.active{display:flex}
 
-/* API key modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; display: flex; align-items: center; justify-content: center; display: none; }
-.modal-overlay.open { display: flex; }
-.modal { background: var(--surface); border-radius: 16px; padding: 2rem; width: 440px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-.modal-title { font-size: 1rem; font-weight: 800; margin-bottom: 0.35rem; }
-.modal-sub { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 1.25rem; line-height: 1.6; }
-.modal input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 9px; padding: 0.65rem 1rem; font-size: 0.82rem; font-family: 'DM Mono', monospace; color: var(--text); outline: none; margin-bottom: 1rem; }
-.modal input:focus { border-color: var(--accent); }
-.modal-btns { display: flex; gap: 0.5rem; justify-content: flex-end; }
+/* Post preview */
+.preview-hdr{width:100%;max-width:680px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem}
+.preview-title{font-size:0.88rem;font-weight:800;letter-spacing:-0.02em}
+.preview-meta{font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px}
+.preview-acts{display:flex;gap:0.4rem}
+.act-btn{padding:6px 14px;border-radius:7px;font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;border:none;font-weight:600;transition:all 0.15s}
+.act-btn.pri{background:var(--accent);color:#1e1b18}
+.act-btn.pri:hover{opacity:0.88}
+.act-btn.sec{background:var(--card);border:1px solid var(--border2);color:var(--text)}
+.act-btn.sec:hover{border-color:var(--accent);color:var(--accent)}
+.act-btn:disabled{opacity:0.35;cursor:not-allowed}
 
-/* Spinner */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.canvas-shell{background:var(--card);border-radius:14px;box-shadow:0 6px 40px rgba(0,0,0,0.12);overflow:hidden}
+#postCanvas{display:block;max-width:100%}
+.canvas-ph{width:540px;height:540px;background:linear-gradient(135deg,var(--surface2),var(--surface));border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.75rem}
+.canvas-ph-icon{font-size:2.5rem;opacity:0.3}
+.canvas-ph-txt{font-size:0.75rem;font-family:'DM Mono',monospace;color:var(--muted);text-align:center;line-height:1.6}
 
-/* Batch generate button */
-.batch-btn {
-  width: 100%; padding: 0.9rem; background: #27231f; color: #f5f2ea; border: none;
-  border-radius: 12px; font-size: 0.85rem; font-weight: 800; font-family: 'Syne', sans-serif;
-  cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; letter-spacing: -0.01em;
-}
-.batch-btn:hover { background: #3a342e; }
-.batch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Caption panel */
+.cap-panel{width:100%;max-width:680px;background:var(--card);border-radius:13px;border:1px solid var(--border);overflow:hidden}
+.cap-tabs{display:flex;border-bottom:1px solid var(--border)}
+.cap-tab{padding:0.6rem 1rem;font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);background:none;border-left:none;border-right:none;border-top:none;transition:all 0.15s}
+.cap-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.cap-body{padding:0.9rem 1.1rem}
+.cap-text{font-size:0.78rem;line-height:1.75;color:var(--text);white-space:pre-wrap;min-height:55px;font-family:'DM Mono',monospace}
+.cap-text.empty{color:var(--muted);font-size:0.7rem}
+.copy-btn{margin-top:0.65rem;padding:5px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;font-size:0.62rem;font-family:'DM Mono',monospace;cursor:pointer;color:var(--muted);transition:all 0.15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
 
-/* Batch progress */
-.batch-progress { margin-top: 0.75rem; display: none; }
-.batch-progress-bar-wrap { background: var(--border); border-radius: 99px; height: 6px; margin-bottom: 0.4rem; }
-.batch-progress-bar { height: 6px; background: var(--accent); border-radius: 99px; width: 0%; transition: width 0.4s; }
-.batch-progress-label { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); text-align: center; }
+/* ── GRID TAB ── Instagram profile simulation ── */
+.ig-profile{width:100%;max-width:680px}
+.ig-header{display:flex;align-items:flex-start;gap:2rem;padding:1.25rem 0 1.5rem;border-bottom:1px solid var(--border)}
+.ig-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#e8c84a,var(--accent));display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;overflow:hidden}
+.ig-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.ig-info{flex:1;min-width:0}
+.ig-username{font-size:1.1rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:0.35rem}
+.ig-bio-text{font-size:0.75rem;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.65;margin-bottom:0.5rem;white-space:pre-wrap}
+.ig-stats{display:flex;gap:1.5rem}
+.ig-stat{text-align:center}
+.ig-stat-n{font-size:0.9rem;font-weight:800}
+.ig-stat-l{font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted)}
+.ig-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:0.1rem}
+.ig-tab{flex:1;padding:0.65rem;text-align:center;font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted);border-bottom:2px solid transparent;cursor:default}
+.ig-tab.ig-active{color:var(--accent);border-bottom-color:var(--accent)}
+.ig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:2px}
+.ig-cell{aspect-ratio:1;overflow:hidden;cursor:pointer;position:relative}
+.ig-cell:hover .ig-cell-ov{opacity:1}
+.ig-cell-ov{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;font-size:0.6rem;font-family:'DM Mono',monospace;color:#fff;font-weight:600;letter-spacing:0.05em}
+.ig-cell canvas{width:100%;height:100%;object-fit:cover;display:block}
+.ig-cell-ph{width:100%;height:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;opacity:0.3}
 
-/* Post grid */
-.post-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; width: 100%; max-width: 780px; }
-.post-grid-item { background: var(--surface); border-radius: 12px; overflow: hidden; border: 2px solid transparent; cursor: pointer; transition: all 0.2s; position: relative; }
-.post-grid-item:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-.post-grid-item.selected { border-color: var(--accent); }
-.post-grid-item canvas { display: block; width: 100%; }
-.post-grid-item .item-status { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; }
-.post-grid-item .item-status.generating { }
-.post-grid-item .item-status.done { display: none; }
-.post-grid-item .item-num { position: absolute; top: 6px; left: 8px; background: rgba(0,0,0,0.55); color: #fff; font-size: 0.6rem; font-family: 'DM Mono', monospace; border-radius: 4px; padding: 2px 6px; }
-.post-grid-item .item-dl { position: absolute; bottom: 6px; right: 6px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 0.6rem; font-family: 'DM Mono', monospace; padding: 4px 8px; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
-.post-grid-item:hover .item-dl { opacity: 1; }
+/* ── CAROUSEL TAB ── */
+.car-builder{width:100%;max-width:780px}
+.car-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem}
+.car-slides-rail{display:flex;gap:0.6rem;overflow-x:auto;padding-bottom:0.5rem;scrollbar-width:thin}
+.car-slide-thumb{width:90px;height:90px;border-radius:9px;overflow:hidden;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:all 0.18s;position:relative;background:var(--surface2)}
+.car-slide-thumb.active{border-color:var(--accent)}
+.car-slide-thumb canvas{width:100%;height:100%;object-fit:cover;display:block}
+.car-slide-thumb .slide-num{position:absolute;top:4px;left:5px;background:rgba(0,0,0,0.55);color:#fff;font-size:0.55rem;font-family:'DM Mono',monospace;border-radius:3px;padding:1px 5px}
+.car-slide-thumb .slide-del{position:absolute;top:3px;right:4px;background:rgba(220,38,38,0.8);color:#fff;border:none;border-radius:3px;font-size:0.6rem;padding:1px 5px;cursor:pointer;opacity:0;transition:opacity 0.15s}
+.car-slide-thumb:hover .slide-del{opacity:1}
+.car-add-slide{width:90px;height:90px;border-radius:9px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:1.5rem;color:var(--muted);transition:all 0.15s;background:var(--surface2)}
+.car-add-slide:hover{border-color:var(--accent);color:var(--accent)}
+.car-preview-main{display:flex;gap:1.25rem;align-items:flex-start}
+.car-canvas-wrap{background:var(--card);border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.12);overflow:hidden;flex-shrink:0}
+#carCanvas{display:block}
+.car-slide-controls{flex:1;min-width:0}
+.car-slide-field{margin-bottom:0.65rem}
+.car-slide-field label{display:block;font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.22rem}
+.car-slide-field input,.car-slide-field textarea,.car-slide-field select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:0.45rem 0.65rem;font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--text);outline:none;transition:border-color 0.15s;resize:vertical}
+.car-slide-field input:focus,.car-slide-field textarea:focus,.car-slide-field select:focus{border-color:var(--accent)}
+.car-nav{display:flex;gap:0.4rem;align-items:center;justify-content:center;margin-top:0.5rem}
+.car-nav-btn{padding:5px 14px;border-radius:7px;font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid var(--border2);background:var(--card);color:var(--text);transition:all 0.15s}
+.car-nav-btn:hover{border-color:var(--accent);color:var(--accent)}
+.car-pos{font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);min-width:50px;text-align:center}
+
+/* ── BIO TAB ── */
+.bio-panel{width:100%;max-width:680px;display:flex;flex-direction:column;gap:1.25rem}
+.bio-section{background:var(--card);border-radius:13px;border:1px solid var(--border);overflow:hidden}
+.bio-sec-hdr{padding:0.85rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.bio-sec-hdr h3{font-size:0.72rem;font-weight:700;letter-spacing:-0.01em}
+.bio-sec-body{padding:1rem 1.1rem}
+.bio-text{font-size:0.78rem;font-family:'DM Mono',monospace;color:var(--text);line-height:1.7;white-space:pre-wrap;min-height:40px}
+.bio-text.empty{color:var(--muted);font-style:italic;font-size:0.7rem}
+.strategy-item{padding:0.65rem 0;border-bottom:1px solid var(--border);display:flex;gap:0.75rem;align-items:flex-start}
+.strategy-item:last-child{border-bottom:none;padding-bottom:0}
+.strategy-num{font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--accent);font-weight:700;min-width:24px;padding-top:2px}
+.strategy-text{flex:1;font-size:0.73rem;font-family:'DM Mono',monospace;color:var(--text);line-height:1.6}
+
+/* ── Modals ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:var(--surface);border-radius:16px;padding:1.75rem;width:460px;max-width:92vw;box-shadow:0 24px 64px rgba(0,0,0,0.25)}
+.modal-title{font-size:0.95rem;font-weight:800;margin-bottom:0.3rem}
+.modal-sub{font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:1.25rem;line-height:1.6}
+.modal-field{margin-bottom:0.85rem}
+.modal-field label{display:block;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.28rem}
+.modal-field input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;font-size:0.75rem;font-family:'DM Mono',monospace;color:var(--text);outline:none}
+.modal-field input:focus{border-color:var(--accent)}
+.modal-btns{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
 
 /* Lightbox */
-.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
-.lightbox.open { display: flex; }
-.lightbox canvas { max-width: 90vw; max-height: 80vh; border-radius: 12px; }
-.lightbox-close { position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255,255,255,0.1); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; }
-.lightbox-actions { display: flex; gap: 0.75rem; }
-.lightbox-caption { max-width: 560px; background: rgba(255,255,255,0.08); border-radius: 10px; padding: 0.85rem 1rem; font-size: 0.75rem; color: rgba(255,255,255,0.8); line-height: 1.6; max-height: 120px; overflow-y: auto; font-family: 'DM Mono', monospace; }
+.lbx{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+.lbx.open{display:flex}
+.lbx canvas{max-width:90vw;max-height:78vh;border-radius:10px}
+.lbx-close{position:absolute;top:1.25rem;right:1.25rem;background:rgba(255,255,255,0.1);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:1rem;cursor:pointer}
+.lbx-acts{display:flex;gap:0.6rem}
+.lbx-cap{max-width:520px;background:rgba(255,255,255,0.07);border-radius:9px;padding:0.75rem 0.9rem;font-size:0.72rem;color:rgba(255,255,255,0.75);line-height:1.65;max-height:110px;overflow-y:auto;font-family:'DM Mono',monospace;text-align:center}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:spin 0.65s linear infinite;display:inline-block;vertical-align:middle;margin-right:7px}
+
+/* Carousel template selector */
+.car-tmpl-row{display:flex;gap:0.4rem;margin-bottom:1rem}
+.car-tmpl{flex:1;padding:0.55rem 0.5rem;border:1.5px solid var(--border2);border-radius:8px;background:var(--surface2);cursor:pointer;text-align:center;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);transition:all 0.15s}
+.car-tmpl:hover{border-color:var(--accent)}
+.car-tmpl.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:600}
+.car-tmpl .ct-icon{font-size:1rem;display:block;margin-bottom:3px}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade-in{animation:fadeIn 0.3s ease}
 </style>
 </head>
 <body>
 
 <!-- Header -->
-<div class="header">
+<div class="hdr">
   <div>
-    <div class="header-title">✨ Social Post Agent</div>
-    <div class="header-sub">Quality Jobs · AI-Powered Content Creation</div>
+    <div class="hdr-title">✦ Social Post Agent</div>
+    <div class="hdr-sub">Quality Jobs · AI Content Studio</div>
   </div>
-  <button class="api-key-btn" onclick="openApiModal()">🔑 API Key</button>
+  <div class="hdr-actions">
+    <a class="hdr-link" href="file:///Users/admin/Desktop/HTML/Important/qj-3d-render-agent.html" target="_blank">🎬 3D Render Agent ↗</a>
+    <button class="hdr-btn" onclick="openApiModal()">🔑 API Keys</button>
+  </div>
 </div>
 
-<div class="wrap">
-  <!-- ── CONTROLS ── -->
-  <div class="controls">
+<div class="app">
 
-    <div class="section-title">Client</div>
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+  <div class="sb-inner">
+
+    <!-- Client -->
+    <div class="sec-lbl">Client Setup</div>
     <div class="field">
       <label>Client name</label>
-      <input type="text" id="clientName" placeholder="e.g. Streamline Building Projects" oninput="loadClientBranding()" list="client-list">
-      <datalist id="client-list"></datalist>
+      <input type="text" id="clientName" placeholder="e.g. Boss Carpentry" oninput="onClientChange()">
     </div>
     <div class="field">
-      <label>Client niche / specialty</label>
-      <input type="text" id="clientNiche" placeholder="e.g. Bathroom & Kitchen Renovations, Sydney">
-    </div>
-    <div class="field">
-      <label>Client website <span style="font-size:0.6rem;color:var(--muted);font-weight:400">(used to match brand colours)</span></label>
-      <div style="display:flex;gap:0.5rem;align-items:center">
-        <input type="url" id="clientWebsite" placeholder="e.g. https://streamlinebuilding.com.au" style="flex:1">
-        <button onclick="detectBrandColor()" id="detectColorBtn" title="Detect brand colour from website" style="flex-shrink:0;padding:0.45rem 0.75rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;font-size:0.7rem;font-family:'DM Mono',monospace;cursor:pointer;color:var(--muted);white-space:nowrap;transition:all 0.15s" onmouseenter="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.color='var(--muted)';this.style.borderColor='var(--border2)'">🎨 Detect</button>
-      </div>
-      <div id="detectStatus" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:0.3rem;min-height:0.9rem"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
-      <div class="field" style="margin-bottom:0">
-        <label>Phone number</label>
-        <input type="tel" id="clientPhone" placeholder="e.g. 0416 630 334">
-      </div>
-      <div class="field" style="margin-bottom:0">
-        <label>Email address</label>
-        <input type="email" id="clientEmail" placeholder="e.g. info@kbg.com.au">
-      </div>
+      <label>Industry / specialty</label>
+      <input type="text" id="clientNiche" placeholder="e.g. Custom Joinery · Melbourne">
     </div>
 
-    <div class="section-title">Brand Colours</div>
-    <div class="color-row" id="colorSwatches">
-      <div class="color-swatch active" style="background:#1a1917" data-color="#1a1917" onclick="selectColor(this)"></div>
-      <div class="color-swatch" style="background:#2563eb" data-color="#2563eb" onclick="selectColor(this)"></div>
-      <div class="color-swatch" style="background:#16a34a" data-color="#16a34a" onclick="selectColor(this)"></div>
-      <div class="color-swatch" style="background:#dc2626" data-color="#dc2626" onclick="selectColor(this)"></div>
-      <div class="color-swatch" style="background:#7c3aed" data-color="#7c3aed" onclick="selectColor(this)"></div>
-      <div class="color-swatch" style="background:#b5870d" data-color="#b5870d" onclick="selectColor(this)"></div>
-      <div class="color-swatch" style="background:#0f172a" data-color="#0f172a" onclick="selectColor(this)"></div>
-      <div class="color-custom">
-        <input type="color" id="customColor" value="#1a1917" oninput="selectCustomColor(this.value)" title="Custom colour">
-      </div>
-    </div>
-
-    <div class="section-title" style="margin-top:1.2rem">Client Logo</div>
-    <div class="upload-zone" id="logoZone" onclick="document.getElementById('logoInput').click()">
+    <!-- Logo -->
+    <div class="sec-lbl">Logo <span class="sec-tag">auto-detects brand colours</span></div>
+    <div class="upz" id="logoZone" onclick="document.getElementById('logoInput').click()">
       <input type="file" id="logoInput" accept="image/*" onchange="loadLogo(event)" style="display:none">
-      <div class="upload-icon">🏷️</div>
-      <div class="upload-label">Click to upload <strong>logo</strong></div>
-      <div class="upload-label" style="font-size:0.6rem;margin-top:3px">PNG with transparency works best</div>
+      <div class="upz-icon">🏷️</div>
+      <div class="upz-lbl">Click to upload <strong>logo</strong></div>
+      <div class="upz-note">PNG transparency works best</div>
     </div>
-    <div class="logo-preview" id="logoPreview" style="display:none">
-      <img id="logoThumb" class="logo-thumb" alt="Logo">
+    <div id="logoPreview" style="display:none;margin-top:0.5rem;display:none;align-items:center;gap:0.65rem">
+      <img id="logoThumb" style="width:48px;height:48px;border-radius:7px;object-fit:contain;border:1px solid var(--border);background:#fff;padding:3px">
       <div>
-        <div style="font-size:0.72rem;font-weight:700">Logo loaded</div>
-        <button onclick="clearLogo()" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--red);background:none;border:none;cursor:pointer;padding:0;margin-top:2px">✕ Remove</button>
+        <div style="font-size:0.7rem;font-weight:700">Logo loaded</div>
+        <button onclick="clearLogo()" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--red);background:none;border:none;cursor:pointer;padding:0">✕ Remove</button>
       </div>
     </div>
 
-    <div class="section-title">Photos</div>
-    <div class="upload-zone" id="photoZone">
+    <!-- Company Brief -->
+    <div class="sec-lbl">Company Brief <span class="sec-tag">context for AI</span></div>
+    <div class="field">
+      <label>Paste overview or upload a doc</label>
+      <textarea id="clientBrief" placeholder="Tell the AI about this client — their services, location, target customer, tone of voice, key offers, what makes them different…" style="min-height:90px"></textarea>
+    </div>
+    <div class="upz" id="briefZone" onclick="document.getElementById('briefInput').click()">
+      <input type="file" id="briefInput" accept=".pdf,.doc,.docx,.txt" onchange="loadBrief(event)" style="display:none">
+      <div class="upz-icon">📄</div>
+      <div class="upz-lbl">Or upload <strong>PDF / DOCX / TXT</strong></div>
+      <div class="upz-note">Text will be extracted and used as context</div>
+    </div>
+    <div id="briefStatus" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--green);margin-top:0.35rem;min-height:0.9rem"></div>
+
+    <!-- Google Drive -->
+    <div class="sec-lbl">Google Drive <span class="sec-tag">client content folder</span></div>
+    <div class="field">
+      <label>Public folder link</label>
+      <div style="display:flex;gap:0.4rem">
+        <input type="url" id="driveUrl" placeholder="https://drive.google.com/drive/folders/…" style="flex:1">
+        <button onclick="loadDriveFolder()" id="driveBtn" style="flex-shrink:0;padding:0.45rem 0.7rem;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;color:var(--muted);white-space:nowrap;transition:all 0.15s" onmouseenter="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.color='var(--muted)';this.style.borderColor='var(--border2)'">↓ Load</button>
+      </div>
+      <div id="driveStatus" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:0.25rem;min-height:0.9rem"></div>
+    </div>
+    <div class="drive-files" id="driveFiles"></div>
+
+    <!-- Photos -->
+    <div class="sec-lbl">Upload Photos <span class="sec-tag">real client content</span></div>
+
+    <div class="rule-box">
+      <p><strong>⚠ No AI-generated humans.</strong> Only use real photos uploaded here for any content featuring people. AI image generation (Manus) is for environments, textures &amp; abstract visuals only.</p>
+    </div>
+
+    <div class="upz" id="photoZone">
       <input type="file" id="photoInput" accept="image/*" multiple onchange="loadPhotos(event)">
-      <div class="upload-icon">📸</div>
-      <div class="upload-label">Click or drag to upload <strong>photos</strong></div>
-      <div class="upload-label" style="font-size:0.6rem;margin-top:3px">Multiple photos supported · select one to use</div>
+      <div class="upz-icon">📸</div>
+      <div class="upz-lbl">Click or drag to upload <strong>photos</strong></div>
+      <div class="upz-note">Multiple files · select one per post</div>
     </div>
-    <div class="photo-thumbs" id="photoThumbs"></div>
+    <div class="thumbs" id="photoThumbs"></div>
 
-    <div class="section-title">Post Type</div>
-    <div class="post-types">
-      <button class="post-type-btn active" data-type="showcase" onclick="selectPostType(this)">
-        <div class="post-type-icon">🏠</div>
-        <div class="post-type-label">Showcase</div>
-        <div class="post-type-sub">Full bleed · gradient</div>
+    <!-- Brand colours -->
+    <div class="sec-lbl">Brand Colour</div>
+    <div class="color-row" id="colorSwatches">
+      <div class="swatch active" style="background:#1a1917" data-c="#1a1917" onclick="pickColor(this)"></div>
+      <div class="swatch" style="background:#c9a847" data-c="#c9a847" onclick="pickColor(this)"></div>
+      <div class="swatch" style="background:#2563eb" data-c="#2563eb" onclick="pickColor(this)"></div>
+      <div class="swatch" style="background:#16a34a" data-c="#16a34a" onclick="pickColor(this)"></div>
+      <div class="swatch" style="background:#dc2626" data-c="#dc2626" onclick="pickColor(this)"></div>
+      <div class="swatch" style="background:#7c3aed" data-c="#7c3aed" onclick="pickColor(this)"></div>
+      <div class="swatch" style="background:#0e4f63" data-c="#0e4f63" onclick="pickColor(this)"></div>
+      <div class="swatch-custom"><input type="color" id="customColor" value="#1a1917" oninput="brandColor=this.value;renderPreview()" title="Custom"></div>
+    </div>
+
+    <!-- Post Type -->
+    <div class="sec-lbl">Post Type</div>
+    <div class="type-grid">
+      <button class="type-btn active" data-type="showcase" onclick="setType(this)">
+        <div class="type-icon">🏠</div><div class="type-name">Showcase</div><div class="type-sub">Full bleed · bold title</div>
       </button>
-      <button class="post-type-btn" data-type="value" onclick="selectPostType(this)">
-        <div class="post-type-icon">💡</div>
-        <div class="post-type-label">Value / Tip</div>
-        <div class="post-type-sub">Photo top · colour block</div>
+      <button class="type-btn" data-type="edu" onclick="setType(this)">
+        <div class="type-icon">📖</div><div class="type-name">Educational</div><div class="type-sub">Dark · tip or guide</div>
       </button>
-      <button class="post-type-btn" data-type="magazine" onclick="selectPostType(this)">
-        <div class="post-type-icon">📰</div>
-        <div class="post-type-label">Magazine</div>
-        <div class="post-type-sub">Colour left · photo right</div>
+      <button class="type-btn" data-type="services" onclick="setType(this)">
+        <div class="type-icon">🗂️</div><div class="type-name">Services</div><div class="type-sub">3-photo grid header</div>
       </button>
-      <button class="post-type-btn" data-type="editorial" onclick="selectPostType(this)">
-        <div class="post-type-icon">✦</div>
-        <div class="post-type-label">Editorial</div>
-        <div class="post-type-sub">Clean card overlay</div>
+      <button class="type-btn" data-type="editorial" onclick="setType(this)">
+        <div class="type-icon">✦</div><div class="type-name">Editorial</div><div class="type-sub">Split layout · clean card</div>
       </button>
-      <button class="post-type-btn" data-type="beforeafter" onclick="selectPostType(this)">
-        <div class="post-type-icon">🔄</div>
-        <div class="post-type-label">Before & After</div>
-        <div class="post-type-sub">Side by side split</div>
+      <button class="type-btn" data-type="testimonial" onclick="setType(this)">
+        <div class="type-icon">⭐</div><div class="type-name">Testimonial</div><div class="type-sub">Quote · photo overlay</div>
       </button>
-      <button class="post-type-btn" data-type="testimonial" onclick="selectPostType(this)">
-        <div class="post-type-icon">⭐</div>
-        <div class="post-type-label">Testimonial</div>
-        <div class="post-type-sub">Quote overlay · stars</div>
-      </button>
-      <button class="post-type-btn" data-type="process" onclick="selectPostType(this)">
-        <div class="post-type-icon">🔨</div>
-        <div class="post-type-label">Process / WIP</div>
-        <div class="post-type-sub">Behind the scenes</div>
-      </button>
-      <button class="post-type-btn" data-type="promotion" onclick="selectPostType(this)">
-        <div class="post-type-icon">🎯</div>
-        <div class="post-type-label">Promotion</div>
-        <div class="post-type-sub">Offer or special deal</div>
+      <button class="type-btn" data-type="promotion" onclick="setType(this)">
+        <div class="type-icon">🎯</div><div class="type-name">Promotion</div><div class="type-sub">Offer or CTA post</div>
       </button>
     </div>
 
-    <!-- Auto-vary toggle (batch only) -->
-    <label style="display:flex;align-items:center;gap:0.6rem;margin-top:0.85rem;cursor:pointer;padding:0.65rem 0.85rem;background:rgba(181,135,13,0.06);border:1px solid rgba(181,135,13,0.18);border-radius:10px">
-      <input type="checkbox" id="autoVaryToggle" checked style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">
-      <div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--text)">🔀 Auto-vary formats for batch</div>
-        <div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:1px">Claude picks the best layout for each photo</div>
-      </div>
-    </label>
-
-    <!-- Testimonial quote field (shown for testimonial type) -->
-    <div class="field" id="testimonialField" style="display:none;margin-top:0.8rem">
-      <label>Client quote / testimonial text</label>
-      <textarea id="testimonialText" placeholder="e.g. 'The team transformed our bathroom completely. We couldn't be happier with the result!' – Sarah M."></textarea>
-    </div>
-
-    <!-- Before photo (shown for before/after type) -->
-    <div id="beforeAfterField" style="display:none;margin-top:0.8rem">
-      <div class="section-title">Before Photo</div>
-      <div class="upload-zone" id="beforeZone">
-        <input type="file" id="beforeInput" accept="image/*" onchange="loadBeforePhoto(event)">
-        <div class="upload-icon">📷</div>
-        <div class="upload-label">Upload <strong>before</strong> photo</div>
-      </div>
-      <div class="photo-thumbs" id="beforeThumb"></div>
-    </div>
-
-    <div class="section-title" style="margin-top:1.1rem">Format</div>
-    <div class="format-tabs">
-      <button class="format-tab active" data-fmt="square" onclick="selectFormat(this)">
-        <span class="fmt-icon">⬛</span>Square<br><span style="font-size:0.55rem">1080×1080</span>
-      </button>
-      <button class="format-tab" data-fmt="portrait" onclick="selectFormat(this)">
-        <span class="fmt-icon">📱</span>Portrait<br><span style="font-size:0.55rem">1080×1350</span>
-      </button>
-      <button class="format-tab" data-fmt="story" onclick="selectFormat(this)">
-        <span class="fmt-icon">🔲</span>Story<br><span style="font-size:0.55rem">1080×1920</span>
-      </button>
-    </div>
-
-    <div class="field" style="margin-top:1rem">
-      <label>Extra context for AI (optional)</label>
-      <textarea id="extraContext" placeholder="e.g. This is a $45k bathroom renovation in Mosman. The clients wanted a spa-like feel with freestanding bath..." style="min-height:55px"></textarea>
-    </div>
-
-    <div class="steps" id="stepsChecklist">
-      <div class="step" id="step-photo">
-        <div class="step-dot">1</div>
-        <span>Upload at least one photo</span>
-      </div>
-      <div class="step done" id="step-key">
-        <div class="step-dot">✓</div>
-        <span>API key saved</span>
-      </div>
-      <div class="step" id="step-type">
-        <div class="step-dot">✓</div>
-        <span>Choose a post type</span>
+    <!-- Testimonial field -->
+    <div id="testimonialField" style="display:none;margin-top:0.65rem">
+      <div class="field"><label>Client quote</label>
+        <textarea id="testimonialText" placeholder="'The team was exceptional from start to finish.' – Sarah M."></textarea>
       </div>
     </div>
 
-    <!-- ── Inspiration Library ─────────────────────────────────────────────── -->
-    <div class="section-title" style="margin-top:1.4rem">📌 Inspiration Library</div>
-    <div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.6rem;line-height:1.55">
-      Paste copy from posts you love — captions, hooks, formats. The AI draws from these when generating to keep every post feeling different.
+    <!-- Format -->
+    <div class="sec-lbl">Format</div>
+    <div class="fmt-row">
+      <button class="fmt-btn active" data-fmt="square" onclick="setFormat(this)"><span class="fi">⬛</span>Square<br><span style="font-size:0.5rem">1080×1080</span></button>
+      <button class="fmt-btn" data-fmt="portrait" onclick="setFormat(this)"><span class="fi">📱</span>Portrait<br><span style="font-size:0.5rem">1080×1350</span></button>
+      <button class="fmt-btn" data-fmt="story" onclick="setFormat(this)"><span class="fi">🔲</span>Story<br><span style="font-size:0.5rem">1080×1920</span></button>
     </div>
-    <div style="display:flex;gap:0.4rem;align-items:flex-start">
-      <textarea id="inspirationInput" placeholder="Paste a post caption, hook, or describe a format you like…" style="flex:1;min-height:60px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.62rem;padding:0.5rem 0.65rem;resize:vertical;outline:none;line-height:1.6;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
-      <button onclick="addInspiration()" style="flex-shrink:0;padding:0.45rem 0.75rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:2px">＋ Add</button>
+
+    <!-- Extra context -->
+    <div class="field" style="margin-top:0.85rem">
+      <label>Extra context for this post (optional)</label>
+      <textarea id="extraCtx" placeholder="e.g. This is a $55k kitchen renovation in Brighton. Clients wanted high-end integrated look with Caesarstone benchtops." style="min-height:50px"></textarea>
     </div>
-    <div id="inspirationList" style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.35rem"></div>
 
-    <button class="generate-btn" id="generateBtn" onclick="generate()">✨ Generate Post</button>
-    <div class="gen-status" id="genStatus"></div>
+    <button class="gen-btn" id="genBtn" onclick="generate()">✨ Generate Post</button>
+    <div class="status-line" id="genStatus"></div>
 
-    <button class="batch-btn" id="batchBtn" style="display:none" onclick="generateAll()">⚡ Generate All Posts</button>
-    <div class="batch-progress" id="batchProgress">
-      <div class="batch-progress-bar-wrap"><div class="batch-progress-bar" id="batchBar"></div></div>
-      <div class="batch-progress-label" id="batchLabel">Generating…</div>
+    <button class="sec-btn" id="stratBtn" onclick="generateStrategy()">⚡ Generate Full Strategy & Grid</button>
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-track"><div class="prog-bar" id="progBar"></div></div>
+      <div class="prog-lbl" id="progLbl">Generating strategy…</div>
     </div>
 
   </div>
+  </div><!-- /sidebar -->
 
-  <!-- ── PREVIEW PANEL ── -->
-  <div class="preview-panel">
+  <!-- ── MAIN PANEL ── -->
+  <div class="main">
 
-    <!-- Single post view -->
-    <div id="singleView" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:1.5rem">
-      <div class="preview-header">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('preview',this)">✨ Post Preview</button>
+      <button class="tab" onclick="switchTab('grid',this)">📱 Instagram Grid</button>
+      <button class="tab" onclick="switchTab('carousel',this)">🎠 Carousel Builder</button>
+      <button class="tab" onclick="switchTab('bio',this)">🎯 Bio & Strategy</button>
+    </div>
+
+    <!-- ── Preview Panel ── -->
+    <div class="panel active" id="panel-preview">
+      <div class="preview-hdr">
         <div>
           <div class="preview-title">Post Preview</div>
-          <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px" id="previewMeta">Upload photos and click Generate to create your post</div>
+          <div class="preview-meta" id="previewMeta">Upload photos and click Generate to create your post</div>
         </div>
-        <div class="preview-actions">
-          <button class="action-btn secondary" id="regenerateBtn" onclick="regenerateCaption()" disabled>↺ New Caption</button>
-          <button class="action-btn primary" id="downloadBtn" onclick="downloadPost()" disabled>⬇ Download PNG</button>
+        <div class="preview-acts">
+          <button class="act-btn sec" id="regenBtn" onclick="regenCaption()" disabled>↺ New Caption</button>
+          <button class="act-btn pri" id="dlBtn" onclick="downloadPost()" disabled>⬇ Download PNG</button>
         </div>
       </div>
 
-      <div class="canvas-wrap" id="canvasWrap">
-        <div class="canvas-placeholder" id="placeholder">
-          <div class="placeholder-icon">✨</div>
-          <div class="placeholder-text">Upload photos, choose a post type<br>and click Generate Post</div>
+      <div id="canvasShell">
+        <div class="canvas-ph" id="canvasPh">
+          <div class="canvas-ph-icon">✦</div>
+          <div class="canvas-ph-txt">Upload a photo, choose a post type<br>and click Generate Post</div>
         </div>
-        <canvas id="postCanvas" style="display:none"></canvas>
+        <div class="canvas-shell" id="canvasWrap" style="display:none">
+          <canvas id="postCanvas"></canvas>
+        </div>
       </div>
 
-      <!-- Caption output -->
-      <div class="caption-output" id="captionOutput" style="display:none">
-        <div class="caption-tabs">
-          <button class="caption-tab active" data-tab="caption" onclick="switchCapTab(this)">Caption</button>
-          <button class="caption-tab" data-tab="hashtags" onclick="switchCapTab(this)">Hashtags</button>
-          <button class="caption-tab" data-tab="story" onclick="switchCapTab(this)">Stories Copy</button>
-          <button class="caption-tab" data-tab="hook" onclick="switchCapTab(this)">Hook</button>
+      <div class="cap-panel" id="capPanel" style="display:none">
+        <div class="cap-tabs">
+          <button class="cap-tab active" data-t="caption" onclick="switchCapTab(this)">Caption</button>
+          <button class="cap-tab" data-t="hashtags" onclick="switchCapTab(this)">Hashtags</button>
+          <button class="cap-tab" data-t="story" onclick="switchCapTab(this)">Stories</button>
+          <button class="cap-tab" data-t="hook" onclick="switchCapTab(this)">Hook</button>
         </div>
-        <div class="caption-body">
-          <div class="caption-text" id="captionDisplay"></div>
-          <button class="copy-caption-btn" onclick="copyCaption()">📋 Copy to clipboard</button>
+        <div class="cap-body">
+          <div class="cap-text" id="capDisplay"></div>
+          <button class="copy-btn" onclick="copyCaption()">📋 Copy</button>
         </div>
       </div>
     </div>
 
-    <!-- Batch grid view -->
-    <div id="batchView" style="display:none;width:100%;flex-direction:column;align-items:center;gap:1.25rem">
-      <div class="preview-header" style="width:100%;max-width:780px">
-        <div>
-          <div class="preview-title">Batch Posts</div>
-          <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px" id="batchMeta">Click any post to expand — hover to download individually</div>
-        </div>
-        <div class="preview-actions">
-          <button class="action-btn secondary" onclick="showSingleView()">← Single View</button>
-          <button class="action-btn primary" id="downloadZipBtn" onclick="downloadAllZip()">⬇ Download All ZIP</button>
-        </div>
-      </div>
-      <div class="post-grid" id="postGrid"></div>
-
-      <!-- Per-post caption panel (batch view) -->
-      <div id="batchCaptionPanel" style="display:none;width:100%;max-width:780px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid var(--border)">
-          <span style="font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted)" id="batchCapLabel">Post 1 caption</span>
-          <div style="display:flex;gap:0.4rem">
-            <button class="caption-tab active" data-btab="caption" onclick="switchBatchCapTab(this)">Caption</button>
-            <button class="caption-tab" data-btab="hashtags" onclick="switchBatchCapTab(this)">Hashtags</button>
-            <button class="caption-tab" data-btab="story" onclick="switchBatchCapTab(this)">Stories</button>
-            <button class="caption-tab" data-btab="hook" onclick="switchBatchCapTab(this)">Hook</button>
+    <!-- ── Grid Panel ── -->
+    <div class="panel" id="panel-grid">
+      <div class="ig-profile fade-in">
+        <div class="ig-header">
+          <div class="ig-avatar" id="igAvatar">✦</div>
+          <div class="ig-info">
+            <div class="ig-username" id="igUsername">@clientname</div>
+            <div class="ig-bio-text" id="igBio">Generate a strategy to see your suggested profile bio and content grid.</div>
+            <div class="ig-stats">
+              <div class="ig-stat"><div class="ig-stat-n" id="igPostCount">0</div><div class="ig-stat-l">posts</div></div>
+              <div class="ig-stat"><div class="ig-stat-n">—</div><div class="ig-stat-l">followers</div></div>
+              <div class="ig-stat"><div class="ig-stat-n">—</div><div class="ig-stat-l">following</div></div>
+            </div>
           </div>
         </div>
-        <div style="padding:1rem">
-          <div class="caption-text" id="batchCaptionText" style="min-height:60px"></div>
-          <button class="copy-caption-btn" onclick="copyBatchCaption()">📋 Copy to clipboard</button>
+        <div class="ig-tabs">
+          <div class="ig-tab ig-active">⊞ Posts</div>
+          <div class="ig-tab">▷ Reels</div>
+          <div class="ig-tab">🏷 Tagged</div>
+        </div>
+        <div class="ig-grid" id="igGrid">
+          <!-- Cells generated by JS -->
+        </div>
+        <div style="text-align:center;padding:2rem;font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted)" id="igGridEmpty">
+          Click <strong>Generate Full Strategy &amp; Grid</strong> in the sidebar to preview your client's Instagram profile.
         </div>
       </div>
     </div>
-  </div>
-</div>
+
+    <!-- ── Carousel Panel ── -->
+    <div class="panel" id="panel-carousel">
+      <div class="car-builder fade-in">
+        <div class="car-top">
+          <div>
+            <div class="preview-title">Carousel Builder</div>
+            <div class="preview-meta">Build multi-slide carousel posts with storylines</div>
+          </div>
+          <div class="preview-acts">
+            <button class="act-btn sec" onclick="genCarouselWithAI()">✨ AI Generate Slides</button>
+            <button class="act-btn pri" onclick="downloadCarousel()">⬇ Download All Slides</button>
+          </div>
+        </div>
+
+        <!-- Template picker -->
+        <div class="car-tmpl-row">
+          <button class="car-tmpl active" data-tmpl="edu" onclick="setCarTmpl(this)"><span class="ct-icon">📖</span>Educational</button>
+          <button class="car-tmpl" data-tmpl="services" onclick="setCarTmpl(this)"><span class="ct-icon">🗂️</span>Services</button>
+          <button class="car-tmpl" data-tmpl="story" onclick="setCarTmpl(this)"><span class="ct-icon">📸</span>Story Arc</button>
+          <button class="car-tmpl" data-tmpl="tips" onclick="setCarTmpl(this)"><span class="ct-icon">💡</span>Tips List</button>
+        </div>
+
+        <!-- Slide rail -->
+        <div style="display:flex;gap:0.6rem;align-items:center;margin-bottom:1rem;overflow-x:auto;padding-bottom:4px">
+          <div class="car-slides-rail" id="carRail"></div>
+          <div class="car-add-slide" onclick="addCarSlide()" title="Add slide">＋</div>
+        </div>
+
+        <!-- Main carousel preview + controls -->
+        <div class="car-preview-main">
+          <div>
+            <div class="car-canvas-wrap">
+              <canvas id="carCanvas" width="400" height="400"></canvas>
+            </div>
+            <div class="car-nav">
+              <button class="car-nav-btn" onclick="carNav(-1)">← Prev</button>
+              <span class="car-pos" id="carPos">1 / 1</span>
+              <button class="car-nav-btn" onclick="carNav(1)">Next →</button>
+            </div>
+          </div>
+
+          <div class="car-slide-controls">
+            <div class="car-slide-field">
+              <label>Slide type</label>
+              <select id="slideType" onchange="renderCarSlide()">
+                <option value="cover">Cover / Hook</option>
+                <option value="content">Content Slide</option>
+                <option value="cta">CTA / Last Slide</option>
+              </select>
+            </div>
+            <div class="car-slide-field">
+              <label>Headline</label>
+              <input type="text" id="slideHeadline" placeholder="e.g. HOW TO CHOOSE THE RIGHT FINISH" oninput="renderCarSlide()">
+            </div>
+            <div class="car-slide-field">
+              <label>Body text</label>
+              <textarea id="slideBody" placeholder="Key information for this slide…" style="min-height:70px" oninput="renderCarSlide()"></textarea>
+            </div>
+            <div class="car-slide-field">
+              <label>Category tag (optional)</label>
+              <input type="text" id="slideTag" placeholder="e.g. GUIDE · FOR HOMEOWNERS" oninput="renderCarSlide()">
+            </div>
+            <div class="car-slide-field">
+              <label>Ghost word (background watermark)</label>
+              <input type="text" id="slideGhost" placeholder="e.g. ONE · TWO · THREE" oninput="renderCarSlide()">
+            </div>
+            <div class="car-slide-field">
+              <label>Background photo (optional)</label>
+              <select id="slideBgPhoto" onchange="renderCarSlide()">
+                <option value="">— No photo (dark bg) —</option>
+              </select>
+            </div>
+            <button class="sec-btn" style="margin-top:0.5rem" onclick="saveCarSlide()">💾 Save Slide</button>
+          </div>
+        </div>
+
+        <!-- Carousel caption -->
+        <div class="cap-panel" id="carCapPanel" style="margin-top:1.25rem">
+          <div class="cap-tabs">
+            <button class="cap-tab active" data-t="caption" onclick="switchCarCapTab(this)">Caption</button>
+            <button class="cap-tab" data-t="hashtags" onclick="switchCarCapTab(this)">Hashtags</button>
+          </div>
+          <div class="cap-body">
+            <div class="cap-text empty" id="carCapText">Generate a carousel to see the suggested caption.</div>
+            <button class="copy-btn" onclick="copyCarCaption()">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Bio & Strategy Panel ── -->
+    <div class="panel" id="panel-bio">
+      <div class="bio-panel fade-in">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+          <div>
+            <div class="preview-title">Bio & Content Strategy</div>
+            <div class="preview-meta" id="bioMeta">Generate a strategy to populate this panel</div>
+          </div>
+          <button class="act-btn pri" onclick="generateStrategy()">✨ Generate</button>
+        </div>
+
+        <div class="bio-section">
+          <div class="bio-sec-hdr">
+            <h3>Instagram Bio</h3>
+            <button class="copy-btn" onclick="copyBio()">📋 Copy</button>
+          </div>
+          <div class="cap-body">
+            <div class="bio-text empty" id="bioText">No bio generated yet.</div>
+          </div>
+        </div>
+
+        <div class="bio-section">
+          <div class="bio-sec-hdr"><h3>Profile Strategy Notes</h3></div>
+          <div class="cap-body">
+            <div class="bio-text empty" id="strategyNotes">No strategy generated yet.</div>
+          </div>
+        </div>
+
+        <div class="bio-section">
+          <div class="bio-sec-hdr"><h3>Content Plan — 9 Post Ideas</h3></div>
+          <div class="cap-body" style="padding:0">
+            <div id="contentPlan" style="padding:0.5rem 1.1rem">
+              <div class="bio-text empty">Generate a strategy to see your 9-post content plan.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bio-section">
+          <div class="bio-sec-hdr"><h3>Posting Schedule Suggestion</h3></div>
+          <div class="cap-body">
+            <div class="bio-text empty" id="postSchedule">No schedule generated yet.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <!-- Lightbox -->
-<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-  <canvas id="lightboxCanvas"></canvas>
-  <div class="lightbox-actions">
-    <button class="action-btn secondary" onclick="lightboxPrev()">← Prev</button>
-    <button class="action-btn primary" onclick="lightboxDownload()">⬇ Download PNG</button>
-    <button class="action-btn secondary" onclick="lightboxNext()">Next →</button>
+<div class="lbx" id="lbx" onclick="if(event.target===this)closeLbx()">
+  <button class="lbx-close" onclick="closeLbx()">✕</button>
+  <canvas id="lbxCanvas"></canvas>
+  <div class="lbx-acts">
+    <button class="act-btn sec" onclick="lbxPrev()">← Prev</button>
+    <button class="act-btn pri" onclick="lbxDl()">⬇ Download</button>
+    <button class="act-btn sec" onclick="lbxNext()">Next →</button>
   </div>
-  <div class="lightbox-caption" id="lightboxCaption"></div>
+  <div class="lbx-cap" id="lbxCap"></div>
 </div>
 
-<!-- API Key Modal -->
-<div class="modal-overlay" id="apiModal">
+<!-- API Keys Modal -->
+<div class="modal-ov" id="apiModal">
   <div class="modal">
-    <div class="modal-title">🔑 Anthropic API Key</div>
-    <div class="modal-sub">Your API key is stored locally in this browser only — never sent anywhere except directly to Anthropic's servers to generate your posts.</div>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+    <div class="modal-title">🔑 API Keys</div>
+    <div class="modal-sub">All keys are stored locally in your browser only — never sent anywhere except to the respective service.</div>
+    <div class="modal-field">
+      <label>Anthropic API Key (Claude — for captions & strategy)</label>
+      <input type="password" id="claudeKeyInput" placeholder="sk-ant-…">
+    </div>
+    <div class="modal-field">
+      <label>Manus API Key (for AI image generation — environments & textures only)</label>
+      <input type="password" id="manusKeyInput" placeholder="manus-…">
+    </div>
+    <div class="modal-field">
+      <label>Google Drive API Key (for loading Drive folder contents)</label>
+      <input type="text" id="driveKeyInput" placeholder="AIza…">
+    </div>
     <div class="modal-btns">
-      <button class="action-btn secondary" onclick="closeApiModal()">Cancel</button>
-      <button class="action-btn primary" onclick="saveApiKey()">Save Key</button>
+      <button class="act-btn sec" onclick="closeApiModal()">Cancel</button>
+      <button class="act-btn pri" onclick="saveKeys()">Save Keys</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-let photos = [];          // Array of { file, dataUrl, img }
-let beforePhoto = null;   // Before photo for before/after
-let logoImg = null;       // Logo image element
-let selectedPhotoIdx = 0;
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let photos = [];           // [{file, dataUrl, img, name}]
+let drivePhotos = [];      // [{id, name, thumbUrl, img}]
+let logoImg = null;
 let brandColor = '#1a1917';
 let postType = 'showcase';
-let format = 'square';    // square | portrait | story
-let generatedData = null; // { caption, hashtags, story, hook, headline, subtext }
+let format = 'square';
+let generatedData = null;  // {caption, hashtags, story, hook, headline, subtext}
+let activeCapTab = 'caption';
 
-const FORMATS = {
-  square:   { w: 1080, h: 1080, label: '1080×1080' },
-  portrait: { w: 1080, h: 1350, label: '1080×1350' },
-  story:    { w: 1080, h: 1920, label: '1080×1920' }
+// Carousel state
+let carSlides = [];
+let carSlideIdx = 0;
+let carTemplate = 'edu';
+let carCaptions = {};
+
+// Grid state
+let gridPosts = []; // array of canvas elements
+let gridCaptions = [];
+
+const FMTS = {
+  square:   {w:1080,h:1080},
+  portrait: {w:1080,h:1350},
+  story:    {w:1080,h:1920}
 };
 
-// ── Init ───────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  // Populate client list from main dashboard localStorage
-  try {
-    const manual = JSON.parse(localStorage.getItem('qj_manual_clients') || '[]');
-    const churned = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
-    const JULES_FB = ["PrimeBuild Solutions","L2 Homes","Quality Custom Homes","Spa Space","Streamline Building Projects","Imperial Renovations","Quality Custom Homes PTY LTD","Elegance Tiles and Bath"];
-    const AYESSA_FB = ["Buildavate","Allspec Homes","Silk Touch Joinery","Barco Build","Renovate Right Homes"];
-    const all = [...new Set([...JULES_FB, ...AYESSA_FB, ...manual.map(c=>c.name)])].filter(n => !churned.includes(n));
-    const dl = document.getElementById('client-list');
-    all.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
-  } catch(e) {}
+  const keys = loadKeys();
+  if (keys.claude) document.querySelector('.hdr-btn').textContent = '🔑 Keys ✓';
+  if (keys.drive) document.getElementById('driveKeyInput').value = keys.drive;
 
-  // Load saved API key indicator
-  const key = localStorage.getItem('qj_social_api_key');
-  if (key) document.querySelector('.api-key-btn').textContent = '🔑 API Key ✓';
-
-  // Load inspiration library
-  loadInspirationList();
+  initCarousel();
+  renderIgGrid();
 });
 
-// ── Client branding ─────────────────────────────────────────────────────────
-// ── Inspiration Library ───────────────────────────────────────────────────────
-function loadInspirationList() {
-  const lib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
-  const el = document.getElementById('inspirationList');
-  if (!el) return;
-  if (!lib.length) {
-    el.innerHTML = `<div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);padding:0.4rem 0;font-style:italic">No inspiration saved yet</div>`;
-    return;
-  }
-  el.innerHTML = lib.map((item, i) => `
-    <div style="display:flex;align-items:flex-start;gap:0.4rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:0.5rem 0.6rem">
-      <div style="flex:1;font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.55;word-break:break-word">${item.replace(/</g,'&lt;').replace(/>/g,'&gt;').substring(0,160)}${item.length>160?'…':''}</div>
-      <button onclick="removeInspiration(${i})" style="flex-shrink:0;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0;opacity:0.5;line-height:1" title="Remove">✕</button>
-    </div>`).join('');
-}
-
-function addInspiration() {
-  const input = document.getElementById('inspirationInput');
-  const text = input.value.trim();
-  if (!text) return;
-  const lib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
-  lib.unshift(text);
-  localStorage.setItem('qj_inspiration_lib', JSON.stringify(lib.slice(0, 50)));
-  input.value = '';
-  loadInspirationList();
-}
-
-function removeInspiration(idx) {
-  const lib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
-  lib.splice(idx, 1);
-  localStorage.setItem('qj_inspiration_lib', JSON.stringify(lib));
-  loadInspirationList();
-}
-
-function loadClientBranding() {
-  const name = document.getElementById('clientName').value.trim();
-  if (!name) return;
-  try {
-    const saved = JSON.parse(localStorage.getItem('qj_social_branding') || '{}');
-    if (saved[name]) {
-      if (saved[name].color) { brandColor = saved[name].color; document.getElementById('customColor').value = brandColor; }
-      if (saved[name].niche) document.getElementById('clientNiche').value = saved[name].niche;
-      if (saved[name].website) document.getElementById('clientWebsite').value = saved[name].website;
-      if (saved[name].logo) {
-        const img = new Image(); img.src = saved[name].logo;
-        img.onload = () => { logoImg = img; showLogoPreview(saved[name].logo); };
-      }
-    }
-  } catch(e) {}
-}
-
-function saveClientBranding() {
-  const name = document.getElementById('clientName').value.trim();
-  if (!name) return;
-  try {
-    const saved = JSON.parse(localStorage.getItem('qj_social_branding') || '{}');
-    saved[name] = {
-      color: brandColor,
-      niche: document.getElementById('clientNiche').value.trim(),
-      website: document.getElementById('clientWebsite').value.trim(),
-      logo: logoImg ? document.getElementById('logoThumb').src : null
-    };
-    localStorage.setItem('qj_social_branding', JSON.stringify(saved));
-  } catch(e) {}
-}
-
-// ── Colour picker ──────────────────────────────────────────────────────────
-function selectColor(el) {
-  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-  brandColor = el.dataset.color;
-  document.getElementById('customColor').value = brandColor;
-  if (generatedData) renderCanvas();
-}
-function selectCustomColor(val) {
-  brandColor = val;
-  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-  if (generatedData) renderCanvas();
-}
-
-// ── Logo upload ────────────────────────────────────────────────────────────
-function loadLogo(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      logoImg = img;
-      showLogoPreview(e.target.result);
-      if (generatedData) renderCanvas();
-    };
-    img.src = e.target.result;
+function loadKeys() {
+  return {
+    claude: localStorage.getItem('qj_social_claude_key') || '',
+    manus:  localStorage.getItem('qj_social_manus_key')  || '',
+    drive:  localStorage.getItem('qj_social_drive_key')  || ''
   };
-  reader.readAsDataURL(file);
-}
-function showLogoPreview(src) {
-  document.getElementById('logoThumb').src = src;
-  document.getElementById('logoPreview').style.display = 'flex';
-  document.getElementById('logoZone').style.display = 'none';
-}
-function clearLogo() {
-  logoImg = null;
-  document.getElementById('logoInput').value = '';
-  document.getElementById('logoPreview').style.display = 'none';
-  document.getElementById('logoZone').style.display = 'block';
-  if (generatedData) renderCanvas();
 }
 
-// ── Photo upload ───────────────────────────────────────────────────────────
-function loadPhotos(event) {
-  const files = Array.from(event.target.files);
-  if (!files.length) return;
-  photos = [];
-  selectedPhotoIdx = 0;
-  const thumbsEl = document.getElementById('photoThumbs');
-  thumbsEl.innerHTML = '';
-  let loaded = 0;
-  files.forEach((file, i) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        photos[i] = { file, dataUrl: e.target.result, img };
-        loaded++;
-        if (loaded === files.length) renderThumbs();
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-  document.getElementById('photoZone').classList.add('has-files');
-}
-
-function renderThumbs() {
-  const el = document.getElementById('photoThumbs');
-  el.innerHTML = '';
-  photos.forEach((p, i) => {
-    if (!p) return;
-    const img = document.createElement('img');
-    img.className = 'photo-thumb' + (i === selectedPhotoIdx ? ' selected' : '');
-    img.src = p.dataUrl;
-    img.onclick = () => { selectedPhotoIdx = i; renderThumbs(); if (generatedData) renderCanvas(); };
-    el.appendChild(img);
-  });
-  // Update step indicator
-  const step = document.getElementById('step-photo');
-  if (step) {
-    if (photos.filter(Boolean).length > 0) {
-      step.className = 'step done';
-      step.querySelector('.step-dot').textContent = '✓';
-      step.querySelector('span').textContent = `${photos.filter(Boolean).length} photo${photos.filter(Boolean).length>1?'s':''} ready`;
-    } else {
-      step.className = 'step';
-      step.querySelector('.step-dot').textContent = '1';
-      step.querySelector('span').textContent = 'Upload at least one photo';
-    }
-  }
-  // Show batch button when multiple photos uploaded
-  const batchBtn = document.getElementById('batchBtn');
-  const validPhotos = photos.filter(Boolean);
-  if (batchBtn) {
-    if (validPhotos.length > 1) {
-      batchBtn.style.display = 'block';
-      batchBtn.textContent = `⚡ Generate All ${validPhotos.length} Posts`;
-    } else {
-      batchBtn.style.display = 'none';
-    }
-  }
-}
-
-function loadBeforePhoto(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      beforePhoto = { file, dataUrl: e.target.result, img };
-      const el = document.getElementById('beforeThumb');
-      el.innerHTML = '';
-      const thumb = document.createElement('img');
-      thumb.className = 'photo-thumb selected';
-      thumb.src = e.target.result;
-      el.appendChild(thumb);
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-// ── Post type & format ─────────────────────────────────────────────────────
-function selectPostType(btn) {
-  document.querySelectorAll('.post-type-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  postType = btn.dataset.type;
-  document.getElementById('testimonialField').style.display = postType === 'testimonial' ? 'block' : 'none';
-  document.getElementById('beforeAfterField').style.display = postType === 'beforeafter' ? 'block' : 'none';
-}
-function selectFormat(btn) {
-  document.querySelectorAll('.format-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  format = btn.dataset.fmt;
-  if (generatedData) renderCanvas();
-}
-function switchCapTab(btn) {
-  document.querySelectorAll('.caption-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const tab = btn.dataset.tab;
-  const d = generatedData;
-  if (!d) return;
-  const texts = { caption: d.caption, hashtags: d.hashtags, story: d.story, hook: d.hook };
-  document.getElementById('captionDisplay').textContent = texts[tab] || '';
-}
-
-// ── API Key ────────────────────────────────────────────────────────────────
 function openApiModal() {
-  const key = localStorage.getItem('qj_social_api_key') || '';
-  document.getElementById('apiKeyInput').value = key;
+  const keys = loadKeys();
+  if (keys.claude) document.getElementById('claudeKeyInput').value = keys.claude;
+  if (keys.manus)  document.getElementById('manusKeyInput').value  = keys.manus;
+  if (keys.drive)  document.getElementById('driveKeyInput').value  = keys.drive;
   document.getElementById('apiModal').classList.add('open');
 }
 function closeApiModal() { document.getElementById('apiModal').classList.remove('open'); }
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (key) {
-    localStorage.setItem('qj_social_api_key', key);
-    document.querySelector('.api-key-btn').textContent = '🔑 API Key ✓';
-  }
+function saveKeys() {
+  const c = document.getElementById('claudeKeyInput').value.trim();
+  const m = document.getElementById('manusKeyInput').value.trim();
+  const d = document.getElementById('driveKeyInput').value.trim();
+  if (c) localStorage.setItem('qj_social_claude_key', c);
+  if (m) localStorage.setItem('qj_social_manus_key', m);
+  if (d) localStorage.setItem('qj_social_drive_key', d);
   closeApiModal();
+  document.querySelector('.hdr-btn').textContent = '🔑 Keys ✓';
 }
 
-// ── Generate ───────────────────────────────────────────────────────────────
-async function generate() {
-  const apiKey = localStorage.getItem('qj_social_api_key');
-  if (!apiKey) { openApiModal(); return; }
-  if (!photos.length || !photos[selectedPhotoIdx]) {
-    const s = document.getElementById('genStatus');
-    s.textContent = '⚠ Upload a photo first — click the Photos section above';
-    s.className = 'gen-status error';
-    document.getElementById('photoZone').style.borderColor = 'var(--red)';
-    document.getElementById('step-photo').className = 'step active';
-    setTimeout(() => { s.className = 'gen-status'; s.textContent = ''; document.getElementById('photoZone').style.borderColor = ''; }, 4000);
+// ════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+// FILE LOADING
+// ════════════════════════════════════════════════
+function loadLogo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      logoImg = img;
+      document.getElementById('logoThumb').src = ev.target.result;
+      const lp = document.getElementById('logoPreview');
+      lp.style.display = 'flex';
+      document.getElementById('logoZone').classList.add('filled');
+      // Extract dominant colour from logo
+      extractLogoColor(img);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearLogo() {
+  logoImg = null;
+  document.getElementById('logoPreview').style.display = 'none';
+  document.getElementById('logoZone').classList.remove('filled');
+  document.getElementById('logoInput').value = '';
+}
+
+function extractLogoColor(img) {
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = 50; cv.height = 50;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, 50, 50);
+    const d = ctx.getImageData(0, 0, 50, 50).data;
+    let r=0, g=0, b=0, count=0;
+    for (let i=0; i<d.length; i+=4) {
+      if (d[i+3] < 80) continue; // skip transparent
+      const sat = Math.max(d[i],d[i+1],d[i+2]) - Math.min(d[i],d[i+1],d[i+2]);
+      if (sat < 30) continue; // skip near-grey
+      r+=d[i]; g+=d[i+1]; b+=d[i+2]; count++;
+    }
+    if (count > 10) {
+      const hex = '#' + [Math.round(r/count), Math.round(g/count), Math.round(b/count)]
+        .map(v => v.toString(16).padStart(2,'0')).join('');
+      brandColor = hex;
+      document.getElementById('customColor').value = hex;
+      renderPreview();
+    }
+  } catch(e) {}
+}
+
+function loadPhotos(e) {
+  const files = Array.from(e.target.files);
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        photos.push({file, dataUrl: ev.target.result, img, name: file.name});
+        // Also add to carousel bg dropdown
+        const sel = document.getElementById('slideBgPhoto');
+        const opt = document.createElement('option');
+        opt.value = photos.length - 1;
+        opt.textContent = file.name;
+        sel.appendChild(opt);
+        loaded++;
+        if (loaded === files.length) renderPhotoThumbs();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPhotoThumbs() {
+  const el = document.getElementById('photoThumbs');
+  el.innerHTML = photos.map((p, i) => `
+    <img class="thumb${i===0?' sel':''}" src="${p.dataUrl}" onclick="selectPhoto(${i})" title="${p.name}">`).join('');
+  document.getElementById('photoZone').classList.toggle('filled', photos.length > 0);
+}
+
+function selectPhoto(i) {
+  document.querySelectorAll('.thumb').forEach((t,j) => t.classList.toggle('sel', i===j));
+}
+
+function getSelectedPhotoIdx() {
+  const thumbs = document.querySelectorAll('.thumb');
+  let idx = 0;
+  thumbs.forEach((t,i) => { if (t.classList.contains('sel')) idx = i; });
+  return idx;
+}
+
+function loadBrief(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('briefStatus');
+  status.textContent = 'Reading file…';
+  const zone = document.getElementById('briefZone');
+
+  if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('clientBrief').value = ev.target.result.substring(0, 8000);
+      status.textContent = '✓ Text extracted from ' + file.name;
+      zone.classList.add('filled');
+    };
+    reader.readAsText(file);
+  } else if (file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+    // Can't fully parse PDF/DOCX in browser without heavy libs; prompt user
+    status.textContent = '⚠ PDF/DOCX detected — please copy-paste the text into the field above for best results.';
+    zone.classList.add('filled');
+  }
+}
+
+// ════════════════════════════════════════════════
+// GOOGLE DRIVE
+// ════════════════════════════════════════════════
+function extractFolderId(url) {
+  const m = url.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2) return m2[1];
+  return null;
+}
+
+async function loadDriveFolder() {
+  const url = document.getElementById('driveUrl').value.trim();
+  const apiKey = localStorage.getItem('qj_social_drive_key') || '';
+  const status = document.getElementById('driveStatus');
+  const filesEl = document.getElementById('driveFiles');
+
+  if (!url) { status.textContent = 'Paste a Google Drive folder link first.'; return; }
+  if (!apiKey) {
+    status.textContent = '⚠ Add a Google Drive API key in 🔑 API Keys to load from Drive.';
     return;
   }
 
-  const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Analysing photos & writing copy…';
-  setStatus('Sending to Claude Vision AI…');
+  const folderId = extractFolderId(url);
+  if (!folderId) { status.textContent = '⚠ Could not read folder ID from link.'; return; }
 
-  const clientName = document.getElementById('clientName').value.trim() || 'our client';
-  const niche     = document.getElementById('clientNiche').value.trim() || 'renovation';
-  const website   = document.getElementById('clientWebsite').value.trim();
-  const extraCtx  = document.getElementById('extraContext').value.trim();
-  const testimonial = document.getElementById('testimonialText').value.trim();
-  const photo = photos[selectedPhotoIdx];
-  const compressed = await compressForAPI(photo);
+  status.textContent = 'Loading folder…';
+  document.getElementById('driveBtn').disabled = true;
 
-  const postTypeLabels = {
-    showcase: 'Showcase (finished job highlight)',
-    value: 'Value/Tip post (advice for homeowners thinking about renovating)',
-    beforeafter: 'Before & After transformation',
-    testimonial: 'Testimonial/social proof post',
-    process: 'Behind the scenes / work in progress',
-    promotion: 'Promotional post / special offer'
+  try {
+    const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
+    const resp = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&key=${apiKey}&fields=files(id,name,thumbnailLink,mimeType)&pageSize=50`);
+    if (!resp.ok) throw new Error('Drive API error: ' + resp.status);
+    const data = await resp.json();
+    const files = data.files || [];
+
+    if (!files.length) { status.textContent = 'No images found in folder (make sure it\'s publicly shared).'; return; }
+
+    status.textContent = `✓ Found ${files.length} images`;
+    drivePhotos = files;
+
+    filesEl.innerHTML = files.map((f, i) => `
+      <img class="drive-thumb" src="${f.thumbnailLink || ''}" title="${f.name}"
+        onclick="selectDrivePhoto(${i})"
+        onerror="this.style.background='var(--surface2)';this.src=''">`).join('');
+
+  } catch(err) {
+    status.textContent = '⚠ ' + err.message + ' — ensure the folder is publicly shared.';
+  } finally {
+    document.getElementById('driveBtn').disabled = false;
+  }
+}
+
+function selectDrivePhoto(i) {
+  document.querySelectorAll('.drive-thumb').forEach((t,j) => t.classList.toggle('sel', i===j));
+  const f = drivePhotos[i];
+  // Load the Drive image for canvas use
+  const imgUrl = `https://drive.google.com/uc?export=view&id=${f.id}`;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    // Add to photos array if not already there
+    const existing = photos.findIndex(p => p.driveId === f.id);
+    if (existing === -1) {
+      photos.push({driveId: f.id, img, dataUrl: imgUrl, name: f.name});
+      const thumbs = document.getElementById('photoThumbs');
+      const t = document.createElement('img');
+      t.className = 'thumb sel';
+      t.src = imgUrl;
+      t.title = f.name;
+      const idx = photos.length - 1;
+      t.onclick = () => selectPhoto(idx);
+      // Deselect others
+      document.querySelectorAll('.thumb').forEach(th => th.classList.remove('sel'));
+      thumbs.appendChild(t);
+    }
   };
-
-  // Pull random inspiration examples from the library
-  const inspirationLib = JSON.parse(localStorage.getItem('qj_inspiration_lib') || '[]');
-  const inspirationSamples = inspirationLib.length
-    ? inspirationLib.sort(() => Math.random() - 0.5).slice(0, 3)
-    : [];
-
-  const systemPrompt = `You are an expert social media content creator specialising in the home renovation and construction industry in Australia. You create high-performing organic social media posts for renovation companies that attract homeowners who are thinking about getting work done.
-
-CRITICAL RULE — IMAGE ACCURACY:
-You will receive a photo. Before writing a single word of copy, you must identify exactly what is shown in the image. Your imageDescription field must be filled first and must be specific (e.g. "aluminium-framed sliding window being installed on a brick home", NOT "home renovation work"). Every piece of copy — especially the headline — must be grounded in and consistent with your imageDescription. If the image shows windows, the copy must reference windows. If it shows tiling, reference tiling. Never write copy that contradicts or misrepresents what is visually present.
-
-CREATIVE VARIETY RULE:
-Each post must feel structurally distinct. Vary the headline approach (question / statement / number / command / surprising fact). Vary the caption opening. Avoid starting every caption the same way. Think about what angle would make someone stop scrolling and feel something — curiosity, recognition, urgency, or aspiration.
-
-Your posts are:
-- Specific and authentic — never generic or salesy
-- Written to provide GENUINE VALUE to homeowners (tips, education, inspiration, social proof)
-- Warm, professional, and trustworthy in tone
-- Designed to generate saves, shares, and comments — not just likes
-- Tailored to the Australian renovation market
-
-You always return responses in valid JSON format with exactly these fields:
-{
-  "imageDescription": "Precise description of what is physically visible in the photo — subject, materials, setting, stage of work. This is filled FIRST before any copy.",
-  "headline": "Short punchy headline for the image overlay (max 8 words, ALL CAPS) — MUST match imageDescription exactly",
-  "subtext": "One supporting line for image overlay (max 12 words) — must be consistent with imageDescription",
-  "caption": "Full Instagram/Facebook caption with line breaks, emojis, call to action",
-  "hashtags": "25-30 relevant hashtags for renovation/construction in Australia",
-  "story": "Short punchy Stories version of the caption (2-3 sentences max)",
-  "hook": "The first line hook only — must stop the scroll (under 10 words)",
-  "brandColor": "The single most prominent brand hex colour for this company (e.g. #2563eb). If you can infer it from their website URL or company name, use it. Otherwise suggest a colour that fits a professional ${niche} business."
-}`;
-
-  const userPrompt = `Create a social media post for ${clientName}, a ${niche} company.${website ? `\nWebsite: ${website}` : ''}
-
-Post type: ${postTypeLabels[postType]}
-${testimonial ? `Client testimonial to feature: "${testimonial}"` : ''}
-${extraCtx ? `Additional context: ${extraCtx}` : ''}
-
-STEP 1 — Describe the image: Look carefully at the photo. Fill imageDescription with an exact, specific description of what you see — the actual type of work, materials, products, setting. Be precise.
-
-STEP 2 — Write copy grounded in that description: Every word of your headline and copy must be consistent with imageDescription. If you described windows, write about windows. If you described tiling, write about tiling. Never contradict what you described.
-
-STEP 3 — Make it feel different: Vary your approach. Don't use the same headline structure or caption opening as you normally would.
-${inspirationSamples.length ? `\nFor creative inspiration and variety, here are some post styles/formats to draw from (don't copy — use as creative direction):\n${inspirationSamples.map((s,i) => `Example ${i+1}: ${s}`).join('\n\n')}` : ''}
-
-Return only valid JSON, no markdown, no explanation.`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 1500,
-        system: systemPrompt,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: compressed.mediaType, data: compressed.base64 }
-            },
-            { type: 'text', text: userPrompt }
-          ]
-        }]
-      })
-    });
-
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-
-    const raw = data.content[0].text;
-    let parsed;
-    try { parsed = JSON.parse(raw); }
-    catch(e) {
-      // Try to extract JSON from response
-      const match = raw.match(/\{[\s\S]+\}/);
-      if (match) parsed = JSON.parse(match[0]);
-      else throw new Error('Could not parse AI response');
-    }
-
-    generatedData = parsed;
-    if (parsed.brandColor && /^#[0-9a-fA-F]{3,6}$/.test(parsed.brandColor)) {
-      applyBrandColor(parsed.brandColor);
-      document.getElementById('detectStatus').textContent = `✓ Brand colour detected: ${parsed.brandColor}`;
-    }
-    saveClientBranding();
-    renderCanvas();
-    showCaptionOutput();
-    const s = document.getElementById('genStatus');
-    s.textContent = '✓ Post generated — download your PNG below';
-    s.className = 'gen-status success';
-    document.getElementById('downloadBtn').disabled = false;
-    document.getElementById('regenerateBtn').disabled = false;
-    btn.disabled = false;
-    btn.innerHTML = '✨ Generate Post';
-
-  } catch(err) {
-    const s = document.getElementById('genStatus');
-    s.textContent = '⚠ ' + (err.message || 'Something went wrong — check your API key');
-    s.className = 'gen-status error';
-    btn.disabled = false;
-    btn.innerHTML = '✨ Generate Post';
-  }
+  img.onerror = () => {
+    document.getElementById('driveStatus').textContent = '⚠ CORS blocked — try downloading this photo and uploading directly.';
+  };
+  img.src = imgUrl;
 }
 
-async function regenerateCaption() {
-  if (!generatedData) return;
-  const btn = document.getElementById('regenerateBtn');
-  btn.disabled = true; btn.textContent = '…generating';
-  const apiKey = localStorage.getItem('qj_social_api_key');
-  if (!apiKey) { openApiModal(); btn.disabled = false; return; }
-
-  const clientName = document.getElementById('clientName').value.trim() || 'the client';
-  const niche = document.getElementById('clientNiche').value.trim() || 'renovation';
-  const photo = photos[selectedPhotoIdx];
-  const compressed = await compressForAPI(photo);
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 1500,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: compressed.mediaType, data: compressed.base64 } },
-            { type: 'text', text: `Write a completely different version of a social media post for ${clientName} (${niche}). Different angle, different hook, different structure. Still valuable and specific to this photo. Return JSON with: headline, subtext, caption, hashtags, story, hook. No markdown.` }
-          ]
-        }]
-      })
-    });
-    const data = await res.json();
-    const raw = data.content[0].text;
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch(e) { const m = raw.match(/\{[\s\S]+\}/); if (m) parsed = JSON.parse(m[0]); else throw e; }
-    generatedData = parsed;
-    renderCanvas();
-    showCaptionOutput();
-    setStatus('✓ New version generated!');
-  } catch(err) {
-    setStatus('⚠ ' + err.message);
-  }
-  btn.disabled = false; btn.textContent = '↺ New Caption';
+// ════════════════════════════════════════════════
+// BRAND COLOR / UI
+// ════════════════════════════════════════════════
+function pickColor(el) {
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  brandColor = el.dataset.c;
+  document.getElementById('customColor').value = brandColor;
+  renderPreview();
 }
 
-// ── Canvas rendering ───────────────────────────────────────────────────────
-function renderCanvas() {
-  if (!generatedData || !photos[selectedPhotoIdx]) return;
-
-  const { w, h } = FORMATS[format];
-  const canvas = document.getElementById('postCanvas');
-  canvas.width = w; canvas.height = h;
-
-  // Scale canvas for display (max 540px wide)
-  const displayW = Math.min(540, window.innerWidth - 500);
-  const displayH = Math.round(displayW * h / w);
-  canvas.style.width = displayW + 'px';
-  canvas.style.height = displayH + 'px';
-
-  document.getElementById('placeholder').style.display = 'none';
-  canvas.style.display = 'block';
-  document.getElementById('previewMeta').textContent = `${FORMATS[format].label} · ${postType} post`;
-
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, w, h);
-
-  dispatchTemplate(ctx, w, h, postType);
+function setType(btn) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  postType = btn.dataset.type;
+  document.getElementById('testimonialField').style.display = postType === 'testimonial' ? 'block' : 'none';
 }
 
-function dispatchTemplate(ctx, w, h, type) {
-  if      (type === 'beforeafter' && beforePhoto) renderBeforeAfter(ctx, w, h);
-  else if (type === 'value')       renderValueTemplate(ctx, w, h);
-  else if (type === 'testimonial') renderTestimonialTemplate(ctx, w, h);
-  else if (type === 'magazine')    renderMagazineTemplate(ctx, w, h);
-  else if (type === 'editorial')   renderEditorialTemplate(ctx, w, h);
-  else if (type === 'process')     renderProcessTemplate(ctx, w, h);
-  else if (type === 'promotion')   renderPromotionTemplate(ctx, w, h);
-  else                             renderShowcaseTemplate(ctx, w, h);
+function setFormat(btn) {
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  format = btn.dataset.fmt;
 }
 
-function drawPhotoFill(ctx, img, x, y, w, h) {
-  const scale = Math.max(w / img.width, h / img.height);
-  const sw = img.width * scale, sh = img.height * scale;
-  const sx = x + (w - sw) / 2, sy = y + (h - sh) / 2;
-  ctx.drawImage(img, sx, sy, sw, sh);
+function onClientChange() {
+  const name = document.getElementById('clientName').value.trim();
+  const igUn = document.getElementById('igUsername');
+  if (igUn) igUn.textContent = name ? '@' + name.toLowerCase().replace(/\s+/g,'') : '@clientname';
 }
 
-// Template 1: Diagonal Slash — photo with angled brand-colour band cutting across
-function renderShowcaseTemplate(ctx, w, h) {
-  const photo = photos[selectedPhotoIdx].img;
-  const name  = document.getElementById('clientName').value.trim();
+function renderPreview() {
+  // Re-render if canvas is already showing
+  if (generatedData) drawPost(generatedData);
+}
 
-  // Full bleed photo
-  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
-  drawPhotoFill(ctx, photo, 0, 0, w, h);
-  ctx.restore();
+// ════════════════════════════════════════════════
+// CANVAS — POST RENDERING
+// ════════════════════════════════════════════════
+function getCanvas() {
+  const {w, h} = FMTS[format];
+  const cv = document.getElementById('postCanvas');
+  cv.width = w; cv.height = h;
+  return {cv, ctx: cv.getContext('2d'), w, h};
+}
 
-  // Dark scrim bottom half
-  const scrim = ctx.createLinearGradient(0, h * 0.35, 0, h);
-  scrim.addColorStop(0, 'rgba(0,0,0,0)'); scrim.addColorStop(1, 'rgba(0,0,0,0.72)');
-  ctx.fillStyle = scrim; ctx.fillRect(0, 0, w, h);
-
-  // Diagonal parallelogram band
-  const y1 = h * 0.56, y2 = h * 0.47, bh = h * 0.115;
+function drawRoundedRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
-  ctx.moveTo(0, y1); ctx.lineTo(w, y2);
-  ctx.lineTo(w, y2 + bh); ctx.lineTo(0, y1 + bh);
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
   ctx.closePath();
-  ctx.fillStyle = brandColor; ctx.fill();
-
-  // White edge lines on band
-  ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(w, y2);
-  ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 2; ctx.stroke();
-
-  // Headline above band
-  const headline = (generatedData.headline || '').toUpperCase();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `800 ${Math.round(w * 0.072)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  wrapText(ctx, headline, 55, y1 - Math.round(w * 0.088), w - 110, Math.round(w * 0.086));
-
-  // Subtext below band
-  ctx.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx.font = `400 ${Math.round(w * 0.03)}px 'DM Mono', monospace`;
-  wrapText(ctx, generatedData.subtext || '', 55, y1 + bh + Math.round(h * 0.038), w - 110, Math.round(w * 0.037));
-
-  if (logoImg) drawLogo(ctx, w, h, 'top-right');
-  if (!logoImg && name) {
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = `500 ${Math.round(w * 0.025)}px 'DM Mono', monospace`;
-    ctx.textAlign = 'right';
-    ctx.fillText(name, w - 55, h - 42);
-  }
 }
 
-// Template 2: Circle Hero — solid brand-colour bg, circle-cropped photo
-function renderValueTemplate(ctx, w, h) {
-  const photo = photos[selectedPhotoIdx].img;
-  const name  = document.getElementById('clientName').value.trim();
-
-  // Solid brand colour background
-  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, w, h);
-
-  // Decorative ghost circles
-  ctx.globalAlpha = 0.07; ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(w * 0.06, h * 0.06, w * 0.28, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(w * 0.92, h * 0.85, w * 0.2, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 1;
-
-  // Large circle photo — offset right
-  const cr = Math.round(Math.min(w, h) * 0.37);
-  const cx = Math.round(w * 0.64), cy = Math.round(h * 0.42);
-
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 32; ctx.shadowOffsetY = 12;
-  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fillStyle = '#000'; ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.clip();
-  drawPhotoFill(ctx, photo, cx - cr, cy - cr, cr * 2, cr * 2);
-  ctx.restore();
-
-  // Circle border
-  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 5;
-  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.stroke();
-
-  // Headline left side
-  const headline = (generatedData.headline || '').toUpperCase();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `800 ${Math.round(w * 0.082)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  wrapText(ctx, headline, 50, h * 0.26, cx - cr - 40, Math.round(w * 0.096));
-
-  // Accent bar
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(50, h * 0.64, 55, 3);
-
-  // Subtext
-  ctx.fillStyle = 'rgba(255,255,255,0.72)';
-  ctx.font = `400 ${Math.round(w * 0.03)}px 'DM Mono', monospace`;
-  wrapText(ctx, generatedData.subtext || '', 50, h * 0.7, cx - cr - 40, Math.round(w * 0.037));
-
-  if (logoImg) drawLogo(ctx, w, h, 'bottom-right');
-  if (!logoImg && name) {
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = `500 ${Math.round(w * 0.024)}px 'DM Mono', monospace`;
-    ctx.textAlign = 'left'; ctx.fillText(name, 50, h - 42);
-  }
-}
-
-// Template 7: Vertical Rotated Text — photo bg + brand strip left with 90° text
-function renderProcessTemplate(ctx, w, h) {
-  const photo = photos[selectedPhotoIdx].img;
-  const name  = document.getElementById('clientName').value.trim();
-  const stripW = Math.round(w * 0.17);
-
-  // Full bleed photo
-  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
-  drawPhotoFill(ctx, photo, 0, 0, w, h);
-  ctx.restore();
-
-  // Dark scrim on right portion only
-  const scrim = ctx.createLinearGradient(0, h * 0.5, 0, h);
-  scrim.addColorStop(0, 'rgba(0,0,0,0)'); scrim.addColorStop(1, 'rgba(0,0,0,0.7)');
-  ctx.fillStyle = scrim; ctx.fillRect(stripW, 0, w - stripW, h);
-
-  // Left brand-colour strip
-  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, stripW, h);
-
-  // Thin white right-edge of strip
-  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(stripW - 2, 0, 2, h);
-
-  // Rotated headline text in strip
-  const headline = (generatedData.headline || '').toUpperCase();
-  ctx.save();
-  ctx.translate(stripW * 0.52, h * 0.96);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `800 ${Math.round(stripW * 0.55)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  ctx.fillText(headline, 0, 0);
-  ctx.restore();
-
-  // Subtext bottom-right of photo
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.font = `400 ${Math.round(w * 0.031)}px 'DM Mono', monospace`;
-  ctx.textAlign = 'left';
-  wrapText(ctx, generatedData.subtext || '', stripW + 40, h * 0.84, w - stripW - 80, Math.round(w * 0.038));
-
-  if (logoImg) drawLogo(ctx, w, h, 'top-right');
-  if (!logoImg && name) {
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = `500 ${Math.round(w * 0.024)}px 'DM Mono', monospace`;
-    ctx.textAlign = 'right'; ctx.fillText(name, w - 50, h - 40);
-  }
-}
-
-// Template 8: Bold Type — white bg, massive headline, circle photo right
-function renderPromotionTemplate(ctx, w, h) {
-  const photo = photos[selectedPhotoIdx].img;
-  const name  = document.getElementById('clientName').value.trim();
-
-  // Clean cream background
-  ctx.fillStyle = '#f7f4ef'; ctx.fillRect(0, 0, w, h);
-
-  // Brand top bar + bottom bar
-  const barH = Math.round(h * 0.012);
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(0, 0, w, barH);
-  const botBarY = Math.round(h * 0.87);
-  ctx.fillRect(0, botBarY, w, h - botBarY);
-
-  // Brand accent stroke (left side, vertical)
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(50, Math.round(h * 0.06), 6, Math.round(h * 0.55));
-
-  // Massive headline
-  const headline = (generatedData.headline || '').toUpperCase();
-  ctx.fillStyle = '#111111';
-  ctx.font = `800 ${Math.round(w * 0.1)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  wrapText(ctx, headline, 80, h * 0.14, w * 0.56, Math.round(w * 0.115));
-
-  // Subtext in brand colour
-  ctx.fillStyle = brandColor;
-  ctx.font = `600 ${Math.round(w * 0.034)}px 'DM Mono', monospace`;
-  wrapText(ctx, generatedData.subtext || '', 80, h * 0.66, w * 0.52, Math.round(w * 0.042));
-
-  // Circle photo right side
-  const cr = Math.round(Math.min(w, h) * 0.28);
-  const cx = Math.round(w * 0.79), cy = Math.round(h * 0.44);
-
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.12)'; ctx.shadowBlur = 28;
-  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fillStyle = '#ddd'; ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.clip();
-  drawPhotoFill(ctx, photo, cx - cr, cy - cr, cr * 2, cr * 2);
-  ctx.restore();
-
-  // Brand ring around circle
-  ctx.strokeStyle = brandColor; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.arc(cx, cy, cr + 6, 0, Math.PI * 2); ctx.stroke();
-
-  // Client name in bottom bar
-  if (name) {
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `700 ${Math.round(w * 0.03)}px 'DM Mono', monospace`;
-    ctx.textAlign = 'left';
-    ctx.fillText(name, 80, botBarY + Math.round((h - botBarY) * 0.65));
-  }
-  if (logoImg) drawLogo(ctx, w, h, 'top-right');
-}
-
-// Template 3: Before/After
-function renderBeforeAfter(ctx, w, h) {
-  const afterPhoto = photos[selectedPhotoIdx].img;
-  const mid = Math.round(w / 2);
-
-  // Before (left)
-  if (beforePhoto) {
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, mid, h); ctx.clip();
-    drawPhotoFill(ctx, beforePhoto.img, 0, 0, mid, h); ctx.restore();
-    // Dark overlay
-    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, 0, mid, h);
-  } else {
-    ctx.fillStyle = '#333'; ctx.fillRect(0, 0, mid, h);
-  }
-
-  // After (right)
-  ctx.save(); ctx.beginPath(); ctx.rect(mid, 0, mid, h); ctx.clip();
-  drawPhotoFill(ctx, afterPhoto, mid, 0, mid, h); ctx.restore();
-
-  // Top accent
-  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, w, 8);
-
-  // Divider line
-  ctx.fillStyle = '#ffffff'; ctx.fillRect(mid - 2, 0, 4, h);
-
-  // BEFORE label
-  ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, h * 0.05, mid * 0.42, h * 0.065);
-  ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(w * 0.028)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillText('BEFORE', mid * 0.21, h * 0.095);
-
-  // AFTER label
-  ctx.fillStyle = brandColor; ctx.fillRect(mid + mid * 0.58, h * 0.05, mid * 0.42, h * 0.065);
-  ctx.fillStyle = '#fff';
-  ctx.fillText('AFTER', mid + mid * 0.79, h * 0.095);
-
-  // Bottom gradient
-  const grad = ctx.createLinearGradient(0, h * 0.75, 0, h);
-  grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,0.75)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-
-  // Headline
-  ctx.fillStyle = '#fff';
-  ctx.font = `800 ${Math.round(w * 0.058)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'center';
-  wrapText(ctx, generatedData.headline || 'TRANSFORMATION', w/2, h * 0.83, w - 120, Math.round(w * 0.07), 'center');
-
-  // Logo
-  if (logoImg) drawLogo(ctx, w, h, 'top-right');
-
-  // Client name
-  if (document.getElementById('clientName').value.trim()) {
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = `500 ${Math.round(w * 0.025)}px 'DM Mono', monospace`;
-    ctx.textAlign = 'right';
-    ctx.fillText(document.getElementById('clientName').value.trim(), w - 55, h - 45);
-  }
-}
-
-// Template 4: Testimonial
-function renderTestimonialTemplate(ctx, w, h) {
-  const photo = photos[selectedPhotoIdx].img;
-
-  // Photo background (desaturated / darkened)
-  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
-  drawPhotoFill(ctx, photo, 0, 0, w, h);
-  ctx.restore();
-
-  // Strong overlay
-  ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(0, 0, w, h);
-
-  // Brand accent
-  ctx.fillStyle = brandColor; ctx.fillRect(0, 0, w, 8);
-  ctx.fillRect(0, h - 8, w, 8);
-
-  // Large quote marks
-  ctx.fillStyle = brandColor; ctx.globalAlpha = 0.35;
-  ctx.font = `800 ${Math.round(w * 0.28)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  ctx.fillText('"', 40, Math.round(h * 0.38));
-  ctx.globalAlpha = 1;
-
-  // Quote text
-  const quote = document.getElementById('testimonialText').value.trim() || generatedData.headline || '';
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `600 ${Math.round(w * 0.048)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'center';
-  wrapText(ctx, quote, w/2, h * 0.38, w * 0.8, Math.round(w * 0.058), 'center');
-
-  // Stars
-  ctx.fillStyle = brandColor;
-  ctx.font = `${Math.round(w * 0.048)}px serif`;
-  ctx.fillText('★★★★★', w/2 - Math.round(w * 0.12), h * 0.72);
-
-  // Logo
-  if (logoImg) drawLogo(ctx, w, h, 'bottom-center');
-}
-
-// Template 5: Magazine (vertical split — brand left, photo right)
-function renderMagazineTemplate(ctx, w, h) {
-  const photo = photos[selectedPhotoIdx].img;
-  const splitX = Math.round(w * 0.42);
-
-  // Left colour panel
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(0, 0, splitX, h);
-
-  // Right photo panel
-  ctx.save();
-  ctx.beginPath(); ctx.rect(splitX, 0, w - splitX, h); ctx.clip();
-  drawPhotoFill(ctx, photo, splitX, 0, w - splitX, h);
-  ctx.restore();
-
-  // Thin divider line
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.fillRect(splitX, 0, 2, h);
-
-  // Top accent stripe on left panel
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
-  ctx.fillRect(0, 0, splitX, 6);
-
-  // Category label (top)
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.font = `500 ${Math.round(w * 0.022)}px 'DM Mono', monospace`;
-  ctx.textAlign = 'left';
-  ctx.fillText('PROJECT FEATURE', 32, Math.round(h * 0.1));
-
-  // Headline — rotated 90° option skipped for legibility; stack vertically
-  const headline = (generatedData.headline || '').toUpperCase();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `800 ${Math.round(w * 0.068)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  wrapText(ctx, headline, 32, Math.round(h * 0.32), splitX - 52, Math.round(w * 0.082));
-
-  // Subtext
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  ctx.font = `400 ${Math.round(w * 0.028)}px 'DM Mono', monospace`;
-  wrapText(ctx, generatedData.subtext || '', 32, Math.round(h * 0.68), splitX - 52, Math.round(w * 0.036));
-
-  // Logo (bottom-left of colour panel)
-  if (logoImg) drawLogo(ctx, splitX, h, 'bottom-right', 24);
-
-  // Client name bottom-left
-  if (!logoImg && document.getElementById('clientName').value.trim()) {
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = `500 ${Math.round(w * 0.022)}px 'DM Mono', monospace`;
-    ctx.textAlign = 'left';
-    ctx.fillText(document.getElementById('clientName').value.trim(), 32, h - 40);
-  }
-}
-
-// Template 6: Editorial (full bleed photo + clean white card bottom)
-function renderEditorialTemplate(ctx, w, h) {
-  const photo = photos[selectedPhotoIdx].img;
-
-  // Full bleed photo
-  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
-  drawPhotoFill(ctx, photo, 0, 0, w, h);
-  ctx.restore();
-
-  // White card anchored at bottom
-  const cardH = Math.round(h * 0.36);
-  const cardY = h - cardH;
-  const cardPad = 48;
-
-  // Card shadow
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.18)';
-  ctx.shadowBlur = 32;
-  ctx.shadowOffsetY = -6;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.moveTo(0, cardY + 20);
-  ctx.quadraticCurveTo(0, cardY, 20, cardY);
-  ctx.lineTo(w - 20, cardY);
-  ctx.quadraticCurveTo(w, cardY, w, cardY + 20);
-  ctx.lineTo(w, h); ctx.lineTo(0, h);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  // Brand accent strip at top of card
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(cardPad, cardY + 18, Math.round(w * 0.1), 4);
-
-  // Headline in dark text
-  const headline = (generatedData.headline || '').toUpperCase();
-  ctx.fillStyle = '#111111';
-  ctx.font = `800 ${Math.round(w * 0.062)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  wrapText(ctx, headline, cardPad, cardY + Math.round(cardH * 0.28), w - cardPad * 2, Math.round(w * 0.075));
-
-  // Subtext
-  ctx.fillStyle = '#555555';
-  ctx.font = `400 ${Math.round(w * 0.027)}px 'DM Mono', monospace`;
-  wrapText(ctx, generatedData.subtext || '', cardPad, cardY + Math.round(cardH * 0.66), w - cardPad * 2 - 100, Math.round(w * 0.034));
-
-  // Logo top-right of photo (above card)
-  if (logoImg) drawLogo(ctx, w, h, 'top-right');
-
-  // Client name bottom-right inside card
-  if (document.getElementById('clientName').value.trim()) {
-    ctx.fillStyle = '#999999';
-    ctx.font = `500 ${Math.round(w * 0.023)}px 'DM Mono', monospace`;
-    ctx.textAlign = 'right';
-    ctx.fillText(document.getElementById('clientName').value.trim(), w - cardPad, h - 38);
-  }
-}
-
-// Logo drawing
-function drawLogo(ctx, w, h, position, padOverride) {
-  if (!logoImg) return;
-  const maxW = Math.round(w * 0.18), maxH = Math.round(h * 0.08);
-  const scale = Math.min(maxW / logoImg.width, maxH / logoImg.height);
-  const lw = logoImg.width * scale, lh = logoImg.height * scale;
-  const pad = padOverride !== undefined ? padOverride : 48;
-  let lx, ly;
-  if (position === 'top-right') { lx = w - lw - pad; ly = pad; }
-  else if (position === 'top-left') { lx = pad; ly = pad; }
-  else if (position === 'bottom-center') { lx = (w - lw) / 2; ly = h - lh - pad - 12; }
-  else if (position === 'bottom-right') { lx = w - lw - pad; ly = h - lh - pad; }
-  else { lx = w - lw - pad; ly = h - lh - pad; }
-
-  // White backing pill
-  ctx.save();
-  const pillPad = 10;
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  roundRect(ctx, lx - pillPad, ly - pillPad, lw + pillPad*2, lh + pillPad*2, 10);
-  ctx.fill();
-  ctx.drawImage(logoImg, lx, ly, lw, lh);
-  ctx.restore();
-}
-
-// Text wrap utility
-function wrapText(ctx, text, x, y, maxW, lineH, align = 'left') {
-  if (!text) return;
+function wrapText(ctx, text, x, y, maxW, lineH) {
   const words = text.split(' ');
   let line = '';
-  let currY = y;
-  ctx.textAlign = align;
-  for (let i = 0; i < words.length; i++) {
-    const test = line + words[i] + ' ';
-    if (ctx.measureText(test).width > maxW && i > 0) {
-      ctx.fillText(line.trim(), x, currY);
-      line = words[i] + ' ';
-      currY += lineH;
+  let lines = [];
+  for (const word of words) {
+    const test = line + (line ? ' ' : '') + word;
+    if (ctx.measureText(test).width > maxW && line) {
+      lines.push(line);
+      line = word;
     } else {
       line = test;
     }
   }
-  if (line.trim()) ctx.fillText(line.trim(), x, currY);
+  if (line) lines.push(line);
+  lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineH));
+  return lines.length * lineH;
 }
 
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+function drawLogo(ctx, w, h) {
+  if (!logoImg) return;
+  const lw = Math.min(w * 0.2, 160);
+  const lh = lw * (logoImg.height / logoImg.width);
+  const lx = (w - lw) / 2;
+  const ly = h - lh - h * 0.04;
+  ctx.drawImage(logoImg, lx, ly, lw, lh);
 }
 
-// ── Caption output ─────────────────────────────────────────────────────────
-function showCaptionOutput() {
-  document.getElementById('captionOutput').style.display = 'block';
-  document.getElementById('captionDisplay').textContent = generatedData.caption || '';
-  document.querySelectorAll('.caption-tab')[0].click();
-}
-function copyCaption() {
-  const activeTab = document.querySelector('.caption-tab.active').dataset.tab;
-  const texts = { caption: generatedData.caption, hashtags: generatedData.hashtags, story: generatedData.story, hook: generatedData.hook };
-  navigator.clipboard.writeText(texts[activeTab] || '').then(() => {
-    const btn = document.querySelector('.copy-caption-btn');
-    btn.textContent = '✓ Copied!'; btn.style.color = 'var(--green)';
-    setTimeout(() => { btn.textContent = '📋 Copy to clipboard'; btn.style.color = ''; }, 2000);
-  });
-}
+function drawPost(data) {
+  const {cv, ctx, w, h} = getCanvas();
+  const photo = photos[getSelectedPhotoIdx()];
 
-// ── Download ───────────────────────────────────────────────────────────────
-function downloadPost() {
-  const canvas = document.getElementById('postCanvas');
-  const clientName = (document.getElementById('clientName').value.trim() || 'post').replace(/\s+/g, '-').toLowerCase();
-  const ts = new Date().toISOString().slice(0,10);
-  const a = document.createElement('a');
-  a.download = `${clientName}-${postType}-${format}-${ts}.png`;
-  a.href = canvas.toDataURL('image/png');
-  a.click();
+  if (postType === 'showcase') drawShowcase(ctx, w, h, photo, data);
+  else if (postType === 'edu') drawEdu(ctx, w, h, photo, data);
+  else if (postType === 'services') drawServices(ctx, w, h, photo, data);
+  else if (postType === 'editorial') drawEditorial(ctx, w, h, photo, data);
+  else if (postType === 'testimonial') drawTestimonial(ctx, w, h, photo, data);
+  else if (postType === 'promotion') drawPromotion(ctx, w, h, photo, data);
+  else drawShowcase(ctx, w, h, photo, data);
+
+  document.getElementById('canvasPh').style.display = 'none';
+  document.getElementById('canvasWrap').style.display = 'block';
+  document.getElementById('dlBtn').disabled = false;
 }
 
-// ── Brand colour detection ─────────────────────────────────────────────────
-async function detectBrandColor() {
-  const apiKey = localStorage.getItem('qj_social_api_key');
-  if (!apiKey) { openApiModal(); return; }
-  const url = document.getElementById('clientWebsite').value.trim();
-  if (!url) { document.getElementById('detectStatus').textContent = '⚠ Enter a website URL first'; return; }
-
-  const btn = document.getElementById('detectColorBtn');
-  const status = document.getElementById('detectStatus');
-  btn.textContent = '⏳ Detecting…'; btn.disabled = true;
-  status.textContent = 'Asking Claude to identify brand colours…';
-
-  const clientName = document.getElementById('clientName').value.trim() || 'this company';
-  const niche      = document.getElementById('clientNiche').value.trim() || 'renovation';
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 200,
-        messages: [{ role: 'user', content: `The company is "${clientName}", a ${niche} business. Their website is ${url}.\n\nBased on what you know about this company or similar companies in this industry, what is their primary brand colour? If you don't know the exact company, suggest a professional colour that fits a ${niche} business.\n\nReturn ONLY a JSON object with one field: { "brandColor": "#hexcode" }. No explanation, no markdown.` }]
-      })
-    });
-    const d = await res.json();
-    if (d.error) throw new Error(d.error.message);
-    const raw = d.content[0].text;
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch(_) { const m = raw.match(/\{[\s\S]+\}/); parsed = m ? JSON.parse(m[0]) : null; }
-    if (parsed && parsed.brandColor && /^#[0-9a-fA-F]{3,6}$/.test(parsed.brandColor)) {
-      applyBrandColor(parsed.brandColor);
-      saveClientBranding();
-      status.textContent = `✓ Brand colour applied: ${parsed.brandColor}`;
-    } else {
-      status.textContent = '⚠ Could not detect colour — pick one manually below';
-    }
-  } catch(err) {
-    status.textContent = '⚠ ' + (err.message || 'Detection failed');
+// ── Showcase: full-bleed photo, bold centered title ──
+function drawShowcase(ctx, w, h, photo, data) {
+  ctx.clearRect(0, 0, w, h);
+  if (photo?.img) {
+    const scale = Math.max(w/photo.img.width, h/photo.img.height);
+    const sw = photo.img.width * scale, sh = photo.img.height * scale;
+    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
+  } else {
+    ctx.fillStyle = '#1e1b18';
+    ctx.fillRect(0, 0, w, h);
   }
-  btn.textContent = '🎨 Detect'; btn.disabled = false;
+  // Gradient overlay
+  const grad = ctx.createLinearGradient(0, h*0.3, 0, h);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.6, 'rgba(0,0,0,0.72)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.88)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Thin accent line at top
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(0, 0, w, 6);
+
+  // Headline
+  const hl = data?.headline || 'Your Headline Here';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${Math.round(w*0.075)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  const hlY = h * 0.78;
+  wrapText(ctx, hl.toUpperCase(), w/2, hlY, w*0.82, w*0.09);
+
+  // Sub text
+  if (data?.subtext) {
+    ctx.font = `400 ${Math.round(w*0.032)}px 'DM Mono', monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.textBaseline = 'top';
+    wrapText(ctx, data.subtext, w/2, h*0.82, w*0.75, w*0.042);
+  }
+
+  drawLogo(ctx, w, h);
 }
 
-function applyBrandColor(hex) {
-  brandColor = hex;
-  const colorInput = document.getElementById('customColor');
-  if (colorInput) colorInput.value = hex;
-  // Deselect preset swatches
-  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-  // Re-render canvas if we have content
-  if (generatedData && photos[selectedPhotoIdx]) renderCanvas();
+// ── Educational: dark charcoal, gold headline, ghost word ──
+function drawEdu(ctx, w, h, photo, data) {
+  ctx.clearRect(0, 0, w, h);
+
+  // Dark bg (with subtle photo blend if provided)
+  ctx.fillStyle = '#2a2722';
+  ctx.fillRect(0, 0, w, h);
+  if (photo?.img) {
+    ctx.globalAlpha = 0.18;
+    const scale = Math.max(w/photo.img.width, h/photo.img.height);
+    const sw = photo.img.width*scale, sh = photo.img.height*scale;
+    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
+    ctx.globalAlpha = 1;
+  }
+
+  // Ghost word watermark (right side, large)
+  const ghost = data?.ghost || '';
+  if (ghost) {
+    ctx.save();
+    ctx.font = `800 ${Math.round(w*0.22)}px 'Syne', sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ghost.toUpperCase(), w + w*0.04, h/2);
+    ctx.restore();
+  }
+
+  // Category pills — top corners
+  const tag = data?.tag || '';
+  if (tag) {
+    const parts = tag.split('·').map(s => s.trim()).filter(Boolean);
+    ctx.font = `500 ${Math.round(w*0.025)}px 'DM Mono', monospace`;
+    const ph = Math.round(w*0.04), pv = Math.round(w*0.018);
+    let px = w*0.05;
+    parts.forEach(p => {
+      const tw = ctx.measureText(p).width;
+      const bw = tw + ph*2, bh = pv*2 + Math.round(w*0.025);
+      const by = w*0.05;
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1.5;
+      drawRoundedRect(ctx, px, by, bw, bh, bh/2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p, px + bw/2, by + bh/2);
+      px += bw + w*0.02;
+    });
+  }
+
+  // Brand color accent line
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(w*0.05, h*0.3, w*0.06, 5);
+
+  // Headline in brand color
+  ctx.font = `800 ${Math.round(w*0.08)}px 'Syne', sans-serif`;
+  ctx.fillStyle = brandColor;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  const hl = data?.headline || 'HEADLINE GOES HERE';
+  const hlH = wrapText(ctx, hl.toUpperCase(), w*0.05, h*0.34, w*0.72, w*0.1);
+
+  // Body text
+  if (data?.subtext) {
+    ctx.font = `400 ${Math.round(w*0.033)}px 'DM Mono', monospace`;
+    ctx.fillStyle = 'rgba(240,235,224,0.82)';
+    ctx.textBaseline = 'top';
+    wrapText(ctx, data.subtext, w*0.05, h*0.34 + hlH + h*0.04, w*0.82, w*0.046);
+  }
+
+  // Bottom: brand name pill
+  const clientName = document.getElementById('clientName').value.trim().toUpperCase();
+  if (clientName) {
+    ctx.font = `600 ${Math.round(w*0.025)}px 'DM Mono', monospace`;
+    const tw = ctx.measureText(clientName).width;
+    const bw = tw + w*0.06, bh = w*0.045;
+    const bx = (w - bw)/2, by = h - bh - h*0.05;
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1.5;
+    drawRoundedRect(ctx, bx, by, bw, bh, bh/2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(clientName, w/2, by + bh/2);
+  }
+
+  drawLogo(ctx, w, h);
 }
 
-// ── Batch caption panel ────────────────────────────────────────────────────
-let activeBatchIdx = -1;
-let activeBatchCapTab = 'caption';
+// ── Services grid: dark, big header, 3-photo strip ──
+function drawServices(ctx, w, h, photo, data) {
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#1e1c19';
+  ctx.fillRect(0, 0, w, h);
 
-function showBatchCaption(idx) {
-  const r = batchResults[idx];
-  if (!r || !r.data) return;
-  activeBatchIdx = idx;
-  const panel = document.getElementById('batchCaptionPanel');
-  panel.style.display = 'block';
-  document.getElementById('batchCapLabel').textContent = `Post ${idx + 1} — caption`;
-  renderBatchCapText();
-  // Highlight selected grid item
-  document.querySelectorAll('.post-grid-item').forEach((el, i) => {
-    el.classList.toggle('selected', i === idx);
-  });
-}
+  // "OUR SERVICES" header
+  const heading = (data?.headline || 'OUR SERVICES').toUpperCase();
+  ctx.font = `800 ${Math.round(w*0.11)}px 'Syne', sans-serif`;
+  ctx.fillStyle = '#f0ebe0';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(heading, w/2, h*0.06);
 
-function renderBatchCapText() {
-  if (activeBatchIdx < 0 || !batchResults[activeBatchIdx]?.data) return;
-  const data = batchResults[activeBatchIdx].data;
-  const map = { caption: data.caption, hashtags: data.hashtags, story: data.story, hook: data.hook };
-  document.getElementById('batchCaptionText').textContent = map[activeBatchCapTab] || '';
-}
+  // 3-photo strip (use same photo tiled or split)
+  const stripY = h*0.24, stripH = h*0.42;
+  const gap = w*0.015;
+  const cellW = (w - gap*4) / 3;
 
-function switchBatchCapTab(btn) {
-  document.querySelectorAll('[data-btab]').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  activeBatchCapTab = btn.dataset.btab;
-  renderBatchCapText();
-}
-
-function copyBatchCaption() {
-  const text = document.getElementById('batchCaptionText').textContent;
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('#batchCaptionPanel .copy-caption-btn');
-    const orig = btn.textContent;
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 1800);
-  });
-}
-
-// ── Image compression helper ───────────────────────────────────────────────
-// Resizes to max 1500px on longest side and encodes as JPEG ~0.82 quality
-// Returns { base64, mediaType } safe to send to Claude API (<5MB typical)
-function compressForAPI(photo) {
-  return new Promise(resolve => {
-    const img = photo.img;
-    const MAX = 1500;
-    let sw = img.width, sh = img.height;
-    if (sw > MAX || sh > MAX) {
-      if (sw > sh) { sh = Math.round(sh * MAX / sw); sw = MAX; }
-      else          { sw = Math.round(sw * MAX / sh); sh = MAX; }
+  for (let i=0; i<3; i++) {
+    const px = gap + i*(cellW + gap);
+    const img = photos[i]?.img || photos[0]?.img;
+    if (img) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(px, stripY, cellW, stripH);
+      ctx.clip();
+      const scale = Math.max(cellW/img.width, stripH/img.height);
+      const sw = img.width*scale, sh = img.height*scale;
+      ctx.drawImage(img, px + (cellW-sw)/2, stripY + (stripH-sh)/2, sw, sh);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#3a3530';
+      ctx.fillRect(px, stripY, cellW, stripH);
     }
-    const c = document.createElement('canvas');
-    c.width = sw; c.height = sh;
-    c.getContext('2d').drawImage(img, 0, 0, sw, sh);
-    const dataUrl = c.toDataURL('image/jpeg', 0.82);
-    resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
-  });
+  }
+
+  // Service label below strip
+  const label = data?.subtext || 'Premium Renovation Services';
+  ctx.font = `400 ${Math.round(w*0.032)}px 'DM Mono', monospace`;
+  ctx.fillStyle = 'rgba(240,235,224,0.6)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(label, w/2, stripY + stripH + h*0.04);
+
+  // Brand line
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(w*0.4, stripY + stripH + h*0.09, w*0.2, 3);
+
+  drawLogo(ctx, w, h);
 }
 
-// ── Batch Generation ───────────────────────────────────────────────────────
-let batchResults = []; // Array of { canvas, data, photoIdx }
-let lightboxIdx   = 0;
+// ── Editorial: split brand color left, photo right ──
+function drawEditorial(ctx, w, h, photo, data) {
+  ctx.clearRect(0, 0, w, h);
+  const splitX = w * 0.42;
 
-async function callClaudeVision(photo, clientName, niche, extraCtx, testimonial, website, assignedType) {
-  const apiKey = localStorage.getItem('qj_social_api_key');
-  const typeForCopy = assignedType || postType;
-  const postTypeLabels = {
-    showcase:    'Full-bleed showcase — strong visual impact, minimal text',
-    value:       'Value/Tip post — educate homeowners, provide genuine insight',
-    magazine:    'Magazine editorial — left panel text, right panel photo',
-    editorial:   'Editorial card — clean minimal card at bottom of photo',
-    beforeafter: 'Before & After transformation story',
-    testimonial: 'Testimonial — feature a client quote or review',
-    process:     'Behind the scenes / process — show the work in progress',
-    promotion:   'Bold promotional — large headline, strong call to action'
-  };
-  const systemPrompt = `You are an expert social media content creator specialising in the home renovation and construction industry in Australia. You create high-performing organic social media posts for renovation companies that attract homeowners who are thinking about getting work done.\n\nYour posts are:\n- Specific and authentic — never generic or salesy\n- Written to provide GENUINE VALUE to homeowners (tips, education, inspiration, social proof)\n- Warm, professional, and trustworthy in tone\n- Designed to generate saves, shares, and comments — not just likes\n- Tailored to the Australian renovation market\n\nYou always return responses in valid JSON format with exactly these fields:\n{\n  "headline": "Short punchy headline (max 6 words, ALL CAPS — written specifically for the ${postTypeLabels[typeForCopy]} layout)",\n  "subtext": "One supporting line (max 12 words)",\n  "caption": "Full Instagram/Facebook caption with line breaks, emojis, call to action",\n  "hashtags": "25-30 relevant hashtags for renovation/construction in Australia",\n  "story": "Short punchy Stories version of the caption (2-3 sentences max)",\n  "hook": "The first line hook only — must stop the scroll (under 10 words)",\n  "brandColor": "The single most prominent brand hex colour for this company. If you can infer it from their website URL or company name, use it. Otherwise suggest a colour that fits a professional ${niche} business."\n}`;
-  const userPrompt = `Create a social media post for ${clientName}, a ${niche} company.${website ? `\nWebsite: ${website}` : ''}\n\nLayout style: ${postTypeLabels[typeForCopy]}\n${testimonial ? `Client testimonial to feature: "${testimonial}"` : ''}\n${extraCtx ? `Additional context: ${extraCtx}` : ''}\n\nLook at the attached photo and write copy that specifically references what you can see. Do not be generic.\n\nThe caption should provide value to homeowners. Include a specific insight, social proof, and a soft call to action in natural Australian English.\n\nReturn only valid JSON, no markdown, no explanation.`;
+  // Left: brand color block
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(0, 0, splitX, h);
 
-  const compressed = await compressForAPI(photo);
+  // Right: photo
+  if (photo?.img) {
+    ctx.save();
+    ctx.rect(splitX, 0, w-splitX, h);
+    ctx.clip();
+    const scale = Math.max((w-splitX)/photo.img.width, h/photo.img.height);
+    const sw = photo.img.width*scale, sh = photo.img.height*scale;
+    ctx.drawImage(photo.img, splitX + ((w-splitX)-sw)/2, (h-sh)/2, sw, sh);
+    ctx.restore();
+    // Subtle gradient blend
+    const blend = ctx.createLinearGradient(splitX, 0, splitX + w*0.15, 0);
+    blend.addColorStop(0, brandColor);
+    blend.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = blend;
+    ctx.fillRect(splitX, 0, w*0.15, h);
+  } else {
+    ctx.fillStyle = '#1e1b18';
+    ctx.fillRect(splitX, 0, w-splitX, h);
+  }
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  // Text on brand color block
+  ctx.save();
+  ctx.fillStyle = isBright(brandColor) ? '#1e1b18' : '#ffffff';
+  const textColor = isBright(brandColor) ? '#1e1b18' : '#ffffff';
+  ctx.font = `800 ${Math.round(splitX*0.14)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  const hl = data?.headline || 'Your Story Here';
+  wrapText(ctx, hl.toUpperCase(), w*0.07, h*0.18, splitX*0.82, splitX*0.17);
+
+  ctx.font = `400 ${Math.round(splitX*0.075)}px 'DM Mono', monospace`;
+  ctx.fillStyle = isBright(brandColor) ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.72)';
+  if (data?.subtext) wrapText(ctx, data.subtext, w*0.07, h*0.52, splitX*0.82, splitX*0.1);
+  ctx.restore();
+
+  // White accent bar
+  ctx.fillStyle = isBright(brandColor) ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.35)';
+  ctx.fillRect(w*0.07, h*0.15, splitX*0.65, 3);
+
+  drawLogo(ctx, w, h);
+}
+
+// ── Testimonial: photo bg, dark overlay, stars, quote ──
+function drawTestimonial(ctx, w, h, photo, data) {
+  ctx.clearRect(0, 0, w, h);
+  if (photo?.img) {
+    const scale = Math.max(w/photo.img.width, h/photo.img.height);
+    const sw = photo.img.width*scale, sh = photo.img.height*scale;
+    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
+  } else {
+    ctx.fillStyle = '#2a2722';
+    ctx.fillRect(0, 0, w, h);
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillRect(0, 0, w, h);
+
+  // Accent top line
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(w*0.15, h*0.22, w*0.7, 4);
+
+  // Stars
+  ctx.font = `${Math.round(w*0.055)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = brandColor;
+  ctx.fillText('★ ★ ★ ★ ★', w/2, h*0.26);
+
+  // Quote
+  const quote = document.getElementById('testimonialText')?.value || (data?.headline || '"Exceptional work from start to finish."');
+  ctx.font = `600 italic ${Math.round(w*0.048)}px 'Syne', sans-serif`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'top';
+  wrapText(ctx, `"${quote}"`, w/2, h*0.36, w*0.78, w*0.062);
+
+  // Client attribution
+  if (data?.subtext) {
+    ctx.font = `400 ${Math.round(w*0.03)}px 'DM Mono', monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText('— ' + data.subtext, w/2, h*0.7);
+  }
+
+  ctx.fillStyle = brandColor;
+  ctx.fillRect(w*0.15, h*0.76, w*0.7, 4);
+
+  drawLogo(ctx, w, h);
+}
+
+// ── Promotion: dark bg, bold offer, CTA block ──
+function drawPromotion(ctx, w, h, photo, data) {
+  ctx.clearRect(0, 0, w, h);
+  if (photo?.img) {
+    const scale = Math.max(w/photo.img.width, h/photo.img.height);
+    const sw = photo.img.width*scale, sh = photo.img.height*scale;
+    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
+    ctx.fillStyle = 'rgba(0,0,0,0.62)';
+    ctx.fillRect(0, 0, w, h);
+  } else {
+    ctx.fillStyle = '#1e1b18';
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  const hl = (data?.headline || 'LIMITED TIME OFFER').toUpperCase();
+  ctx.font = `800 ${Math.round(w*0.095)}px 'Syne', sans-serif`;
+  ctx.fillStyle = brandColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  wrapText(ctx, hl, w/2, h*0.38, w*0.84, w*0.11);
+
+  if (data?.subtext) {
+    ctx.font = `400 ${Math.round(w*0.036)}px 'DM Mono', monospace`;
+    ctx.fillStyle = '#fff';
+    ctx.textBaseline = 'top';
+    wrapText(ctx, data.subtext, w/2, h*0.58, w*0.78, w*0.05);
+  }
+
+  // CTA button
+  const ctaText = 'BOOK NOW';
+  ctx.font = `700 ${Math.round(w*0.038)}px 'Syne', sans-serif`;
+  const ctaW = ctx.measureText(ctaText).width + w*0.1;
+  const ctaH = w*0.09, ctaX = (w-ctaW)/2, ctaY = h*0.74;
+  ctx.fillStyle = brandColor;
+  drawRoundedRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH/2);
+  ctx.fill();
+  ctx.fillStyle = isBright(brandColor) ? '#1e1b18' : '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ctaText, w/2, ctaY + ctaH/2);
+
+  drawLogo(ctx, w, h);
+}
+
+function isBright(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return (r*299 + g*587 + b*114) / 1000 > 150;
+}
+
+// ════════════════════════════════════════════════
+// AI GENERATION — CAPTIONS & STRATEGY
+// ════════════════════════════════════════════════
+async function callClaude(prompt) {
+  const key = localStorage.getItem('qj_social_claude_key') || '';
+  if (!key) throw new Error('Add your Anthropic API key in 🔑 API Keys first.');
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': key,
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-8',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: compressed.mediaType, data: compressed.base64 } },
-        { type: 'text', text: userPrompt }
-      ]}]
+      messages: [{role: 'user', content: prompt}]
     })
   });
-  const d = await res.json();
-  if (d.error) throw new Error(d.error.message);
-  const raw = d.content[0].text;
-  try { return JSON.parse(raw); }
-  catch(_) {
-    const m = raw.match(/\{[\s\S]+\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error('Could not parse AI response');
+  if (!resp.ok) {
+    const e = await resp.json().catch(()=>({error:{message:'Unknown error'}}));
+    throw new Error(e.error?.message || 'API error ' + resp.status);
+  }
+  const data = await resp.json();
+  return data.content?.[0]?.text || '';
+}
+
+function buildClientContext() {
+  const name = document.getElementById('clientName').value.trim() || 'the client';
+  const niche = document.getElementById('clientNiche').value.trim() || '';
+  const brief = document.getElementById('clientBrief').value.trim() || '';
+  const extra = document.getElementById('extraCtx').value.trim() || '';
+  return `Client: ${name}${niche ? ` — ${niche}` : ''}
+${brief ? `Company overview: ${brief.substring(0,2000)}` : ''}
+${extra ? `Post context: ${extra}` : ''}`.trim();
+}
+
+async function generate() {
+  if (!photos.length && !drivePhotos.length) {
+    setStatus('Upload at least one photo first.', 'err'); return;
+  }
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Generating…';
+  setStatus('');
+
+  try {
+    const ctx = buildClientContext();
+    const typeName = document.querySelector('.type-btn.active')?.querySelector('.type-name')?.textContent || postType;
+    const prompt = `You are a premium social media content creator for a trade and renovation company.
+
+${ctx}
+
+Post type: ${typeName}
+Format: ${format}
+
+Generate post content. Respond with ONLY valid JSON (no markdown), exactly this structure:
+{
+  "headline": "SHORT PUNCHY HEADLINE (max 8 words, uppercase works great)",
+  "subtext": "Supporting sentence or two. Natural, specific, not generic.",
+  "ghost": "ONE WORD for background watermark (optional, e.g. QUALITY, BUILD, CRAFT)",
+  "tag": "CATEGORY · FOR HOMEOWNERS",
+  "caption": "Full Instagram caption. Engaging, specific to client/industry. 3-5 sentences. End with a question or CTA.",
+  "hashtags": "#renovation #builder #sydney (15-20 relevant hashtags)",
+  "story": "Short punchy stories copy (2-3 sentences, emoji ok)",
+  "hook": "Attention-grabbing opening line for the caption (1 sentence)"
+}
+
+Be specific to the industry and client. NO generic filler. Make it premium and authentic.`;
+
+    const raw = await callClaude(prompt);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse AI response — try again.');
+    generatedData = JSON.parse(jsonMatch[0]);
+
+    drawPost(generatedData);
+    showCaption(generatedData);
+    document.getElementById('regenBtn').disabled = false;
+    document.getElementById('previewMeta').textContent = `${typeName} · ${format} · ${FMTS[format].w}×${FMTS[format].h}`;
+    setStatus('');
+
+  } catch(err) {
+    setStatus(err.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ Generate Post';
   }
 }
 
-function renderCanvasOffscreen(parsed, photoObj, typeOverride) {
-  const c = document.createElement('canvas');
-  const { w, h } = FORMATS[format] || FORMATS.square;
-  c.width = w; c.height = h;
-  // Temporarily swap global state to render
-  const prevGenData = generatedData;
-  const prevPhoto   = photos[selectedPhotoIdx];
-  generatedData = parsed;
-  photos[selectedPhotoIdx] = photoObj;
-  const ctx = c.getContext('2d');
-  dispatchTemplate(ctx, c.width, c.height, typeOverride || postType);
-  generatedData = prevGenData;
-  photos[selectedPhotoIdx] = prevPhoto;
-  return c;
+async function regenCaption() {
+  if (!generatedData) return;
+  const btn = document.getElementById('regenBtn');
+  btn.disabled = true;
+  btn.innerHTML = '↺ …';
+  try {
+    const ctx = buildClientContext();
+    const prompt = `Generate a fresh Instagram caption for this post.
+
+${ctx}
+
+Headline shown on post: "${generatedData.headline}"
+
+Give me a completely different caption angle. Respond with ONLY JSON:
+{
+  "caption": "...",
+  "hashtags": "...",
+  "story": "...",
+  "hook": "..."
+}`;
+    const raw = await callClaude(prompt);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const newData = JSON.parse(jsonMatch[0]);
+      generatedData = {...generatedData, ...newData};
+      showCaption(generatedData);
+    }
+  } catch(err) {
+    setStatus(err.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '↺ New Caption';
+  }
 }
 
-async function generateAll() {
-  const apiKey = localStorage.getItem('qj_social_api_key');
-  if (!apiKey) { openApiModal(); return; }
-  const validPhotos = photos.filter(Boolean);
-  if (!validPhotos.length) return;
+async function generateStrategy() {
+  const btn = document.getElementById('stratBtn');
+  btn.disabled = true;
+  const pw = document.getElementById('progWrap');
+  pw.style.display = 'block';
 
-  const btn = document.getElementById('batchBtn');
-  const genBtn = document.getElementById('generateBtn');
-  btn.disabled = true; genBtn.disabled = true;
-  btn.textContent = '⚡ Generating…';
+  const setProgress = (pct, lbl) => {
+    document.getElementById('progBar').style.width = pct + '%';
+    document.getElementById('progLbl').textContent = lbl;
+  };
 
-  const progressWrap  = document.getElementById('batchProgress');
-  const progressBar   = document.getElementById('batchBar');
-  const progressLabel = document.getElementById('batchLabel');
-  progressWrap.style.display = 'block';
-  batchResults = [];
+  try {
+    setProgress(10, 'Analysing client brief…');
+    const ctx = buildClientContext();
+    const prompt = `You are a premium Instagram content strategist for trade and renovation businesses.
 
-  const clientName  = document.getElementById('clientName').value.trim() || 'our client';
-  const niche       = document.getElementById('clientNiche').value.trim() || 'renovation';
-  const website     = document.getElementById('clientWebsite').value.trim();
-  const extraCtx    = document.getElementById('extraContext').value.trim();
-  const testimonial = document.getElementById('testimonialText').value.trim();
-  let brandColorApplied = false;
+${ctx}
 
-  // Round-robin template list — guaranteed variety regardless of photo content
-  const VARY_TYPES = ['showcase', 'value', 'magazine', 'editorial', 'process', 'promotion', 'testimonial'];
-  const autoVary = document.getElementById('autoVaryToggle')?.checked;
-  // Shuffle so the order is different each batch run
-  const shuffled = autoVary
-    ? [...VARY_TYPES].sort(() => Math.random() - 0.5)
-    : null;
+Create a complete Instagram content strategy. Respond with ONLY valid JSON:
+{
+  "bio": "Compact Instagram bio (max 150 chars). Include location, what they do, and a CTA emoji line.",
+  "strategy": "3-4 sentences on their content strategy — tone, content mix, visual style direction.",
+  "posts": [
+    {"type": "showcase|edu|services|editorial|testimonial|promotion", "headline": "...", "subtext": "...", "caption": "...", "hashtags": "..."},
+    ... (9 posts total — mix of types, diverse topics)
+  ],
+  "schedule": "Suggested posting schedule — e.g. Mon/Wed/Fri at 7am, with Reels on Tue/Thu."
+}
 
-  for (let i = 0; i < validPhotos.length; i++) {
-    const pct = Math.round((i / validPhotos.length) * 100);
-    progressBar.style.width = pct + '%';
-    const assignedType = shuffled ? shuffled[i % shuffled.length] : postType;
-    progressLabel.textContent = `Generating post ${i + 1} of ${validPhotos.length} · ${TYPE_LABELS[assignedType] || assignedType}…`;
+Make the 9 posts genuinely varied: mix project showcases, educational tips, a services overview, a testimonial, and a promotional post. Each should feel distinct and premium.`;
 
-    renderBatchGridPlaceholders(validPhotos.length, i);
+    setProgress(30, 'Writing strategy…');
+    const raw = await callClaude(prompt);
+    setProgress(70, 'Building grid…');
 
-    try {
-      const parsed = await callClaudeVision(validPhotos[i], clientName, niche, extraCtx, testimonial, website, assignedType);
-      if (!brandColorApplied && parsed.brandColor && /^#[0-9a-fA-F]{3,6}$/.test(parsed.brandColor)) {
-        applyBrandColor(parsed.brandColor);
-        document.getElementById('detectStatus').textContent = `✓ Brand colour detected: ${parsed.brandColor}`;
-        saveClientBranding();
-        brandColorApplied = true;
-      }
-      const canvas = renderCanvasOffscreen(parsed, validPhotos[i], assignedType);
-      batchResults.push({ canvas, data: parsed, photoIdx: i, usedType: assignedType });
-    } catch(err) {
-      batchResults.push({ canvas: null, data: null, photoIdx: i, error: err.message });
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse strategy response.');
+    const strategy = JSON.parse(jsonMatch[0]);
+
+    // Update Bio tab
+    document.getElementById('bioText').textContent = strategy.bio || '';
+    document.getElementById('bioText').classList.remove('empty');
+    document.getElementById('strategyNotes').textContent = strategy.strategy || '';
+    document.getElementById('strategyNotes').classList.remove('empty');
+    document.getElementById('postSchedule').textContent = strategy.schedule || '';
+    document.getElementById('postSchedule').classList.remove('empty');
+    document.getElementById('bioMeta').textContent = 'Generated for ' + (document.getElementById('clientName').value || 'client');
+    document.getElementById('igBio').textContent = strategy.bio || '';
+
+    // Update IG username
+    const name = document.getElementById('clientName').value.trim();
+    document.getElementById('igUsername').textContent = '@' + (name.toLowerCase().replace(/\s+/g,'') || 'clientname');
+
+    // Set avatar to logo if available
+    if (logoImg) {
+      const av = document.getElementById('igAvatar');
+      av.innerHTML = `<img src="${document.getElementById('logoThumb').src}">`;
     }
 
-    renderBatchGrid();
-    if (i < validPhotos.length - 1) await new Promise(r => setTimeout(r, 800));
+    // Render 9-post content plan
+    const posts = strategy.posts || [];
+    document.getElementById('contentPlan').innerHTML = posts.map((p, i) => `
+      <div class="strategy-item">
+        <span class="strategy-num">${String(i+1).padStart(2,'0')}</span>
+        <div class="strategy-text">
+          <strong>${p.type?.toUpperCase() || 'POST'}</strong> — ${p.headline}<br>
+          <span style="opacity:0.7">${p.subtext || ''}</span>
+        </div>
+      </div>`).join('');
+
+    // Render IG grid with mini canvas posts
+    setProgress(85, 'Rendering grid…');
+    await renderStrategyGrid(posts);
+    document.getElementById('igPostCount').textContent = posts.length;
+    document.getElementById('igGridEmpty').style.display = 'none';
+
+    setProgress(100, 'Done!');
+    setTimeout(() => { pw.style.display = 'none'; }, 1500);
+
+    // Switch to grid tab
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('.tab:nth-child(2)').classList.add('active');
+    document.getElementById('panel-grid').classList.add('active');
+
+  } catch(err) {
+    setProgress(0, '');
+    pw.style.display = 'none';
+    setStatus(err.message, 'err');
+  } finally {
+    btn.disabled = false;
   }
-
-  progressBar.style.width = '100%';
-  progressLabel.textContent = `✓ ${batchResults.filter(r=>r.canvas).length} posts ready — click to expand, or download ZIP`;
-
-  btn.disabled = false;
-  genBtn.disabled = false;
-  btn.textContent = `⚡ Regenerate All ${validPhotos.length} Posts`;
-
-  showBatchView();
 }
 
-function renderBatchGridPlaceholders(total, currentlyGenerating) {
-  const grid = document.getElementById('postGrid');
-  if (!grid) return;
+async function renderStrategyGrid(posts) {
+  const grid = document.getElementById('igGrid');
   grid.innerHTML = '';
-  for (let i = 0; i < total; i++) {
-    const item = document.createElement('div');
-    item.className = 'post-grid-item';
-    item.id = `grid-item-${i}`;
-    if (i < currentlyGenerating && batchResults[i]) {
-      // already done
-      if (batchResults[i].canvas) {
-        const thumb = document.createElement('canvas');
-        const ratio = batchResults[i].canvas.height / batchResults[i].canvas.width;
-        thumb.width  = 240;
-        thumb.height = Math.round(240 * ratio);
-        thumb.getContext('2d').drawImage(batchResults[i].canvas, 0, 0, thumb.width, thumb.height);
-        item.appendChild(thumb);
-        item.innerHTML += `<span class="item-num">${i+1}</span>`;
-        const dlBtn = document.createElement('button');
-        dlBtn.className = 'item-dl';
-        dlBtn.textContent = '⬇ Save';
-        dlBtn.onclick = e => { e.stopPropagation(); downloadSingle(i); };
-        item.appendChild(dlBtn);
-        item.onclick = () => openLightbox(i);
-      }
-    } else if (i === currentlyGenerating) {
-      item.innerHTML = `<div style="width:240px;height:240px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.5rem;color:var(--muted);font-size:0.7rem;font-family:'DM Mono',monospace"><span class="spinner" style="border-top-color:var(--accent)"></span>Generating…</div><span class="item-num">${i+1}</span>`;
-    } else {
-      item.innerHTML = `<div style="width:240px;height:240px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.5rem">⋯</div><span class="item-num">${i+1}</span>`;
-    }
-    grid.appendChild(item);
+  gridPosts = [];
+
+  for (let i = 0; i < Math.min(posts.length, 9); i++) {
+    const post = posts[i];
+    const cv = document.createElement('canvas');
+    cv.width = 300; cv.height = 300;
+    const ctx2 = cv.getContext('2d');
+    const photo = photos[i % Math.max(photos.length, 1)];
+
+    // Temporarily set postType for drawing
+    const savedType = postType;
+    postType = post.type || 'showcase';
+    drawPostToCtx(ctx2, 300, 300, photo, post);
+    postType = savedType;
+
+    const cell = document.createElement('div');
+    cell.className = 'ig-cell';
+    cell.appendChild(cv);
+    const ov = document.createElement('div');
+    ov.className = 'ig-cell-ov';
+    ov.textContent = 'VIEW';
+    cell.appendChild(ov);
+    const idx = i;
+    cell.onclick = () => openLbxFromGrid(idx, posts);
+    grid.appendChild(cell);
+    gridPosts.push(cv);
+    gridCaptions = posts.map(p => p.caption || '');
   }
-  showBatchView();
 }
 
-const TYPE_LABELS = { showcase:'Showcase', value:'Value/Tip', magazine:'Magazine', editorial:'Editorial', beforeafter:'Before/After', testimonial:'Testimonial', process:'Process', promotion:'Promo' };
+function drawPostToCtx(ctx, w, h, photo, data) {
+  if (postType === 'showcase') drawShowcase(ctx, w, h, photo, data);
+  else if (postType === 'edu') drawEdu(ctx, w, h, photo, data);
+  else if (postType === 'services') drawServices(ctx, w, h, photo, data);
+  else if (postType === 'editorial') drawEditorial(ctx, w, h, photo, data);
+  else if (postType === 'testimonial') drawTestimonial(ctx, w, h, photo, data);
+  else if (postType === 'promotion') drawPromotion(ctx, w, h, photo, data);
+  else drawShowcase(ctx, w, h, photo, data);
+}
 
-function renderBatchGrid() {
-  const grid = document.getElementById('postGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  batchResults.forEach((r, i) => {
-    const item = document.createElement('div');
-    item.className = 'post-grid-item';
-    if (r.canvas) {
-      const thumb = document.createElement('canvas');
-      const ratio = r.canvas.height / r.canvas.width;
-      thumb.width  = 240;
-      thumb.height = Math.round(240 * ratio);
-      thumb.getContext('2d').drawImage(r.canvas, 0, 0, thumb.width, thumb.height);
-      item.appendChild(thumb);
+// ════════════════════════════════════════════════
+// CAROUSEL BUILDER
+// ════════════════════════════════════════════════
+function initCarousel() {
+  carSlides = [
+    {type:'cover', headline:'YOUR TOPIC HERE', body:'', tag:'GUIDE · FOR HOMEOWNERS', ghost:'', bgPhoto:''},
+    {type:'content', headline:'POINT ONE', body:'Your first key point goes here.', tag:'', ghost:'ONE', bgPhoto:''},
+    {type:'cta', headline:'READY TO GET STARTED?', body:'Call us today for a free consultation.', tag:'', ghost:'', bgPhoto:''}
+  ];
+  carSlideIdx = 0;
+  renderCarRail();
+  loadCarSlideIntoForm(0);
+  renderCarSlide();
+}
 
-      // Post number
-      const numEl = document.createElement('span');
-      numEl.className = 'item-num';
-      numEl.textContent = i + 1;
-      item.appendChild(numEl);
+function setCarTmpl(btn) {
+  document.querySelectorAll('.car-tmpl').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  carTemplate = btn.dataset.tmpl;
+  renderCarSlide();
+}
 
-      // Template type badge
-      if (r.usedType) {
-        const badge = document.createElement('span');
-        badge.style.cssText = 'position:absolute;bottom:30px;left:6px;background:rgba(0,0,0,0.6);color:rgba(255,255,255,0.85);font-size:0.55rem;font-family:"DM Mono",monospace;border-radius:4px;padding:2px 6px;pointer-events:none';
-        badge.textContent = TYPE_LABELS[r.usedType] || r.usedType;
-        item.appendChild(badge);
-      }
+function renderCarRail() {
+  const rail = document.getElementById('carRail');
+  rail.innerHTML = carSlides.map((s, i) => `
+    <div class="car-slide-thumb${i===carSlideIdx?' active':''}" onclick="selectCarSlide(${i})">
+      <canvas id="carThumb${i}" width="90" height="90"></canvas>
+      <span class="slide-num">${i+1}</span>
+      ${carSlides.length > 1 ? `<button class="slide-del" onclick="event.stopPropagation();deleteCarSlide(${i})">✕</button>` : ''}
+    </div>`).join('');
 
-      // Download button
-      const dlBtn = document.createElement('button');
-      dlBtn.className = 'item-dl';
-      dlBtn.textContent = '⬇ Save';
-      dlBtn.onclick = e => { e.stopPropagation(); downloadSingle(i); };
-      item.appendChild(dlBtn);
+  // Draw thumbnails
+  carSlides.forEach((s, i) => {
+    const cv = document.getElementById('carThumb' + i);
+    if (cv) drawCarSlideToCanvas(cv.getContext('2d'), 90, 90, s);
+  });
+  document.getElementById('carPos').textContent = `${carSlideIdx+1} / ${carSlides.length}`;
+}
 
-      // Expand button
-      const expBtn = document.createElement('button');
-      expBtn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:5px;font-size:0.6rem;padding:3px 7px;cursor:pointer;opacity:0;transition:opacity 0.2s;font-family:"DM Mono",monospace';
-      expBtn.textContent = '⤢ Expand';
-      item.onmouseenter = () => { expBtn.style.opacity = '1'; dlBtn.style.opacity = '1'; };
-      item.onmouseleave = () => { expBtn.style.opacity = '0'; dlBtn.style.opacity = '0'; };
-      expBtn.onclick = e => { e.stopPropagation(); openLightbox(i); };
-      item.appendChild(expBtn);
+function selectCarSlide(i) {
+  saveCarSlide();
+  carSlideIdx = i;
+  loadCarSlideIntoForm(i);
+  renderCarSlide();
+  renderCarRail();
+}
 
-      item.onclick = () => showBatchCaption(i);
-    } else {
-      item.innerHTML = `<div style="width:240px;height:240px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.4rem;color:var(--red);font-size:0.65rem;font-family:'DM Mono',monospace;text-align:center;padding:1rem">⚠<br>${r.error||'Failed'}</div><span class="item-num">${i+1}</span>`;
+function addCarSlide() {
+  saveCarSlide();
+  const ghosts = ['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT'];
+  carSlides.splice(carSlideIdx+1, 0, {
+    type: 'content',
+    headline: 'NEW POINT',
+    body: '',
+    tag: '',
+    ghost: ghosts[Math.min(carSlideIdx+1, ghosts.length-1)] || '',
+    bgPhoto: ''
+  });
+  carSlideIdx++;
+  loadCarSlideIntoForm(carSlideIdx);
+  renderCarRail();
+  renderCarSlide();
+}
+
+function deleteCarSlide(i) {
+  if (carSlides.length <= 1) return;
+  carSlides.splice(i, 1);
+  carSlideIdx = Math.min(carSlideIdx, carSlides.length-1);
+  loadCarSlideIntoForm(carSlideIdx);
+  renderCarRail();
+  renderCarSlide();
+}
+
+function saveCarSlide() {
+  if (carSlideIdx < 0 || carSlideIdx >= carSlides.length) return;
+  carSlides[carSlideIdx] = {
+    type:     document.getElementById('slideType').value,
+    headline: document.getElementById('slideHeadline').value,
+    body:     document.getElementById('slideBody').value,
+    tag:      document.getElementById('slideTag').value,
+    ghost:    document.getElementById('slideGhost').value,
+    bgPhoto:  document.getElementById('slideBgPhoto').value
+  };
+}
+
+function loadCarSlideIntoForm(i) {
+  const s = carSlides[i];
+  if (!s) return;
+  document.getElementById('slideType').value = s.type || 'content';
+  document.getElementById('slideHeadline').value = s.headline || '';
+  document.getElementById('slideBody').value = s.body || '';
+  document.getElementById('slideTag').value = s.tag || '';
+  document.getElementById('slideGhost').value = s.ghost || '';
+  document.getElementById('slideBgPhoto').value = s.bgPhoto || '';
+}
+
+function carNav(dir) {
+  saveCarSlide();
+  carSlideIdx = Math.max(0, Math.min(carSlides.length-1, carSlideIdx + dir));
+  loadCarSlideIntoForm(carSlideIdx);
+  renderCarRail();
+  renderCarSlide();
+}
+
+function renderCarSlide() {
+  const cv = document.getElementById('carCanvas');
+  cv.width = 400; cv.height = 400;
+  const s = {
+    type:     document.getElementById('slideType').value,
+    headline: document.getElementById('slideHeadline').value,
+    body:     document.getElementById('slideBody').value,
+    tag:      document.getElementById('slideTag').value,
+    ghost:    document.getElementById('slideGhost').value,
+    bgPhoto:  document.getElementById('slideBgPhoto').value
+  };
+  drawCarSlideToCanvas(cv.getContext('2d'), 400, 400, s);
+}
+
+function drawCarSlideToCanvas(ctx, w, h, s) {
+  const photo = s.bgPhoto !== '' ? photos[parseInt(s.bgPhoto)] : null;
+
+  if (carTemplate === 'edu' || carTemplate === 'tips') {
+    // Dark charcoal educational
+    const savedType = postType;
+    postType = 'edu';
+    drawEdu(ctx, w, h, photo, {headline: s.headline, subtext: s.body, ghost: s.ghost, tag: s.tag});
+    postType = savedType;
+  } else if (carTemplate === 'services') {
+    const savedType = postType;
+    postType = 'services';
+    drawServices(ctx, w, h, photo, {headline: s.headline, subtext: s.body});
+    postType = savedType;
+  } else if (carTemplate === 'story') {
+    // Story arc: full bleed photo with overlay
+    const savedType = postType;
+    postType = 'showcase';
+    drawShowcase(ctx, w, h, photo || photos[0], {headline: s.headline, subtext: s.body});
+    postType = savedType;
+  }
+}
+
+async function genCarouselWithAI() {
+  const key = localStorage.getItem('qj_social_claude_key') || '';
+  if (!key) { alert('Add your Anthropic API key first.'); return; }
+  const topic = document.getElementById('slideHeadline').value.trim() || 'Tell me the carousel topic';
+  const ctx = buildClientContext();
+  const count = carSlides.length || 4;
+
+  const prompt = `Create content for a ${count}-slide Instagram carousel for a trade/renovation business.
+
+${ctx}
+Topic/theme: ${topic}
+Template style: ${carTemplate}
+
+Respond with ONLY JSON array of ${count} slide objects:
+[
+  {"type":"cover","headline":"HOOK HEADLINE","body":"","tag":"GUIDE · FOR HOMEOWNERS","ghost":""},
+  {"type":"content","headline":"POINT ONE HEADER","body":"Explanation text for this point. Be specific and useful.","tag":"","ghost":"ONE"},
+  ... (remaining slides)
+  {"type":"cta","headline":"READY TO START?","body":"Contact us for a free consultation.","tag":"","ghost":""}
+]`;
+
+  try {
+    const btn = document.querySelector('[onclick="genCarouselWithAI()"]');
+    btn.innerHTML = '…';
+    btn.disabled = true;
+    const raw = await callClaude(prompt);
+    const arrMatch = raw.match(/\[[\s\S]*\]/);
+    if (!arrMatch) throw new Error('Could not parse AI carousel response.');
+    carSlides = JSON.parse(arrMatch[0]);
+    carSlideIdx = 0;
+    loadCarSlideIntoForm(0);
+    renderCarRail();
+    renderCarSlide();
+
+    // Generate carousel caption
+    const capPrompt = `Write an Instagram caption for a ${count}-slide carousel about "${topic}" for a renovation/trade company.
+${ctx}
+Return JSON: {"caption":"...","hashtags":"..."}`;
+    const capRaw = await callClaude(capPrompt);
+    const capMatch = capRaw.match(/\{[\s\S]*\}/);
+    if (capMatch) {
+      const capData = JSON.parse(capMatch[0]);
+      carCaptions = capData;
+      const capEl = document.getElementById('carCapText');
+      capEl.textContent = capData.caption || '';
+      capEl.classList.remove('empty');
     }
-    grid.appendChild(item);
+
+    btn.innerHTML = '✨ AI Generate Slides';
+    btn.disabled = false;
+  } catch(err) {
+    alert('AI error: ' + err.message);
+    document.querySelector('[onclick="genCarouselWithAI()"]').innerHTML = '✨ AI Generate Slides';
+    document.querySelector('[onclick="genCarouselWithAI()"]').disabled = false;
+  }
+}
+
+function downloadCarousel() {
+  saveCarSlide();
+  carSlides.forEach((s, i) => {
+    const cv = document.createElement('canvas');
+    cv.width = 1080; cv.height = 1080;
+    const ctx = cv.getContext('2d');
+    const photo = s.bgPhoto !== '' ? photos[parseInt(s.bgPhoto)] : null;
+    const savedType = postType;
+    if (carTemplate === 'edu' || carTemplate === 'tips') postType = 'edu';
+    else if (carTemplate === 'services') postType = 'services';
+    else postType = 'showcase';
+    drawEdu(ctx, 1080, 1080, photo, {headline: s.headline, subtext: s.body, ghost: s.ghost, tag: s.tag});
+    postType = savedType;
+
+    const a = document.createElement('a');
+    a.href = cv.toDataURL('image/png');
+    a.download = `slide-${i+1}.png`;
+    a.click();
   });
 }
 
-function showBatchView() {
-  document.getElementById('singleView').style.display = 'none';
-  const bv = document.getElementById('batchView');
-  bv.style.display = 'flex';
-}
-function showSingleView() {
-  document.getElementById('batchView').style.display = 'none';
-  document.getElementById('singleView').style.display = 'flex';
-}
-
-function openLightbox(idx) {
-  const r = batchResults[idx];
-  if (!r || !r.canvas) return;
-  lightboxIdx = idx;
-  const lb = document.getElementById('lightbox');
-  const lc = document.getElementById('lightboxCanvas');
-  const ratio = r.canvas.height / r.canvas.width;
-  const maxW  = Math.min(window.innerWidth * 0.88, 900);
-  lc.width    = maxW;
-  lc.height   = Math.round(maxW * ratio);
-  lc.getContext('2d').drawImage(r.canvas, 0, 0, lc.width, lc.height);
-  const cap = document.getElementById('lightboxCaption');
-  cap.textContent = r.data ? (r.data.caption || '') : '';
-  lb.classList.add('open');
-}
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
-function lightboxPrev() { const idx = (lightboxIdx - 1 + batchResults.length) % batchResults.length; openLightbox(idx); }
-function lightboxNext() { const idx = (lightboxIdx + 1) % batchResults.length; openLightbox(idx); }
-function lightboxDownload() { downloadSingle(lightboxIdx); }
-
-function downloadSingle(idx) {
-  const r = batchResults[idx];
-  if (!r || !r.canvas) return;
-  const clientName = (document.getElementById('clientName').value.trim() || 'post').replace(/\s+/g,'-').toLowerCase();
-  const ts = new Date().toISOString().slice(0,10);
-  const a = document.createElement('a');
-  a.download = `${clientName}-${postType}-post${idx+1}-${ts}.png`;
-  a.href = r.canvas.toDataURL('image/png');
-  a.click();
+function switchCarCapTab(btn) {
+  document.querySelectorAll('#carCapPanel .cap-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const t = btn.dataset.t;
+  const el = document.getElementById('carCapText');
+  if (t === 'caption') el.textContent = carCaptions.caption || '';
+  else if (t === 'hashtags') el.textContent = carCaptions.hashtags || '';
 }
 
-async function downloadAllZip() {
-  const ready = batchResults.filter(r => r.canvas);
-  if (!ready.length) return;
-  const btn = document.getElementById('downloadZipBtn');
-  btn.disabled = true; btn.textContent = '⏳ Packaging…';
-  const zip = new JSZip();
-  const clientName = (document.getElementById('clientName').value.trim() || 'posts').replace(/\s+/g,'-').toLowerCase();
-  const ts = new Date().toISOString().slice(0,10);
-  batchResults.forEach((r, i) => {
-    if (!r.canvas) return;
-    const dataUrl = r.canvas.toDataURL('image/png');
-    const base64  = dataUrl.split(',')[1];
-    zip.file(`${clientName}-${postType}-post${i+1}-${ts}.png`, base64, { base64: true });
-    if (r.data) {
-      const txt = [r.data.caption, '', '— Hashtags —', r.data.hashtags, '', '— Stories Copy —', r.data.story, '', '— Hook —', r.data.hook].join('\n');
-      zip.file(`${clientName}-post${i+1}-captions.txt`, txt);
-    }
+function copyCarCaption() {
+  const txt = document.getElementById('carCapText').textContent;
+  navigator.clipboard?.writeText(txt).then(() => {
+    const btn = document.querySelector('[onclick="copyCarCaption()"]');
+    btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = '📋 Copy', 1800);
   });
-  const blob = await zip.generateAsync({ type: 'blob' });
-  const a = document.createElement('a');
-  a.download = `${clientName}-social-posts-${ts}.zip`;
-  a.href = URL.createObjectURL(blob);
-  a.click();
-  URL.revokeObjectURL(a.href);
-  btn.disabled = false; btn.textContent = '⬇ Download All ZIP';
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function setStatus(msg) { document.getElementById('genStatus').textContent = msg; }
+// ════════════════════════════════════════════════
+// CAPTION PANEL
+// ════════════════════════════════════════════════
+function showCaption(data) {
+  const panel = document.getElementById('capPanel');
+  panel.style.display = 'block';
+  const el = document.getElementById('capDisplay');
+  el.textContent = data.caption || '';
+  el.classList.remove('empty');
+}
+
+function switchCapTab(btn) {
+  document.querySelectorAll('.cap-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  activeCapTab = btn.dataset.t;
+  const el = document.getElementById('capDisplay');
+  if (!generatedData) return;
+  const map = {caption:'caption', hashtags:'hashtags', story:'story', hook:'hook'};
+  el.textContent = generatedData[map[activeCapTab]] || '';
+}
+
+function copyCaption() {
+  const txt = document.getElementById('capDisplay').textContent;
+  navigator.clipboard?.writeText(txt).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = '📋 Copy', 1800);
+  });
+}
+
+function copyBio() {
+  const txt = document.getElementById('bioText').textContent;
+  navigator.clipboard?.writeText(txt).then(() => {});
+}
+
+// ════════════════════════════════════════════════
+// DOWNLOAD / LIGHTBOX
+// ════════════════════════════════════════════════
+function downloadPost() {
+  const cv = document.getElementById('postCanvas');
+  const a = document.createElement('a');
+  const name = document.getElementById('clientName').value.trim().replace(/\s+/g,'-').toLowerCase() || 'post';
+  a.href = cv.toDataURL('image/png');
+  a.download = `${name}-${postType}-${format}.png`;
+  a.click();
+}
+
+let lbxIdx = 0, lbxPosts = [], lbxCaps = [];
+function openLbxFromGrid(i, posts) {
+  lbxIdx = i; lbxPosts = gridPosts; lbxCaps = posts.map(p => p.caption || '');
+  showLbx(i);
+}
+
+function showLbx(i) {
+  if (!lbxPosts[i]) return;
+  const src = lbxPosts[i];
+  const dest = document.getElementById('lbxCanvas');
+  dest.width = src.width; dest.height = src.height;
+  dest.getContext('2d').drawImage(src, 0, 0);
+  document.getElementById('lbxCap').textContent = lbxCaps[i] || '';
+  document.getElementById('lbx').classList.add('open');
+  lbxIdx = i;
+}
+
+function closeLbx() { document.getElementById('lbx').classList.remove('open'); }
+function lbxPrev() { showLbx(Math.max(0, lbxIdx-1)); }
+function lbxNext() { showLbx(Math.min(lbxPosts.length-1, lbxIdx+1)); }
+function lbxDl() {
+  const cv = document.getElementById('lbxCanvas');
+  const a = document.createElement('a');
+  a.href = cv.toDataURL('image/png');
+  a.download = `grid-post-${lbxIdx+1}.png`;
+  a.click();
+}
+
+// ════════════════════════════════════════════════
+// INSTAGRAM GRID (empty state)
+// ════════════════════════════════════════════════
+function renderIgGrid() {
+  const grid = document.getElementById('igGrid');
+  if (grid.children.length) return; // already populated
+  grid.innerHTML = Array.from({length:9}).map(() => `
+    <div class="ig-cell"><div class="ig-cell-ph">✦</div></div>`).join('');
+}
+
+// ════════════════════════════════════════════════
+// STATUS
+// ════════════════════════════════════════════════
+function setStatus(msg, type='') {
+  const el = document.getElementById('genStatus');
+  el.textContent = msg;
+  el.className = 'status-line' + (type ? ' ' + type : '');
+}
 </script>
 </body>
 </html>
