@@ -1772,7 +1772,7 @@ const AGENT_OVERRIDES = {
 };
 
 // Clients who are active but NOT on the call centre — shown in Ad Clients tab only
-const NON_CC_CLIENTS = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms", "Moonlight Doors and Windows", "Favourite Home"];
+const NON_CC_CLIENTS = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms", "Moonlight Doors and Windows", "Favourite Home", "Silk Touch Joinery"];
 function isNonCC(name) {
   const n = (name||'').toLowerCase().replace(/\s+/g,'');
   try {
@@ -4547,40 +4547,31 @@ function removeWebClient(idx) {
   localStorage.setItem('qj_web_clients', JSON.stringify(list));
   switchPage('ceo');
 }
-function moveWebToAds(idx, name, mrr) {
+function moveWebToAds(idx, name) {
   // remove from webExtra
   let webList = [];
   try { webList = JSON.parse(localStorage.getItem('qj_web_clients') || '[]'); } catch(_) {}
   webList.splice(idx, 1);
   localStorage.setItem('qj_web_clients', JSON.stringify(webList));
-  // add to adsExtra
+  // add to ads-only list
   let adsList = [];
-  try { adsList = JSON.parse(localStorage.getItem('qj_ads_clients') || '[]'); } catch(_) {}
-  adsList.push({ name, mrr });
-  localStorage.setItem('qj_ads_clients', JSON.stringify(adsList));
+  try { adsList = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]'); } catch(_) {}
+  if (!adsList.includes(name)) adsList.push(name);
+  localStorage.setItem('qj_ads_only_clients', JSON.stringify(adsList));
   switchPage('ceo');
 }
-
-// ── Ads Only client management ────────────────────────────────────────────────
-function addAdsClient() {
-  const nameEl = document.getElementById('ads-add-name');
-  const mrrEl  = document.getElementById('ads-add-mrr');
-  const name   = (nameEl?.value || '').trim();
-  const mrr    = parseFloat(mrrEl?.value || '0');
-  if (!name || !mrr) return;
+function moveToAds(name) {
   let list = [];
-  try { list = JSON.parse(localStorage.getItem('qj_ads_clients') || '[]'); } catch(_) {}
-  list.push({ name, mrr });
-  localStorage.setItem('qj_ads_clients', JSON.stringify(list));
-  if (nameEl) nameEl.value = '';
-  if (mrrEl)  mrrEl.value  = '';
+  try { list = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]'); } catch(_) {}
+  if (!list.includes(name)) list.push(name);
+  localStorage.setItem('qj_ads_only_clients', JSON.stringify(list));
   switchPage('ceo');
 }
-function removeAdsClient(idx) {
+function removeFromAds(name) {
   let list = [];
-  try { list = JSON.parse(localStorage.getItem('qj_ads_clients') || '[]'); } catch(_) {}
-  list.splice(idx, 1);
-  localStorage.setItem('qj_ads_clients', JSON.stringify(list));
+  try { list = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]'); } catch(_) {}
+  list = list.filter(n => n !== name);
+  localStorage.setItem('qj_ads_only_clients', JSON.stringify(list));
   switchPage('ceo');
 }
 
@@ -10355,7 +10346,9 @@ async function renderCEOOverview() {
         </div>
         <div class="ceo-client-badges" style="flex-shrink:0">
           ${valueBadge(c)}
-          ${c.hasCC && !isNonCC(c.name) ? `<span class="ceo-badge cc">CC</span>` : `<span class="ceo-badge no-cc">Ads</span>`}
+          ${c.hasCC && !isNonCC(c.name)
+            ? `<span class="ceo-badge cc">CC</span><button onclick="moveToAds('${c.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:1px solid rgba(251,146,60,0.4);color:#f97316;cursor:pointer;font-size:0.58rem;padding:1px 6px;border-radius:5px;line-height:1.5;font-family:'DM Mono',monospace;white-space:nowrap" title="Move to Ads Only">→ Ads</button>`
+            : `<span class="ceo-badge no-cc">Ads</span><button onclick="removeFromAds('${c.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:1px solid rgba(99,102,241,0.4);color:#6366f1;cursor:pointer;font-size:0.58rem;padding:1px 6px;border-radius:5px;line-height:1.5;font-family:'DM Mono',monospace;white-space:nowrap" title="Move back to CC">↩ CC</button>`}
           <button class="ceo-action-btn pause" onclick="_ceoPauseClient('${c.name.replace(/'/g,"\\'")}')">⏸ Pause</button>
         </div>
       </div>
@@ -10488,7 +10481,7 @@ async function renderCEOOverview() {
                     </div>
                     <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:#6366f1;font-weight:700">$${c.mrr}/mo</div>
                     ${i >= WEB_HARDCODED.length ? `
-                      <button onclick="moveWebToAds(${i - WEB_HARDCODED.length},'${c.name.replace(/'/g,"\\'")}',${c.mrr})" style="margin-left:0.35rem;background:none;border:1px solid rgba(251,146,60,0.4);color:#f97316;cursor:pointer;font-size:0.6rem;padding:1px 5px;border-radius:5px;line-height:1.4;font-family:'DM Mono',monospace" title="Move to Ads Only">→ Ads</button>
+                      <button onclick="moveWebToAds(${i - WEB_HARDCODED.length},'${c.name.replace(/'/g,"\\'")}');" style="margin-left:0.35rem;background:none;border:1px solid rgba(251,146,60,0.4);color:#f97316;cursor:pointer;font-size:0.6rem;padding:1px 5px;border-radius:5px;line-height:1.4;font-family:'DM Mono',monospace" title="Move to Ads Only">→ Ads</button>
                       <button onclick="removeWebClient(${i - WEB_HARDCODED.length})" style="margin-left:0.25rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1" title="Remove">✕</button>
                     ` : ''}
                   </div>`).join('')}
@@ -10501,42 +10494,6 @@ async function renderCEOOverview() {
                 <input id="web-add-name" placeholder="Client name" style="flex:1;min-width:0;padding:0.45rem 0.65rem;border:1px solid var(--border2);border-radius:8px;font-size:0.75rem;font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);outline:none"/>
                 <input id="web-add-mrr" placeholder="$/mo" type="number" min="0" style="width:72px;padding:0.45rem 0.55rem;border:1px solid var(--border2);border-radius:8px;font-size:0.75rem;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);outline:none"/>
                 <button onclick="addWebClient()" style="padding:0.45rem 0.85rem;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.72rem;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap">+ Add</button>
-              </div>`;
-            })()}
-          </div>
-
-          <!-- Ads Only column -->
-          <div>
-            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid #f97316">
-              <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316">📣 Ads Only</span>
-            </div>
-            ${(() => {
-              const ADS_HARDCODED = [
-                { name: 'Silk Touch Joinery', mrr: null },
-              ];
-              let adsExtra = [];
-              try { adsExtra = JSON.parse(localStorage.getItem('qj_ads_clients') || '[]'); } catch(_) {}
-              const adsClients = [...ADS_HARDCODED, ...adsExtra];
-              const total = adsClients.reduce((s,c) => s + (c.mrr || 0), 0);
-              return `
-              <div style="display:flex;flex-direction:column;gap:0.5rem">
-                ${adsClients.map((c,i) => `
-                  <div class="ceo-client-row" style="border-color:rgba(249,115,22,0.2)">
-                    <div style="flex:1;min-width:0">
-                      <div class="ceo-client-name">${c.name}</div>
-                    </div>
-                    <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:#f97316;font-weight:700">${c.mrr ? '$'+c.mrr+'/mo' : '—'}</div>
-                    ${i >= ADS_HARDCODED.length ? `<button onclick="removeAdsClient(${i - ADS_HARDCODED.length})" style="margin-left:0.5rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1" title="Remove">✕</button>` : ''}
-                  </div>`).join('')}
-                <div style="margin-top:0.35rem;padding-top:0.5rem;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Total MRR</span>
-                  <span style="font-size:0.85rem;font-weight:800;color:#f97316">${total ? '$'+total+'/mo' : '—'}</span>
-                </div>
-              </div>
-              <div style="margin-top:0.75rem;display:flex;gap:0.4rem;align-items:center">
-                <input id="ads-add-name" placeholder="Client name" style="flex:1;min-width:0;padding:0.45rem 0.65rem;border:1px solid var(--border2);border-radius:8px;font-size:0.75rem;font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);outline:none"/>
-                <input id="ads-add-mrr" placeholder="$/mo" type="number" min="0" style="width:72px;padding:0.45rem 0.55rem;border:1px solid var(--border2);border-radius:8px;font-size:0.75rem;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);outline:none"/>
-                <button onclick="addAdsClient()" style="padding:0.45rem 0.85rem;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:0.72rem;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap">+ Add</button>
               </div>`;
             })()}
           </div>
