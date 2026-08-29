@@ -4525,6 +4525,29 @@ function initAssistant() {
 
 window.switchPage = switchPage;
 
+// ── Website Package client management ────────────────────────────────────────
+function addWebClient() {
+  const nameEl = document.getElementById('web-add-name');
+  const mrrEl  = document.getElementById('web-add-mrr');
+  const name   = (nameEl?.value || '').trim();
+  const mrr    = parseFloat(mrrEl?.value || '0');
+  if (!name || !mrr) return;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('qj_web_clients') || '[]'); } catch(_) {}
+  list.push({ name, mrr });
+  localStorage.setItem('qj_web_clients', JSON.stringify(list));
+  if (nameEl) nameEl.value = '';
+  if (mrrEl)  mrrEl.value  = '';
+  switchPage('ceo');
+}
+function removeWebClient(idx) {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('qj_web_clients') || '[]'); } catch(_) {}
+  list.splice(idx, 1);
+  localStorage.setItem('qj_web_clients', JSON.stringify(list));
+  switchPage('ceo');
+}
+
 // ── Onboarding Deck tab ──────────────────────────────────────────────────────
 function renderCEOObDeck() {
   const el = document.getElementById('app-pm-ob-deck');
@@ -10408,27 +10431,37 @@ async function renderCEOOverview() {
               <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6366f1">🌐 Website Package</span>
             </div>
             ${(() => {
-              const webClients = [
+              const WEB_HARDCODED = [
                 { name: 'Generational Bathrooms',  mrr: 49  },
                 { name: 'Quality Custom Homes',     mrr: 274 },
                 { name: 'Integra Renovations',      mrr: 142 },
                 { name: 'Established Renovations',  mrr: 99  },
                 { name: 'Marco Build',              mrr: 109 },
+                { name: 'Boss Carpentry',           mrr: 99  },
               ];
+              let webExtra = [];
+              try { webExtra = JSON.parse(localStorage.getItem('qj_web_clients') || '[]'); } catch(_) {}
+              const webClients = [...WEB_HARDCODED, ...webExtra];
               const total = webClients.reduce((s,c) => s + c.mrr, 0);
               return `
-              <div style="display:flex;flex-direction:column;gap:0.5rem">
-                ${webClients.map(c => `
+              <div style="display:flex;flex-direction:column;gap:0.5rem" id="web-clients-list">
+                ${webClients.map((c,i) => `
                   <div class="ceo-client-row" style="border-color:rgba(99,102,241,0.2)">
                     <div style="flex:1;min-width:0">
                       <div class="ceo-client-name">${c.name}</div>
                     </div>
                     <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:#6366f1;font-weight:700">$${c.mrr}/mo</div>
+                    ${i >= WEB_HARDCODED.length ? `<button onclick="removeWebClient(${i - WEB_HARDCODED.length})" style="margin-left:0.5rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1" title="Remove">✕</button>` : ''}
                   </div>`).join('')}
                 <div style="margin-top:0.35rem;padding-top:0.5rem;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center">
                   <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Total MRR</span>
                   <span style="font-size:0.85rem;font-weight:800;color:#6366f1">$${total}/mo</span>
                 </div>
+              </div>
+              <div style="margin-top:0.75rem;display:flex;gap:0.4rem;align-items:center" id="web-add-row">
+                <input id="web-add-name" placeholder="Client name" style="flex:1;min-width:0;padding:0.45rem 0.65rem;border:1px solid var(--border2);border-radius:8px;font-size:0.75rem;font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);outline:none"/>
+                <input id="web-add-mrr" placeholder="$/mo" type="number" min="0" style="width:72px;padding:0.45rem 0.55rem;border:1px solid var(--border2);border-radius:8px;font-size:0.75rem;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);outline:none"/>
+                <button onclick="addWebClient()" style="padding:0.45rem 0.85rem;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.72rem;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap">+ Add</button>
               </div>`;
             })()}
           </div>
