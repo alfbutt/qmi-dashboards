@@ -380,6 +380,16 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
       <div class="swatch-custom"><input type="color" id="customColor" value="#1a1917" oninput="brandColor=this.value;renderPreview()" title="Custom"></div>
     </div>
 
+    <!-- Style / Knowledge Base -->
+    <div class="sec-lbl">Style Direction <span class="sec-tag">your knowledge base</span></div>
+    <div class="field">
+      <label>Describe the look you want (AI uses this for every post)</label>
+      <textarea id="styleNotes" placeholder="e.g. Dark backgrounds, gold accent, bold Bebas headlines. Think luxury renovation — not budget. Similar to @mtdcollective or @barbalaceconstruction. Each post should feel editorial and premium. Photos should be full-bleed with minimal text overlay. Carousels should tell a story — before/after, process, result." style="min-height:80px" oninput="saveField('styleNotes',this.value)"></textarea>
+    </div>
+    <div class="rule-box" style="background:rgba(201,168,71,0.06);border-color:rgba(201,168,71,0.2)">
+      <p style="color:var(--accent)"><strong>Knowledge Base Note:</strong> The example Instagram grids you uploaded at the start of the session were sent to Claude (me in the chat), not to this tool. Describe what you liked about those examples above and the AI will replicate that style — dark aesthetic, bold type, editorial feel, mix of photo and graphic posts.</p>
+    </div>
+
     <!-- Post Type -->
     <div class="sec-lbl">Post Types <span class="sec-tag">select multiple</span></div>
     <div class="type-grid">
@@ -529,7 +539,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
             <div class="preview-meta">Build multi-slide carousel posts with storylines</div>
           </div>
           <div class="preview-acts">
-            <button class="act-btn sec" onclick="genCarouselWithAI()">✨ AI Generate Slides</button>
+            <button class="act-btn sec" id="carAiBtn" onclick="genCarouselWithAI()">✨ AI Generate Slides</button>
             <button class="act-btn pri" onclick="downloadCarousel()">⬇ Download All Slides</button>
           </div>
         </div>
@@ -667,7 +677,8 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
   <canvas id="lbxCanvas"></canvas>
   <div class="lbx-acts">
     <button class="act-btn sec" onclick="lbxPrev()">← Prev</button>
-    <button class="act-btn pri" onclick="lbxDl()">⬇ Download</button>
+    <button class="act-btn sec" onclick="lbxDl()">⬇ This slide</button>
+    <button class="act-btn pri" onclick="lbxDlAll()">⬇ All slides</button>
     <button class="act-btn sec" onclick="lbxNext()">Next →</button>
   </div>
   <div class="lbx-cap" id="lbxCap"></div>
@@ -768,7 +779,7 @@ function safeParseJson(raw, label) {
 // ════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════
-const SAVED_FIELDS = ['clientName','clientNiche','clientBrief','transcriptText','driveUrl','extraCtx'];
+const SAVED_FIELDS = ['clientName','clientNiche','clientBrief','transcriptText','driveUrl','extraCtx','styleNotes'];
 
 function saveField(key, val) {
   try { localStorage.setItem('qj_social_field_' + key, val); } catch(e) {}
@@ -1017,31 +1028,38 @@ async function loadDriveFolder() {
         onclick="selectDrivePhoto(${i})"
         onerror="this.style.background='var(--surface2)';this.src=''">`).join('');
 
-    // Auto-load all drive images into photos array using high-res thumbnail (CORS-safe)
+    // Load full-resolution images via Drive API alt=media (full quality, CORS-enabled with API key)
     let loaded = 0;
+    const total = files.length;
     files.forEach((f, i) => {
-      if (!f.thumbnailLink) return;
-      const hiRes = f.thumbnailLink.replace(/=s\d+/, '=s1080');
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const existing = photos.findIndex(p => p.driveId === f.id);
-        if (existing === -1) {
-          photos.push({driveId: f.id, img, dataUrl: hiRes, name: f.name});
+      const existing = photos.findIndex(p => p.driveId === f.id);
+      if (existing !== -1) { loaded++; return; }
+
+      // Try full-res first via alt=media, fall back to hi-res thumbnail
+      const fullUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${apiKey}`;
+      const thumbUrl = (f.thumbnailLink||'').replace(/=s\d+/, '=s1600');
+
+      const tryLoad = (url, isFallback) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          photos.push({driveId: f.id, img, dataUrl: url, name: f.name});
           const sel = document.getElementById('slideBgPhoto');
           const opt = document.createElement('option');
           opt.value = photos.length - 1;
           opt.textContent = f.name;
           sel.appendChild(opt);
-        }
-        loaded++;
-        if (loaded === files.length) {
-          status.textContent = `✓ ${files.length} images loaded and ready to use`;
-          renderPhotoThumbs();
-        }
+          loaded++;
+          status.textContent = `Loading ${loaded}/${total}…`;
+          if (loaded >= total) { status.textContent = `✓ ${total} images loaded at full quality`; renderPhotoThumbs(); }
+        };
+        img.onerror = () => {
+          if (!isFallback && thumbUrl) tryLoad(thumbUrl, true);
+          else { loaded++; if (loaded >= total && loaded > 0) { status.textContent = `✓ ${loaded} images loaded`; renderPhotoThumbs(); } }
+        };
+        img.src = url;
       };
-      img.onerror = () => { loaded++; };
-      img.src = hiRes;
+      tryLoad(fullUrl, false);
     });
 
   } catch(err) {
@@ -1688,15 +1706,20 @@ async function generateStrategy() {
     setProgress(10, 'Analysing client brief…');
     const ctx = buildClientContext();
     const transcript = document.getElementById('transcriptText')?.value?.trim() || '';
-    const prompt = `You are a premium Instagram content strategist for trade and renovation businesses.
+    const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
+    const prompt = `You are an elite Instagram content strategist for premium trade and renovation businesses.
 
 ${ctx}
-${transcript ? `\nSales call transcript (use for tone/pain points/offers):\n${transcript.substring(0,1500)}` : ''}
+${transcript ? `\nSales call context:\n${transcript.substring(0,1500)}` : ''}
+${styleNotes ? `\nStyle direction: ${styleNotes}` : ''}
+
+Be SPECIFIC. Use real suburb names, real price points, real outcomes. No generic filler.
+Each headline should be punchy and scroll-stopping. Subtext should feel editorial, not corporate.
 
 Respond with ONLY this JSON (no extra text, no markdown):
-{"bio":"Instagram bio max 120 chars with emoji CTA","strategy":"2-3 sentences on tone and content mix","schedule":"e.g. Mon/Wed/Fri 7am + Reels Tue/Thu","posts":[{"type":"showcase","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption 2-3 sentences.","hashtags":"#tag1 #tag2"},{"type":"edu","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"services","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"editorial","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"testimonial","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"promotion","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"showcase","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"edu","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"editorial","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"}]}
+{"bio":"Instagram bio max 120 chars with emoji CTA — specific to this company","strategy":"2-3 sentences on their content tone and mix","schedule":"Specific posting schedule","posts":[{"type":"showcase","headline":"SPECIFIC PUNCHY HEADLINE","subtext":"Specific one-liner about this project/service","caption":"3-4 sentence Instagram caption, specific, ends with question or CTA.","hashtags":"15 specific hashtags"},{"type":"edu","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"},{"type":"services","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"},{"type":"editorial","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"},{"type":"testimonial","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"},{"type":"promotion","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"},{"type":"showcase","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"},{"type":"edu","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"},{"type":"editorial","headline":"HEADLINE","subtext":"Subtext","caption":"Caption.","hashtags":"hashtags"}]}
 
-Fill in real content for ALL 9 posts. Be specific to the client industry. No placeholders.`;
+Every post must be DISTINCT. Mix real project showcases, specific tips, process insights, a genuine testimonial, and one strong offer.`;
 
     setProgress(30, 'Writing strategy…');
     const raw = await callClaude(prompt, 4000);
@@ -1741,14 +1764,14 @@ Fill in real content for ALL 9 posts. Be specific to the client industry. No pla
         </div>
       </div>`).join('');
 
-    // Render IG grid with mini canvas posts
-    setProgress(85, 'Rendering grid…');
-    await renderStrategyGrid(posts);
+    // Render IG grid — first pass instant, second pass generates 5-slide carousels
+    setProgress(70, 'Rendering grid…');
+    await renderStrategyGrid(posts, setProgress);
     document.getElementById('igPostCount').textContent = 36;
     document.getElementById('igGridEmpty').style.display = 'none';
 
-    setProgress(100, 'Done!');
-    setTimeout(() => { pw.style.display = 'none'; }, 1500);
+    setProgress(100, 'Done! Click any carousel cell to browse all 5 slides.');
+    setTimeout(() => { pw.style.display = 'none'; }, 3000);
 
     // Switch to grid tab
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1765,78 +1788,157 @@ Fill in real content for ALL 9 posts. Be specific to the client industry. No pla
   }
 }
 
-// Grid pattern: 0=carousel/graphic, 1=photo, 2=graphic, 3=photo, 4=3D-placeholder (every 5th)
-function gridCellType(idx) {
-  const mod = idx % 3;
-  if (mod === 1) return 'photo';       // every 2nd = real photo
-  if (idx % 9 === 6) return '3d';      // every 9th row middle = 3D placeholder
-  return 'graphic';
+// Grid items store full carousel data
+// gridItems[i] = {kind:'carousel'|'photo'|'3d', coverCanvas, slides:[canvas,...], caption}
+let gridItems = [];
+
+// Pattern per row of 3: [carousel, photo, carousel] with 3D slot every 3rd row middle
+function gridCellKind(idx) {
+  if (idx % 9 === 7) return '3d';   // position 7 of every 9 = 3D slot
+  if (idx % 3 === 1) return 'photo'; // every middle = photo
+  return 'carousel';
 }
 
-async function renderStrategyGrid(posts) {
+function draw3dPlaceholder(ctx, w, h) {
+  ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle=brandColor; ctx.fillRect(0,0,w,6);
+  ctx.font=`${Math.round(w*0.16)}px 'Bebas Neue',Impact,sans-serif`;
+  ctx.fillStyle='rgba(255,255,255,0.07)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('3D RENDER', w/2, h*0.4);
+  ctx.font=`${Math.round(w*0.055)}px 'Bebas Neue',Impact,sans-serif`;
+  ctx.fillStyle=brandColor; ctx.textBaseline='top';
+  ctx.fillText('VIDEO SLOT', w/2, h*0.54);
+  ctx.font=`${Math.round(w*0.038)}px 'DM Mono',monospace`;
+  ctx.fillStyle='rgba(255,255,255,0.28)';
+  ctx.fillText('3D Render Agent ↗', w/2, h*0.67);
+  if(logoImg){const lh=Math.round(h*0.1),lw=lh*(logoImg.width/logoImg.height);ctx.globalAlpha=0.6;ctx.drawImage(logoImg,w-lw-w*0.04,h-lh-h*0.04,lw,lh);ctx.globalAlpha=1;}
+}
+
+async function generateCarouselSlides(post, photoObj, setProgress) {
+  const clientCtx = buildClientContext();
+  const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
+  const prompt = `You are creating a premium Instagram CAROUSEL for a trade/renovation company.
+
+${clientCtx}
+${styleNotes ? `Style direction: ${styleNotes}` : ''}
+
+Post topic: ${post.headline}
+Type: ${post.type}
+Caption context: ${post.subtext || ''}
+
+Create 5 slides. Be SPECIFIC — reference real locations, real outcomes, real numbers where plausible. No generic filler.
+
+Return ONLY a JSON array of exactly 5 slide objects:
+[
+  {"slide":1,"slideType":"cover","headline":"HOOK THAT STOPS THE SCROLL","body":"","ghost":"CRAFT","tag":"FOR HOMEOWNERS"},
+  {"slide":2,"slideType":"content","headline":"THE PROBLEM","body":"2-3 sentences about the specific pain point this client faces.","ghost":"WHY","tag":""},
+  {"slide":3,"slideType":"content","headline":"OUR APPROACH","body":"Specific detail about how this company solves it. Reference their method, materials, location.","ghost":"HOW","tag":""},
+  {"slide":4,"slideType":"content","headline":"THE RESULT","body":"Specific outcome — timeframe, quality, client reaction. Make it vivid.","ghost":"WIN","tag":""},
+  {"slide":5,"slideType":"cta","headline":"READY TO START?","body":"One compelling sentence. Specific CTA matching the company.","ghost":"","tag":""}
+]`;
+
+  try {
+    const raw = await callClaude(prompt, 2000);
+    const slides = safeParseJson(raw);
+    if (Array.isArray(slides) && slides.length >= 2) return slides;
+  } catch(e) {}
+
+  // Fallback: generate basic 5-slide structure from existing post data
+  return [
+    {slide:1, slideType:'cover',   headline: post.headline,        body:'', ghost:'', tag: post.tag||''},
+    {slide:2, slideType:'content', headline: 'THE CHALLENGE',      body: post.subtext||'Many homeowners face this exact situation.', ghost:'WHY', tag:''},
+    {slide:3, slideType:'content', headline: 'OUR SOLUTION',       body: 'We approach every project with precision and care.', ghost:'HOW', tag:''},
+    {slide:4, slideType:'content', headline: 'THE OUTCOME',        body: 'The result speaks for itself.', ghost:'WIN', tag:''},
+    {slide:5, slideType:'cta',     headline: 'BOOK A FREE CONSULT',body: 'Call or DM us today.', ghost:'', tag:''}
+  ];
+}
+
+function renderCarouselSlidesToCanvases(slides, photoObj, size=300) {
+  return slides.map(s => {
+    const cv = document.createElement('canvas');
+    cv.width = size; cv.height = size;
+    const ctx2 = cv.getContext('2d');
+    const savedType = postType;
+    postType = s.slideType === 'cover' ? 'showcase' : (s.slideType === 'cta' ? 'promotion' : 'edu');
+    drawPostToCtx(ctx2, size, size, photoObj, {
+      headline: s.headline, subtext: s.body, ghost: s.ghost, tag: s.tag
+    });
+    postType = savedType;
+    return cv;
+  });
+}
+
+async function renderStrategyGrid(posts, setProgress) {
   const grid = document.getElementById('igGrid');
   grid.innerHTML = '';
+  gridItems = [];
   gridPosts = [];
   gridCaptions = [];
   const TOTAL = 36;
 
+  // First pass — render all cells instantly with cover slides
   for (let i = 0; i < TOTAL; i++) {
-    const cellKind = gridCellType(i);
+    const kind = gridCellKind(i);
     const post = posts[i % posts.length] || posts[0];
-    const photoObj = photos[i % Math.max(photos.length, 1)];
+    const photoIdx = Math.floor(i / 3) % Math.max(photos.length, 1);
+    const photoObj = photos[photoIdx] || photos[0];
 
     const cv = document.createElement('canvas');
     cv.width = 300; cv.height = 300;
     const ctx2 = cv.getContext('2d');
 
-    if (cellKind === '3d') {
-      // 3D render placeholder slot
-      ctx2.fillStyle = '#1a1714';
-      ctx2.fillRect(0,0,300,300);
-      ctx2.fillStyle = brandColor;
-      ctx2.fillRect(0,0,300,6);
-      ctx2.font = `48px 'Bebas Neue',Impact,sans-serif`;
-      ctx2.fillStyle = 'rgba(255,255,255,0.12)';
-      ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
-      ctx2.fillText('3D RENDER', 150, 120);
-      ctx2.font = `18px 'DM Mono',monospace`;
-      ctx2.fillStyle = brandColor;
-      ctx2.fillText('VIDEO SLOT', 150, 170);
-      ctx2.font = `13px 'DM Mono',monospace`;
-      ctx2.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx2.fillText('Generate with 3D Render Agent', 150, 205);
-      if (logoImg) {
-        const lh=40, lw=lh*(logoImg.width/logoImg.height);
-        ctx2.globalAlpha=0.7;
-        ctx2.drawImage(logoImg,300-lw-12,300-lh-12,lw,lh);
-        ctx2.globalAlpha=1;
-      }
-    } else if (cellKind === 'photo' && photoObj?.img) {
-      // Raw photo post — photo fills frame with subtle text overlay
-      const savedType = postType;
-      postType = 'showcase';
+    if (kind === '3d') {
+      draw3dPlaceholder(ctx2, 300, 300);
+      gridItems.push({kind, coverCanvas: cv, slides: [], caption: ''});
+    } else if (kind === 'photo') {
+      const savedType = postType; postType = 'showcase';
       drawPostToCtx(ctx2, 300, 300, photoObj, post);
       postType = savedType;
+      gridItems.push({kind, coverCanvas: cv, slides: [cv], caption: post.caption||''});
     } else {
-      // Graphic / carousel post
-      const savedType = postType;
-      postType = post.type || 'edu';
+      // carousel — render cover now, expand slides in background
+      const savedType = postType; postType = post.type || 'edu';
       drawPostToCtx(ctx2, 300, 300, photoObj, post);
       postType = savedType;
+      gridItems.push({kind, coverCanvas: cv, slides: [cv], caption: post.caption||'', post, photoObj, expanded: false});
     }
 
     const cell = document.createElement('div');
     cell.className = 'ig-cell';
+    cell.id = `cell-${i}`;
     cell.appendChild(cv);
+
     const ov = document.createElement('div');
     ov.className = 'ig-cell-ov';
-    ov.textContent = cellKind === '3d' ? '3D SLOT' : 'VIEW';
+    ov.innerHTML = kind==='3d' ? '3D' : kind==='carousel' ? '▶ 5 slides' : '📸';
     cell.appendChild(ov);
-    const idx = i;
-    cell.onclick = () => { if(cellKind!=='3d') openLbxFromGrid(idx, posts); };
+
+    const captureI = i;
+    cell.onclick = () => openGridCell(captureI);
     grid.appendChild(cell);
+
     gridPosts.push(cv);
     gridCaptions.push(post.caption || '');
+  }
+
+  // Second pass — expand carousel cells into full 5-slide sets (background, sequential)
+  const carouselCells = gridItems.map((item,i)=>({item,i})).filter(({item})=>item.kind==='carousel');
+  for (let n = 0; n < carouselCells.length; n++) {
+    const {item, i} = carouselCells[n];
+    if (setProgress) setProgress(70 + Math.round(25 * n / carouselCells.length), `Building carousel ${n+1}/${carouselCells.length}…`);
+    const slides = await generateCarouselSlides(item.post, item.photoObj);
+    const canvases = renderCarouselSlidesToCanvases(slides, item.photoObj, 300);
+    item.slides = canvases;
+    item.slideData = slides;
+    item.expanded = true;
+    // Update cover canvas with proper first slide
+    if (canvases.length) {
+      const cell = document.getElementById(`cell-${i}`);
+      const firstCv = canvases[0];
+      if (cell) { cell.replaceChild(firstCv, cell.querySelector('canvas')); }
+      item.coverCanvas = firstCv;
+      gridPosts[i] = firstCv;
+    }
   }
 }
 
@@ -1993,33 +2095,38 @@ function drawCarSlideToCanvas(ctx, w, h, s) {
 
 async function genCarouselWithAI() {
   const key = localStorage.getItem('qj_social_claude_key') || '';
-  if (!key) { alert('Add your Anthropic API key first.'); return; }
-  const topic = document.getElementById('slideHeadline').value.trim() || 'Tell me the carousel topic';
+  if (!key) { setStatus('No Claude API key — click 🔑 API Keys first.', 'err'); return; }
+  const topic = document.getElementById('slideHeadline').value.trim() ||
+                document.getElementById('clientNiche').value.trim() ||
+                'our premium services';
   const ctx = buildClientContext();
-  const count = carSlides.length || 4;
+  const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
 
-  const prompt = `Create content for a ${count}-slide Instagram carousel for a trade/renovation business.
+  const prompt = `Create a 5-slide Instagram carousel for a premium trade/renovation company.
 
 ${ctx}
-Topic/theme: ${topic}
-Template style: ${carTemplate}
+${styleNotes ? `Style: ${styleNotes}` : ''}
+Topic: ${topic}
+Template: ${carTemplate}
 
-Respond with ONLY JSON array of ${count} slide objects:
+Be SPECIFIC — real locations, real outcomes, real language this company would use. No filler.
+
+Return ONLY a JSON array of exactly 5 objects:
 [
-  {"type":"cover","headline":"HOOK HEADLINE","body":"","tag":"GUIDE · FOR HOMEOWNERS","ghost":""},
-  {"type":"content","headline":"POINT ONE HEADER","body":"Explanation text for this point. Be specific and useful.","tag":"","ghost":"ONE"},
-  ... (remaining slides)
-  {"type":"cta","headline":"READY TO START?","body":"Contact us for a free consultation.","tag":"","ghost":""}
+  {"type":"cover","headline":"SCROLL-STOPPING HOOK","body":"","tag":"FOR HOMEOWNERS","ghost":"CRAFT"},
+  {"type":"content","headline":"THE PROBLEM","body":"Specific 2-sentence description of the pain point.","tag":"","ghost":"WHY"},
+  {"type":"content","headline":"OUR APPROACH","body":"Specific 2-sentence description of how this company solves it.","tag":"","ghost":"HOW"},
+  {"type":"content","headline":"THE RESULT","body":"Specific outcome — timeframe, quality detail, client reaction.","tag":"","ghost":"WIN"},
+  {"type":"cta","headline":"GET STARTED TODAY","body":"One compelling CTA sentence specific to this company.","tag":"","ghost":""}
 ]`;
 
+  const btn = document.getElementById('carAiBtn');
   try {
-    const btn = document.querySelector('[onclick="genCarouselWithAI()"]');
-    btn.innerHTML = '…';
-    btn.disabled = true;
-    const raw = await callClaude(prompt);
-    const arrMatch = raw.match(/\[[\s\S]*\]/);
-    if (!arrMatch) throw new Error('Could not parse AI carousel response.');
-    carSlides = JSON.parse(arrMatch[0]);
+    if(btn){btn.innerHTML='<span class="spin"></span>Generating…';btn.disabled=true;}
+    const raw = await callClaude(prompt, 2000);
+    const slides = safeParseJson(raw);
+    if (!Array.isArray(slides) || !slides.length) throw new Error('Could not parse carousel response — try again.');
+    carSlides = slides;
     carSlideIdx = 0;
     loadCarSlideIntoForm(0);
     renderCarRail();
@@ -2038,12 +2145,10 @@ Return JSON: {"caption":"...","hashtags":"..."}`;
       capEl.classList.remove('empty');
     }
 
-    btn.innerHTML = '✨ AI Generate Slides';
-    btn.disabled = false;
+    if(btn){btn.innerHTML='✨ AI Generate Slides';btn.disabled=false;}
   } catch(err) {
-    alert('AI error: ' + err.message);
-    document.querySelector('[onclick="genCarouselWithAI()"]').innerHTML = '✨ AI Generate Slides';
-    document.querySelector('[onclick="genCarouselWithAI()"]').disabled = false;
+    setStatus('Carousel error: ' + err.message, 'err');
+    if(btn){btn.innerHTML='✨ AI Generate Slides';btn.disabled=false;}
   }
 }
 
@@ -2133,33 +2238,73 @@ function downloadPost() {
   a.click();
 }
 
-let lbxIdx = 0, lbxPosts = [], lbxCaps = [];
-function openLbxFromGrid(i, posts) {
-  lbxIdx = i; lbxPosts = gridPosts; lbxCaps = posts.map(p => p.caption || '');
-  showLbx(i);
+// Lightbox state
+let lbxGridIdx = 0;   // which grid cell
+let lbxSlideIdx = 0;  // which slide within that cell
+
+function openGridCell(gridIdx) {
+  const item = gridItems[gridIdx];
+  if (!item || item.kind === '3d') return;
+  lbxGridIdx = gridIdx;
+  lbxSlideIdx = 0;
+  showLbxSlide();
 }
 
-function showLbx(i) {
-  if (!lbxPosts[i]) return;
-  const src = lbxPosts[i];
+function showLbxSlide() {
+  const item = gridItems[lbxGridIdx];
+  if (!item) return;
+  const slides = item.slides;
+  const src = slides[lbxSlideIdx] || item.coverCanvas;
+  if (!src) return;
   const dest = document.getElementById('lbxCanvas');
   dest.width = src.width; dest.height = src.height;
   dest.getContext('2d').drawImage(src, 0, 0);
-  document.getElementById('lbxCap').textContent = lbxCaps[i] || '';
+  document.getElementById('lbxCap').textContent =
+    slides.length > 1
+      ? `Slide ${lbxSlideIdx+1} / ${slides.length}  ·  ${item.caption || ''}`
+      : (item.caption || '');
   document.getElementById('lbx').classList.add('open');
-  lbxIdx = i;
 }
 
 function closeLbx() { document.getElementById('lbx').classList.remove('open'); }
-function lbxPrev() { showLbx(Math.max(0, lbxIdx-1)); }
-function lbxNext() { showLbx(Math.min(lbxPosts.length-1, lbxIdx+1)); }
+
+function lbxPrev() {
+  const item = gridItems[lbxGridIdx];
+  if (!item) return;
+  if (lbxSlideIdx > 0) { lbxSlideIdx--; showLbxSlide(); }
+  else { lbxGridIdx = Math.max(0, lbxGridIdx-1); lbxSlideIdx = 0; showLbxSlide(); }
+}
+function lbxNext() {
+  const item = gridItems[lbxGridIdx];
+  if (!item) return;
+  if (lbxSlideIdx < item.slides.length - 1) { lbxSlideIdx++; showLbxSlide(); }
+  else { lbxGridIdx = Math.min(gridItems.length-1, lbxGridIdx+1); lbxSlideIdx = 0; showLbxSlide(); }
+}
+
 function lbxDl() {
   const cv = document.getElementById('lbxCanvas');
   const a = document.createElement('a');
+  const item = gridItems[lbxGridIdx];
+  const name = document.getElementById('clientName').value.trim().replace(/\s+/g,'-').toLowerCase()||'post';
   a.href = cv.toDataURL('image/png');
-  a.download = `grid-post-${lbxIdx+1}.png`;
+  a.download = `${name}-cell${lbxGridIdx+1}-slide${lbxSlideIdx+1}.png`;
   a.click();
 }
+
+function lbxDlAll() {
+  const item = gridItems[lbxGridIdx];
+  if (!item) return;
+  const name = document.getElementById('clientName').value.trim().replace(/\s+/g,'-').toLowerCase()||'post';
+  item.slides.forEach((cv, i) => {
+    const a = document.createElement('a');
+    a.href = cv.toDataURL('image/png');
+    a.download = `${name}-cell${lbxGridIdx+1}-slide${i+1}.png`;
+    a.click();
+  });
+}
+
+// Keep old name for compat
+function openLbxFromGrid(i, posts) { openGridCell(i); }
 
 // ════════════════════════════════════════════════
 // INSTAGRAM GRID (empty state)
