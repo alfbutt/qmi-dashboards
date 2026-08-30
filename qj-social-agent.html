@@ -395,8 +395,12 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
         <div id="kbProgressLbl" style="font-size:0.58rem;font-family:'DM Mono',monospace;color:#06b6d4;margin-top:0.3rem;text-align:center"></div>
       </div>
     </div>
-    <!-- Toggle to reveal thumbnails -->
-    <button id="kbToggleBtn" onclick="kbToggle()" style="display:none;margin-top:0.5rem;width:100%;padding:0.35rem;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:7px;color:#06b6d4;font-size:0.6rem;font-family:'DM Mono',monospace;cursor:pointer;text-align:center">▼ View knowledge base</button>
+    <!-- Analyse + toggle -->
+    <div style="display:flex;gap:0.4rem;margin-top:0.5rem">
+      <button id="kbAnalyseBtn" onclick="kbAnalyseAll()" style="display:none;flex:1;padding:0.35rem 0.5rem;background:#06b6d4;color:#000;border:none;border-radius:7px;font-size:0.6rem;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer">⚡ Analyse All & Save Style Guide</button>
+      <button id="kbToggleBtn" onclick="kbToggle()" style="display:none;flex:1;padding:0.35rem;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:7px;color:#06b6d4;font-size:0.6rem;font-family:'DM Mono',monospace;cursor:pointer;text-align:center">▼ View screenshots</button>
+    </div>
+    <div id="kbAnalysisStatus" style="font-size:0.58rem;font-family:'DM Mono',monospace;color:#06b6d4;margin-top:0.3rem;min-height:0.9rem"></div>
     <div id="kbThumbs" style="display:none;margin-top:0.4rem;flex-wrap:wrap;gap:0.35rem"></div>
 
     <!-- Post Type -->
@@ -1216,10 +1220,18 @@ async function kbRender() {
   const images = await kbLoadAll();
   const count  = images.length;
   const tag    = document.getElementById('kbCountTag');
-  const btn    = document.getElementById('kbToggleBtn');
+  const aBtn   = document.getElementById('kbAnalyseBtn');
+  const tBtn   = document.getElementById('kbToggleBtn');
   const thumbs = document.getElementById('kbThumbs');
+  const status = document.getElementById('kbAnalysisStatus');
   if (tag) tag.textContent = count + ' screenshot' + (count === 1 ? '' : 's');
-  if (btn) btn.style.display = count ? 'block' : 'none';
+  if (aBtn) aBtn.style.display = count ? 'block' : 'none';
+  if (tBtn) tBtn.style.display = count ? 'block' : 'none';
+  // Show saved guide status
+  if (status) {
+    const guide = await kbLoadGuide();
+    status.textContent = guide ? `✅ Style guide active — ${count} posts analysed` : (count ? '⚠️ Click "Analyse All" so Claude learns your style' : '');
+  }
   if (!thumbs) return;
   thumbs.innerHTML = images.map(img => {
     const filename = img.url.split('/kb-images/')[1];
@@ -1228,6 +1240,84 @@ async function kbRender() {
       <button onclick="kbDeleteImg(${img.id},'${filename}')" style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.75);border:none;color:#fff;border-radius:3px;font-size:0.6rem;line-height:1;padding:1px 4px;cursor:pointer">×</button>
     </div>`;
   }).join('');
+}
+
+// ── KB Style Guide — stored in Supabase ──────────────────────────────────────
+async function kbLoadGuide() {
+  try {
+    const resp = await fetch(`${SB_URL}/rest/v1/kb_guide?select=content&order=id.desc&limit=1`, { headers: SB_HEADERS });
+    if (!resp.ok) return null;
+    const rows = await resp.json();
+    return rows?.[0]?.content || null;
+  } catch(e) { return null; }
+}
+
+async function kbSaveGuide(content) {
+  // Upsert: delete old, insert new
+  await fetch(`${SB_URL}/rest/v1/kb_guide`, { method: 'DELETE', headers: SB_HEADERS });
+  await fetch(`${SB_URL}/rest/v1/kb_guide`, {
+    method: 'POST',
+    headers: { ...SB_HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ content })
+  });
+}
+
+async function kbAnalyseAll() {
+  const images = await kbLoadAll();
+  if (!images.length) return;
+  const btn    = document.getElementById('kbAnalyseBtn');
+  const status = document.getElementById('kbAnalysisStatus');
+  btn.disabled = true;
+  const total = images.length;
+  const batchSize = 5;
+  const analyses = [];
+  const batches = Math.ceil(total / batchSize);
+
+  for (let b = 0; b < batches; b++) {
+    const batch = images.slice(b * batchSize, (b + 1) * batchSize);
+    status.textContent = `Analysing batch ${b + 1} of ${batches} (${batch.length} posts)…`;
+    const kbImgs = [];
+    for (const img of batch) {
+      try {
+        const resp = await fetch(img.url, { mode: 'cors' });
+        if (!resp.ok) continue;
+        const blob = await resp.blob();
+        const b64 = await resizeImageBlob(blob, 800);
+        if (b64) kbImgs.push({ mediaType: 'image/jpeg', data: b64 });
+      } catch(e) {}
+    }
+    if (!kbImgs.length) continue;
+    try {
+      const prompt = `You are analysing Instagram post screenshots to build a detailed style guide.
+
+Examine these ${kbImgs.length} posts carefully. Describe in detail:
+- Visual style: colors, backgrounds, contrast, mood
+- Typography: font styles, sizes, weight, placement, capitalization
+- Layout: how elements are arranged, use of space, grid structure
+- Photography: how photos are treated, cropping, filters, overlays
+- Copywriting: tone of voice, headline style, caption length, punctuation
+- Carousel structure: how multi-slide posts flow, slide-to-slide narrative
+- What makes these posts stop the scroll
+
+Be extremely specific and detailed. This will be used to replicate this aesthetic exactly.`;
+      const analysis = await callClaude(prompt, 1200, kbImgs);
+      if (analysis) analyses.push(`BATCH ${b + 1}:\n${analysis}`);
+    } catch(e) { console.error('Batch analysis failed', e); }
+  }
+
+  if (!analyses.length) { status.textContent = '❌ Analysis failed — check API key'; btn.disabled = false; return; }
+
+  status.textContent = 'Saving style guide…';
+  const combined = `KNOWLEDGE BASE STYLE GUIDE — derived from ${total} reference posts:\n\n${analyses.join('\n\n---\n\n')}`;
+  await kbSaveGuide(combined);
+  status.textContent = `✅ Style guide saved — ${total} posts analysed & memorised`;
+  btn.disabled = false;
+}
+
+async function getKBPrompt() {
+  const guide = await kbLoadGuide();
+  if (guide) return guide;
+  return `You have been given reference screenshots. Analyse their visual style, layout, typography, color usage, and copywriting tone. Replicate that same premium standard in everything you generate.`;
 }
 
 async function getKBImages() {
@@ -1272,9 +1362,6 @@ function resizeImageBlob(blob, maxPx) {
   });
 }
 
-function getKBPrompt() {
-  return `You have been given reference screenshots from the knowledge base showing competitor/inspiration Instagram posts. Carefully analyse their visual style, layout, typography, color usage, copywriting tone, and carousel structure. Replicate that same level of quality and aesthetic in everything you generate — not a copy, but the same premium standard.`;
-}
 
 function setType(btn) {
   const t = btn.dataset.type;
@@ -1725,6 +1812,7 @@ async function generate() {
 
   const types = [...selectedTypes];
   const clientCtx = buildClientContext();
+  const kbGuide = await getKBPrompt();
 
   const kbImages = await getKBImages();
   const hasKB = kbImages.length > 0;
@@ -1736,7 +1824,7 @@ async function generate() {
 
     try {
       const prompt = `You are a premium social media content creator.
-${hasKB ? `\n${getKBPrompt()}\n` : ''}
+${hasKB ? `\n${kbGuide}\n` : ''}
 ${clientCtx}
 
 Post type: ${typeName}
@@ -1890,10 +1978,10 @@ async function generateStrategy() {
     const ctx = buildClientContext();
     const transcript = document.getElementById('transcriptText')?.value?.trim() || '';
     const kbImages = await getKBImages();
-    const kbPrompt = getKBPrompt();
-    const hasKB = kbImages.length > 0;
+    const kbGuideStr = await getKBPrompt();
+    const hasKB = !!kbGuideStr;
     const prompt = `You are an elite Instagram content strategist. You have deep expertise in premium social media aesthetics and what makes content stop the scroll.
-${hasKB ? `\n${kbPrompt}\n` : ''}
+${hasKB ? `\n${kbGuideStr}\n` : ''}
 ${ctx}
 ${transcript ? `\nSales call context:\n${transcript.substring(0,1500)}` : ''}
 
@@ -2001,9 +2089,10 @@ function draw3dPlaceholder(ctx, w, h) {
 async function generateCarouselSlides(post, photoObj, setProgress) {
   const clientCtx = buildClientContext();
   const kbImages = await getKBImages();
-  const hasKB = kbImages.length > 0;
+  const kbGuideStr = await getKBPrompt();
+  const hasKB = !!kbGuideStr;
   const prompt = `You are creating a premium Instagram CAROUSEL.
-${hasKB ? `\n${getKBPrompt()}\n` : ''}
+${hasKB ? `\n${kbGuideStr}\n` : ''}
 ${clientCtx}
 
 Post topic: ${post.headline}
@@ -2064,7 +2153,7 @@ async function renderStrategyGrid(posts, setProgress) {
   for (let i = 0; i < TOTAL; i++) {
     const kind = gridCellKind(i);
     const post = posts[i % posts.length] || posts[0];
-    const photoIdx = Math.floor(i / 3) % Math.max(photos.length, 1);
+    const photoIdx = i % Math.max(photos.length, 1);
     const photoObj = photos[photoIdx] || photos[0];
 
     const cv = document.createElement('canvas');
@@ -2285,10 +2374,11 @@ async function genCarouselWithAI() {
                 'our premium services';
   const ctx = buildClientContext();
   const kbImages = await getKBImages();
-  const hasKB = kbImages.length > 0;
+  const kbGuideStr = await getKBPrompt();
+  const hasKB = !!kbGuideStr;
 
   const prompt = `Create a 5-slide Instagram carousel.
-${hasKB ? `\n${getKBPrompt()}\n` : ''}
+${hasKB ? `\n${kbGuideStr}\n` : ''}
 ${ctx}
 Topic: ${topic}
 Template: ${carTemplate}
