@@ -1114,99 +1114,97 @@ function pickColor(el) {
   renderPreview();
 }
 
-// ─── Knowledge Base — IndexedDB image store ──────────────────────────────────
-let kbDB = null;
-
-function kbOpenDB() {
-  return new Promise((resolve, reject) => {
-    if (kbDB) return resolve(kbDB);
-    const req = indexedDB.open('qj_kb', 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore('images', { keyPath: 'id', autoIncrement: true });
-    req.onsuccess = e => { kbDB = e.target.result; resolve(kbDB); };
-    req.onerror   = () => reject(req.error);
-  });
-}
-
-async function kbGetAll() {
-  const db = await kbOpenDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('images', 'readonly');
-    const req = tx.objectStore('images').getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
-  });
-}
-
-async function kbPut(record) {
-  const db = await kbOpenDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('images', 'readwrite');
-    const req = tx.objectStore('images').add(record);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
-  });
-}
-
-async function kbRemove(id) {
-  const db = await kbOpenDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('images', 'readwrite');
-    const req = tx.objectStore('images').delete(id);
-    req.onsuccess = resolve;
-    req.onerror   = () => reject(req.error);
-  });
-}
+// ─── Knowledge Base — Supabase cloud storage ─────────────────────────────────
+const SB_URL = 'https://nuudvqzzhzlrwccqdmix.supabase.co';
+const SB_KEY = 'sb_publishable_BKc-mjXqwAR4jHHZ_nI8Qw_l-PjtvDk';
+const SB_HEADERS = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` };
 
 async function kbAddImages(evt) {
   const files = Array.from(evt.target.files);
+  const zone = document.getElementById('kbZone');
+  zone.style.opacity = '0.5';
+  zone.style.pointerEvents = 'none';
   for (const file of files) {
-    const b64 = await new Promise(res => {
-      const r = new FileReader();
-      r.onload = e => res(e.target.result); // data URL
-      r.readAsDataURL(file);
-    });
-    await kbPut({ dataUrl: b64, name: file.name, added: Date.now() });
+    const ext = file.name.split('.').pop() || 'jpg';
+    const filename = `kb-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    try {
+      const upResp = await fetch(`${SB_URL}/storage/v1/object/kb-images/${filename}`, {
+        method: 'POST',
+        headers: { ...SB_HEADERS, 'Content-Type': file.type },
+        body: file
+      });
+      if (!upResp.ok) { const e = await upResp.json(); console.error('Upload failed', e); continue; }
+      const publicUrl = `${SB_URL}/storage/v1/object/public/kb-images/${filename}`;
+      await fetch(`${SB_URL}/rest/v1/kb_images`, {
+        method: 'POST',
+        headers: { ...SB_HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ url: publicUrl })
+      });
+    } catch(e) { console.error(e); }
   }
   evt.target.value = '';
+  zone.style.opacity = '';
+  zone.style.pointerEvents = '';
   kbRender();
 }
 
-async function kbDeleteImg(id) {
-  await kbRemove(id);
+async function kbDeleteImg(id, filename) {
+  await fetch(`${SB_URL}/storage/v1/object/kb-images/${filename}`, {
+    method: 'DELETE', headers: SB_HEADERS
+  });
+  await fetch(`${SB_URL}/rest/v1/kb_images?id=eq.${id}`, {
+    method: 'DELETE', headers: SB_HEADERS
+  });
   kbRender();
+}
+
+async function kbLoadAll() {
+  try {
+    const resp = await fetch(`${SB_URL}/rest/v1/kb_images?select=*&order=created_at.desc`, { headers: SB_HEADERS });
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch(e) { return []; }
 }
 
 async function kbRender() {
-  const images = await kbGetAll();
+  const images = await kbLoadAll();
   const count = images.length;
-  document.getElementById('kbCountTag').textContent = count + ' screenshot' + (count === 1 ? '' : 's');
+  const tag = document.getElementById('kbCountTag');
+  if (tag) tag.textContent = count + ' screenshot' + (count === 1 ? '' : 's');
   const thumbs = document.getElementById('kbThumbs');
-  if (!images.length) {
-    thumbs.innerHTML = '';
-    return;
-  }
-  thumbs.innerHTML = images.map(img => `
-    <div style="position:relative;width:56px;height:56px;border-radius:7px;overflow:hidden;border:1px solid var(--border2)">
-      <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover">
-      <button onclick="kbDeleteImg(${img.id})" style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:3px;font-size:0.6rem;line-height:1;padding:1px 3px;cursor:pointer">×</button>
-    </div>`).join('');
+  if (!thumbs) return;
+  thumbs.innerHTML = images.map(img => {
+    const filename = img.url.split('/kb-images/')[1];
+    return `<div style="position:relative;width:56px;height:56px;border-radius:7px;overflow:hidden;border:1px solid var(--border2)">
+      <img src="${img.url}" style="width:100%;height:100%;object-fit:cover" crossorigin="anonymous">
+      <button onclick="kbDeleteImg(${img.id},'${filename}')" style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.75);border:none;color:#fff;border-radius:3px;font-size:0.6rem;line-height:1;padding:1px 4px;cursor:pointer">×</button>
+    </div>`;
+  }).join('');
 }
 
 async function getKBImages() {
-  // Returns up to 8 most-recent images as {type, base64, mediaType} for Claude vision
   try {
-    const all = await kbGetAll();
-    return all.slice(-8).map(img => {
-      const match = img.dataUrl.match(/^data:(.+?);base64,(.+)$/);
-      if (!match) return null;
-      return { mediaType: match[1], data: match[2] };
-    }).filter(Boolean);
+    const images = await kbLoadAll();
+    const sample = images.slice(0, 8);
+    const result = [];
+    for (const img of sample) {
+      try {
+        const resp = await fetch(img.url);
+        const blob = await resp.blob();
+        const b64 = await new Promise(res => {
+          const r = new FileReader();
+          r.onload = e => res(e.target.result.split(',')[1]);
+          r.readAsDataURL(blob);
+        });
+        result.push({ mediaType: blob.type || 'image/jpeg', data: b64 });
+      } catch(e) {}
+    }
+    return result;
   } catch(e) { return []; }
 }
 
 function getKBPrompt() {
-  // Text portion of KB context injected into prompts alongside vision images
-  return `You have been given reference screenshots from the knowledge base showing competitor/inspiration Instagram posts. Analyse their visual style, layout, typography approach, color usage, copywriting tone, and carousel structure. Replicate that same level of quality, aesthetic, and specificity in every post you generate — not a copy, but the same premium standard.`;
+  return `You have been given reference screenshots from the knowledge base showing competitor/inspiration Instagram posts. Carefully analyse their visual style, layout, typography, color usage, copywriting tone, and carousel structure. Replicate that same level of quality and aesthetic in everything you generate — not a copy, but the same premium standard.`;
 }
 
 function setType(btn) {
