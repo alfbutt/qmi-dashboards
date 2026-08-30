@@ -326,6 +326,20 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     </div>
     <div id="briefStatus" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--green);margin-top:0.35rem;min-height:0.9rem"></div>
 
+    <!-- Sales Call Transcript -->
+    <div class="sec-lbl" style="color:#a855f7">Sales Call Transcript <span class="sec-tag" style="background:rgba(168,85,247,0.12);color:#a855f7">shapes strategy</span></div>
+    <div class="field">
+      <label style="color:#a855f7">Paste transcript or upload TXT/DOCX</label>
+      <textarea id="transcriptText" placeholder="Paste your sales call transcript here — the AI will use it to understand the client's pain points, goals, offers and tone of voice when building the content strategy…" style="min-height:80px;border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.05)"></textarea>
+    </div>
+    <div class="upz" id="transcriptZone" onclick="document.getElementById('transcriptInput').click()" style="border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.05)">
+      <input type="file" id="transcriptInput" accept=".txt,.doc,.docx,.pdf" onchange="loadTranscript(event)" style="display:none">
+      <div class="upz-icon">🎙️</div>
+      <div class="upz-lbl" style="color:#a855f7">Upload <strong>transcript file</strong></div>
+      <div class="upz-note">TXT · DOCX · PDF</div>
+    </div>
+    <div id="transcriptStatus" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:#a855f7;margin-top:0.35rem;min-height:0.9rem"></div>
+
     <!-- Google Drive -->
     <div class="sec-lbl">Google Drive <span class="sec-tag">client content folder</span></div>
     <div class="field">
@@ -896,6 +910,25 @@ function getSelectedPhotoIdx() {
   return idx;
 }
 
+function loadTranscript(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('transcriptStatus');
+  status.textContent = 'Reading file…';
+  if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('transcriptText').value = ev.target.result.substring(0, 12000);
+      status.textContent = '✓ Transcript loaded from ' + file.name;
+      document.getElementById('transcriptZone').classList.add('filled');
+    };
+    reader.readAsText(file);
+  } else {
+    status.textContent = '⚠ PDF/DOCX — copy-paste the text above for best results.';
+    document.getElementById('transcriptZone').classList.add('filled');
+  }
+}
+
 function loadBrief(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -1446,7 +1479,7 @@ function isBright(hex) {
 // ════════════════════════════════════════════════
 // AI GENERATION — CAPTIONS & STRATEGY
 // ════════════════════════════════════════════════
-async function callClaude(prompt) {
+async function callClaude(prompt, maxTok=1800) {
   const key = localStorage.getItem('qj_social_claude_key') || '';
   if (!key) throw new Error('No Claude API key — click 🔑 API Keys in the top right and paste your Anthropic key.');
 
@@ -1462,7 +1495,7 @@ async function callClaude(prompt) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
+        max_tokens: maxTok,
         messages: [{role: 'user', content: prompt}]
       })
     });
@@ -1662,25 +1695,19 @@ async function generateStrategy() {
   try {
     setProgress(10, 'Analysing client brief…');
     const ctx = buildClientContext();
+    const transcript = document.getElementById('transcriptText')?.value?.trim() || '';
     const prompt = `You are a premium Instagram content strategist for trade and renovation businesses.
 
 ${ctx}
+${transcript ? `\nSales call transcript (use for tone/pain points/offers):\n${transcript.substring(0,1500)}` : ''}
 
-Create a complete Instagram content strategy. Respond with ONLY valid JSON:
-{
-  "bio": "Compact Instagram bio (max 150 chars). Include location, what they do, and a CTA emoji line.",
-  "strategy": "3-4 sentences on their content strategy — tone, content mix, visual style direction.",
-  "posts": [
-    {"type": "showcase|edu|services|editorial|testimonial|promotion", "headline": "...", "subtext": "...", "caption": "...", "hashtags": "..."},
-    ... (9 posts total — mix of types, diverse topics)
-  ],
-  "schedule": "Suggested posting schedule — e.g. Mon/Wed/Fri at 7am, with Reels on Tue/Thu."
-}
+Respond with ONLY this JSON (no extra text, no markdown):
+{"bio":"Instagram bio max 120 chars with emoji CTA","strategy":"2-3 sentences on tone and content mix","schedule":"e.g. Mon/Wed/Fri 7am + Reels Tue/Thu","posts":[{"type":"showcase","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption 2-3 sentences.","hashtags":"#tag1 #tag2"},{"type":"edu","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"services","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"editorial","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"testimonial","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"promotion","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"showcase","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"edu","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"},{"type":"editorial","headline":"HEADLINE","subtext":"Short subtext","caption":"Caption.","hashtags":"#tag1 #tag2"}]}
 
-Make the 9 posts genuinely varied: mix project showcases, educational tips, a services overview, a testimonial, and a promotional post. Each should feel distinct and premium.`;
+Fill in real content for ALL 9 posts. Be specific to the client industry. No placeholders.`;
 
     setProgress(30, 'Writing strategy…');
-    const raw = await callClaude(prompt);
+    const raw = await callClaude(prompt, 4000);
     setProgress(70, 'Building grid…');
 
     const strategy = safeParseJson(raw);
