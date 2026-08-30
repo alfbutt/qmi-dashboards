@@ -90,11 +90,6 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 /* Post type pills */
 /* Knowledge Base */
 .kb-add-box{border:1.5px solid rgba(6,182,212,0.25);border-radius:10px;background:rgba(6,182,212,0.04);padding:0.6rem 0.7rem}
-.kb-entry{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.45rem 0.55rem;font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--text);line-height:1.5;position:relative}
-.kb-entry-tag{display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:rgba(6,182,212,0.15);color:#06b6d4;font-size:0.5rem;font-weight:700;margin-bottom:0.25rem;margin-right:0.25rem;text-transform:uppercase}
-.kb-entry-niche{display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:rgba(201,168,71,0.12);color:var(--accent);font-size:0.5rem;font-weight:700;margin-bottom:0.25rem;text-transform:uppercase}
-.kb-entry-text{color:var(--muted);white-space:pre-wrap;word-break:break-word}
-.kb-del{position:absolute;top:0.3rem;right:0.4rem;background:none;border:none;color:rgba(239,68,68,0.5);cursor:pointer;font-size:0.75rem;line-height:1;padding:0}
 .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}
 .type-btn{padding:0.55rem 0.65rem;border:1.5px solid var(--border2);border-radius:9px;background:var(--surface2);cursor:pointer;transition:all 0.15s;text-align:left;position:relative}
 .type-btn:hover{border-color:var(--accent)}
@@ -388,48 +383,15 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     </div>
 
     <!-- Knowledge Base — Persistent Library -->
-    <div class="sec-lbl" style="color:#06b6d4">Knowledge Base <span class="sec-tag" style="background:rgba(6,182,212,0.1);color:#06b6d4" id="kbCountTag">0 posts saved</span></div>
-    <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.6rem;line-height:1.6">Paste in captions, headlines, or post ideas from accounts you love. Saved <strong style="color:#06b6d4">permanently</strong> — Claude pulls from these every time you generate.</div>
-
-    <!-- Add to KB -->
-    <div class="kb-add-box" id="kbAddBox">
-      <textarea id="kbInput" placeholder="Paste a caption, headline, or post idea here…&#10;&#10;e.g. 'This $280k Toorak kitchen reno took 6 weeks. Every tile, every handle, hand-picked by our client. This is what obsessing over details looks like. Swipe to see the process →'" style="min-height:70px;width:100%;box-sizing:border-box;background:transparent;border:none;outline:none;resize:vertical;font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--text);line-height:1.6"></textarea>
-      <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;flex-wrap:wrap">
-        <select id="kbTag" style="flex:1;min-width:90px;padding:0.3rem 0.4rem;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:0.6rem;font-family:'DM Mono',monospace">
-          <option value="caption">Caption</option>
-          <option value="headline">Headline</option>
-          <option value="carousel">Carousel script</option>
-          <option value="hook">Hook / opener</option>
-          <option value="cta">CTA</option>
-          <option value="testimonial">Testimonial</option>
-          <option value="hashtags">Hashtags</option>
-          <option value="style">Style direction</option>
-        </select>
-        <select id="kbNiche" style="flex:1;min-width:90px;padding:0.3rem 0.4rem;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:0.6rem;font-family:'DM Mono',monospace">
-          <option value="any">Any niche</option>
-          <option value="trades">Trades / builders</option>
-          <option value="real-estate">Real estate</option>
-          <option value="interior">Interior design</option>
-          <option value="fitness">Fitness / coaching</option>
-          <option value="luxury">Luxury lifestyle</option>
-          <option value="business">Business / B2B</option>
-        </select>
-        <button onclick="kbAdd()" style="padding:0.3rem 0.7rem;background:#06b6d4;color:#000;border:none;border-radius:6px;font-size:0.6rem;font-weight:700;cursor:pointer;white-space:nowrap">+ Save to KB</button>
-      </div>
+    <div class="sec-lbl" style="color:#06b6d4">Knowledge Base <span class="sec-tag" style="background:rgba(6,182,212,0.1);color:#06b6d4" id="kbCountTag">0 screenshots</span></div>
+    <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.55rem;line-height:1.6">Upload screenshots of competitor posts you like. Saved <strong style="color:#06b6d4">permanently</strong> in your browser — Claude visually analyses them every time you generate.</div>
+    <div class="upz" id="kbZone" style="border-color:rgba(6,182,212,0.3);background:rgba(6,182,212,0.04);padding:0.9rem" onclick="document.getElementById('kbFileInput').click()">
+      <input type="file" id="kbFileInput" accept="image/*" multiple style="display:none" onchange="kbAddImages(event)">
+      <div class="upz-icon" style="font-size:1.3rem">📸</div>
+      <div class="upz-lbl" style="color:#06b6d4">Drop or click to upload competitor screenshots</div>
+      <div class="upz-note">PNG, JPG · any number · stored permanently</div>
     </div>
-
-    <!-- Search + list -->
-    <div style="display:flex;gap:0.4rem;margin-top:0.5rem;align-items:center">
-      <input id="kbSearch" type="text" placeholder="Search knowledge base…" style="flex:1;padding:0.3rem 0.5rem;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:0.6rem;font-family:'DM Mono',monospace" oninput="kbRender()">
-      <button onclick="kbClear()" style="padding:0.3rem 0.5rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:0.58rem;color:#ef4444;cursor:pointer;white-space:nowrap" title="Clear all">Clear all</button>
-    </div>
-    <div id="kbList" style="margin-top:0.5rem;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem"></div>
-
-    <!-- Style notes -->
-    <div class="field" style="margin-top:0.65rem">
-      <label>Style direction (optional — adds to the library)</label>
-      <textarea id="styleNotes" placeholder="e.g. Dark editorial feel. Bold Bebas headlines. Photos full-bleed. Carousels tell a story. Premium, not budget." style="min-height:45px" oninput="saveField('styleNotes',this.value)"></textarea>
-    </div>
+    <div id="kbThumbs" style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.35rem"></div>
 
     <!-- Post Type -->
     <div class="sec-lbl">Post Types <span class="sec-tag">select multiple</span></div>
@@ -1153,75 +1115,99 @@ function pickColor(el) {
   renderPreview();
 }
 
-// ─── Persistent Knowledge Base ───────────────────────────────────────────────
-const KB_STORE_KEY = 'qj_kb_entries';
+// ─── Knowledge Base — IndexedDB image store ──────────────────────────────────
+let kbDB = null;
 
-function kbLoad() {
-  try { return JSON.parse(localStorage.getItem(KB_STORE_KEY) || '[]'); } catch(e) { return []; }
+function kbOpenDB() {
+  return new Promise((resolve, reject) => {
+    if (kbDB) return resolve(kbDB);
+    const req = indexedDB.open('qj_kb', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('images', { keyPath: 'id', autoIncrement: true });
+    req.onsuccess = e => { kbDB = e.target.result; resolve(kbDB); };
+    req.onerror   = () => reject(req.error);
+  });
 }
 
-function kbSave(entries) {
-  try { localStorage.setItem(KB_STORE_KEY, JSON.stringify(entries)); } catch(e) {}
+async function kbGetAll() {
+  const db = await kbOpenDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('images', 'readonly');
+    const req = tx.objectStore('images').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
 }
 
-function kbAdd() {
-  const text = document.getElementById('kbInput').value.trim();
-  if (!text) return;
-  const tag   = document.getElementById('kbTag').value;
-  const niche = document.getElementById('kbNiche').value;
-  const entries = kbLoad();
-  entries.unshift({ id: Date.now(), text, tag, niche });
-  kbSave(entries);
-  document.getElementById('kbInput').value = '';
+async function kbPut(record) {
+  const db = await kbOpenDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('images', 'readwrite');
+    const req = tx.objectStore('images').add(record);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+async function kbRemove(id) {
+  const db = await kbOpenDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('images', 'readwrite');
+    const req = tx.objectStore('images').delete(id);
+    req.onsuccess = resolve;
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+async function kbAddImages(evt) {
+  const files = Array.from(evt.target.files);
+  for (const file of files) {
+    const b64 = await new Promise(res => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result); // data URL
+      r.readAsDataURL(file);
+    });
+    await kbPut({ dataUrl: b64, name: file.name, added: Date.now() });
+  }
+  evt.target.value = '';
   kbRender();
 }
 
-function kbDelete(id) {
-  const entries = kbLoad().filter(e => e.id !== id);
-  kbSave(entries);
+async function kbDeleteImg(id) {
+  await kbRemove(id);
   kbRender();
 }
 
-function kbClear() {
-  if (!confirm('Delete all knowledge base entries? This cannot be undone.')) return;
-  localStorage.removeItem(KB_STORE_KEY);
-  kbRender();
-}
-
-function kbRender() {
-  const q = (document.getElementById('kbSearch')?.value || '').toLowerCase();
-  const entries = kbLoad().filter(e => !q || e.text.toLowerCase().includes(q) || e.tag.includes(q) || e.niche.includes(q));
-  const list = document.getElementById('kbList');
-  const count = kbLoad().length;
-  document.getElementById('kbCountTag').textContent = count + ' post' + (count === 1 ? '' : 's') + ' saved';
-  if (!entries.length) {
-    list.innerHTML = `<div style="font-size:0.58rem;font-family:'DM Mono',monospace;color:var(--muted);text-align:center;padding:0.6rem">${count ? 'No results for that search.' : 'No entries yet — paste your first post above.'}</div>`;
+async function kbRender() {
+  const images = await kbGetAll();
+  const count = images.length;
+  document.getElementById('kbCountTag').textContent = count + ' screenshot' + (count === 1 ? '' : 's');
+  const thumbs = document.getElementById('kbThumbs');
+  if (!images.length) {
+    thumbs.innerHTML = '';
     return;
   }
-  list.innerHTML = entries.map(e => `
-    <div class="kb-entry">
-      <button class="kb-del" onclick="kbDelete(${e.id})" title="Delete">×</button>
-      <span class="kb-entry-tag">${e.tag}</span>
-      <span class="kb-entry-niche">${e.niche}</span>
-      <div class="kb-entry-text">${e.text.length > 220 ? e.text.slice(0,220) + '…' : e.text}</div>
+  thumbs.innerHTML = images.map(img => `
+    <div style="position:relative;width:56px;height:56px;border-radius:7px;overflow:hidden;border:1px solid var(--border2)">
+      <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover">
+      <button onclick="kbDeleteImg(${img.id})" style="position:absolute;top:1px;right:1px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:3px;font-size:0.6rem;line-height:1;padding:1px 3px;cursor:pointer">×</button>
     </div>`).join('');
 }
 
+async function getKBImages() {
+  // Returns up to 8 most-recent images as {type, base64, mediaType} for Claude vision
+  try {
+    const all = await kbGetAll();
+    return all.slice(-8).map(img => {
+      const match = img.dataUrl.match(/^data:(.+?);base64,(.+)$/);
+      if (!match) return null;
+      return { mediaType: match[1], data: match[2] };
+    }).filter(Boolean);
+  } catch(e) { return []; }
+}
+
 function getKBPrompt() {
-  const entries = kbLoad();
-  const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
-  let out = '';
-  if (entries.length) {
-    // Send up to 30 most recent entries (most recent = most relevant)
-    const sample = entries.slice(0, 30);
-    out += `KNOWLEDGE BASE — ${entries.length} saved reference posts (use these as style, tone, and format examples for every post you write):\n`;
-    sample.forEach((e, i) => {
-      out += `\n[${i+1}] TYPE: ${e.tag} | NICHE: ${e.niche}\n${e.text}\n`;
-    });
-    out += `\nAnalyse the voice, structure, specificity, and energy in these examples. Match that level of quality in everything you generate.`;
-  }
-  if (styleNotes) out += `\n\nSTYLE DIRECTION: ${styleNotes}`;
-  return out;
+  // Text portion of KB context injected into prompts alongside vision images
+  return `You have been given reference screenshots from the knowledge base showing competitor/inspiration Instagram posts. Analyse their visual style, layout, typography approach, color usage, copywriting tone, and carousel structure. Replicate that same level of quality, aesthetic, and specificity in every post you generate — not a copy, but the same premium standard.`;
 }
 
 function setType(btn) {
@@ -1603,9 +1589,23 @@ function isBright(hex) {
 // ════════════════════════════════════════════════
 // AI GENERATION — CAPTIONS & STRATEGY
 // ════════════════════════════════════════════════
-async function callClaude(prompt, maxTok=1800) {
+async function callClaude(prompt, maxTok=1800, kbImages=[]) {
   const key = localStorage.getItem('qj_social_claude_key') || '';
   if (!key) throw new Error('No Claude API key — click 🔑 API Keys in the top right and paste your Anthropic key.');
+
+  // Build message content — prepend KB images as vision blocks if provided
+  let content;
+  if (kbImages && kbImages.length) {
+    content = [
+      ...kbImages.map(img => ({
+        type: 'image',
+        source: { type: 'base64', media_type: img.mediaType, data: img.data }
+      })),
+      { type: 'text', text: prompt }
+    ];
+  } else {
+    content = prompt;
+  }
 
   let resp;
   try {
@@ -1620,7 +1620,7 @@ async function callClaude(prompt, maxTok=1800) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: maxTok,
-        messages: [{role: 'user', content: prompt}]
+        messages: [{ role: 'user', content }]
       })
     });
   } catch(netErr) {
@@ -1820,12 +1820,11 @@ async function generateStrategy() {
     setProgress(10, 'Analysing client brief…');
     const ctx = buildClientContext();
     const transcript = document.getElementById('transcriptText')?.value?.trim() || '';
+    const kbImages = await getKBImages();
     const kbPrompt = getKBPrompt();
+    const hasKB = kbImages.length > 0;
     const prompt = `You are an elite Instagram content strategist. You have deep expertise in premium social media aesthetics and what makes content stop the scroll.
-
-KNOWLEDGE BASE — MASTER AESTHETIC (follow this exactly for every post):
-${kbPrompt}
-
+${hasKB ? `\n${kbPrompt}\n` : ''}
 ${ctx}
 ${transcript ? `\nSales call context:\n${transcript.substring(0,1500)}` : ''}
 
@@ -1838,7 +1837,7 @@ Respond with ONLY this JSON (no extra text, no markdown):
 Every post must be DISTINCT. Mix real project showcases, specific tips, process insights, a genuine testimonial, and one strong offer.`;
 
     setProgress(30, 'Writing strategy…');
-    const raw = await callClaude(prompt, 4000);
+    const raw = await callClaude(prompt, 4000, kbImages);
     setProgress(70, 'Building grid…');
 
     let strategy = safeParseJson(raw);
@@ -1932,19 +1931,17 @@ function draw3dPlaceholder(ctx, w, h) {
 
 async function generateCarouselSlides(post, photoObj, setProgress) {
   const clientCtx = buildClientContext();
-  const kbPrompt = getKBPrompt();
+  const kbImages = await getKBImages();
+  const hasKB = kbImages.length > 0;
   const prompt = `You are creating a premium Instagram CAROUSEL.
-
-KNOWLEDGE BASE — MASTER AESTHETIC (apply to every slide):
-${kbPrompt}
-
+${hasKB ? `\n${getKBPrompt()}\n` : ''}
 ${clientCtx}
 
 Post topic: ${post.headline}
 Type: ${post.type}
 Caption context: ${post.subtext || ''}
 
-Create 5 slides that match this aesthetic perfectly. Be SPECIFIC — real locations, real outcomes, real numbers. No generic filler.
+Create 5 slides. Be SPECIFIC — real locations, real outcomes, real numbers. No generic filler.
 
 Return ONLY a JSON array of exactly 5 slide objects:
 [
@@ -1956,7 +1953,7 @@ Return ONLY a JSON array of exactly 5 slide objects:
 ]`;
 
   try {
-    const raw = await callClaude(prompt, 2000);
+    const raw = await callClaude(prompt, 2000, kbImages);
     const slides = safeParseJson(raw);
     if (Array.isArray(slides) && slides.length >= 2) return slides;
   } catch(e) {}
