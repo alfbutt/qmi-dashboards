@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Social Post Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -1009,13 +1009,40 @@ async function loadDriveFolder() {
 
     if (!files.length) { status.textContent = 'No images found in folder (make sure it\'s publicly shared).'; return; }
 
-    status.textContent = `✓ Found ${files.length} images`;
+    status.textContent = `✓ Found ${files.length} images — loading for canvas…`;
     drivePhotos = files;
 
     filesEl.innerHTML = files.map((f, i) => `
-      <img class="drive-thumb" src="${f.thumbnailLink || ''}" title="${f.name}"
+      <img class="drive-thumb" src="${(f.thumbnailLink||'').replace(/=s\d+/,'=s200')}" title="${f.name}"
         onclick="selectDrivePhoto(${i})"
         onerror="this.style.background='var(--surface2)';this.src=''">`).join('');
+
+    // Auto-load all drive images into photos array using high-res thumbnail (CORS-safe)
+    let loaded = 0;
+    files.forEach((f, i) => {
+      if (!f.thumbnailLink) return;
+      const hiRes = f.thumbnailLink.replace(/=s\d+/, '=s1080');
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const existing = photos.findIndex(p => p.driveId === f.id);
+        if (existing === -1) {
+          photos.push({driveId: f.id, img, dataUrl: hiRes, name: f.name});
+          const sel = document.getElementById('slideBgPhoto');
+          const opt = document.createElement('option');
+          opt.value = photos.length - 1;
+          opt.textContent = f.name;
+          sel.appendChild(opt);
+        }
+        loaded++;
+        if (loaded === files.length) {
+          status.textContent = `✓ ${files.length} images loaded and ready to use`;
+          renderPhotoThumbs();
+        }
+      };
+      img.onerror = () => { loaded++; };
+      img.src = hiRes;
+    });
 
   } catch(err) {
     status.textContent = '⚠ ' + err.message + ' — ensure the folder is publicly shared.';
@@ -1123,30 +1150,26 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 }
 
 function wrapText(ctx, text, x, y, maxW, lineH) {
-  const words = text.split(' ');
-  let line = '';
-  let lines = [];
+  const words = (text||'').split(' ');
+  let line='', lines=[];
   for (const word of words) {
-    const test = line + (line ? ' ' : '') + word;
-    if (ctx.measureText(test).width > maxW && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = test;
-    }
+    const test = line+(line?' ':'')+word;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line=word; }
+    else line=test;
   }
   if (line) lines.push(line);
-  lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineH));
-  return lines.length * lineH;
+  lines.forEach((l,i) => ctx.fillText(l, x, y+i*lineH));
+  return lines.length*lineH;
 }
 
 function drawLogo(ctx, w, h) {
   if (!logoImg) return;
-  const lw = Math.min(w * 0.2, 160);
-  const lh = lw * (logoImg.height / logoImg.width);
-  const lx = (w - lw) / 2;
-  const ly = h - lh - h * 0.04;
-  ctx.drawImage(logoImg, lx, ly, lw, lh);
+  const lh = Math.min(h * 0.07, 56);
+  const lw = lh * (logoImg.width / logoImg.height);
+  const margin = w * 0.04;
+  ctx.globalAlpha = 0.88;
+  ctx.drawImage(logoImg, w - lw - margin, h - lh - margin, lw, lh);
+  ctx.globalAlpha = 1;
 }
 
 function drawPost(data) {
@@ -1166,329 +1189,278 @@ function drawPost(data) {
   document.getElementById('dlBtn').disabled = false;
 }
 
-// ── Showcase: full-bleed photo, bold centered title ──
-function drawShowcase(ctx, w, h, photo, data) {
-  ctx.clearRect(0, 0, w, h);
-  if (photo?.img) {
-    const scale = Math.max(w/photo.img.width, h/photo.img.height);
-    const sw = photo.img.width * scale, sh = photo.img.height * scale;
-    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
-  } else {
-    ctx.fillStyle = '#1e1b18';
-    ctx.fillRect(0, 0, w, h);
-  }
-  // Gradient overlay
-  const grad = ctx.createLinearGradient(0, h*0.3, 0, h);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.6, 'rgba(0,0,0,0.72)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.88)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
-
-  // Thin accent line at top
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(0, 0, w, 6);
-
-  // Headline
-  const hl = data?.headline || 'Your Headline Here';
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `800 ${Math.round(w*0.075)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  const hlY = h * 0.78;
-  wrapText(ctx, hl.toUpperCase(), w/2, hlY, w*0.82, w*0.09);
-
-  // Sub text
-  if (data?.subtext) {
-    ctx.font = `400 ${Math.round(w*0.032)}px 'DM Mono', monospace`;
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.textBaseline = 'top';
-    wrapText(ctx, data.subtext, w/2, h*0.82, w*0.75, w*0.042);
-  }
-
-  drawLogo(ctx, w, h);
+// ── HELPER: fill photo cover ──
+function fillPhoto(ctx, img, x, y, w, h) {
+  if (!img) return;
+  const scale = Math.max(w/img.width, h/img.height);
+  const sw = img.width*scale, sh = img.height*scale;
+  ctx.drawImage(img, x+(w-sw)/2, y+(h-sh)/2, sw, sh);
 }
 
-// ── Educational: dark charcoal, gold headline, ghost word ──
-function drawEdu(ctx, w, h, photo, data) {
-  ctx.clearRect(0, 0, w, h);
+// ── HELPER: Bebas headline with auto size-down ──
+function bebasText(ctx, text, x, y, maxW, size, align='left') {
+  ctx.font = `${size}px 'Bebas Neue', Impact, sans-serif`;
+  ctx.textAlign = align;
+  // auto shrink if needed
+  while (ctx.measureText(text).width > maxW && size > 24) {
+    size -= 4;
+    ctx.font = `${size}px 'Bebas Neue', Impact, sans-serif`;
+  }
+  ctx.fillText(text, x, y);
+  return size;
+}
 
-  // Dark bg (with subtle photo blend if provided)
-  ctx.fillStyle = '#2a2722';
-  ctx.fillRect(0, 0, w, h);
-  if (photo?.img) {
-    ctx.globalAlpha = 0.18;
-    const scale = Math.max(w/photo.img.width, h/photo.img.height);
-    const sw = photo.img.width*scale, sh = photo.img.height*scale;
-    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
-    ctx.globalAlpha = 1;
+// ── HELPER: wrap text, return total height ──
+function wrapTextLeft(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line='', lines=[];
+  for (const w of words) {
+    const t = line+(line?' ':'')+w;
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line=w; }
+    else line=t;
+  }
+  if (line) lines.push(line);
+  lines.forEach((l,i) => ctx.fillText(l, x, y+i*lineH));
+  return lines.length*lineH;
+}
+
+// ── Showcase: full-bleed photo · Bebas headline bottom-left ──
+function drawShowcase(ctx, w, h, photo, data) {
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,w,h);
+  if (photo?.img) { ctx.save(); ctx.rect(0,0,w,h); ctx.clip(); fillPhoto(ctx,photo.img,0,0,w,h); ctx.restore(); }
+
+  // Bottom gradient
+  const g=ctx.createLinearGradient(0,h*0.4,0,h);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(0.5,'rgba(0,0,0,0.65)');
+  g.addColorStop(1,'rgba(0,0,0,0.92)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+
+  // Left accent bar
+  ctx.fillStyle=brandColor; ctx.fillRect(w*0.06,h*0.54,5,h*0.3);
+
+  // Category tag
+  const tag=(data?.tag||'').split('·')[0].trim().toUpperCase();
+  if(tag){
+    ctx.font=`${Math.round(w*0.024)}px 'DM Mono',monospace`;
+    ctx.fillStyle=brandColor; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(tag, w*0.075, h*0.55);
   }
 
-  // Ghost word watermark (right side, large)
-  const ghost = data?.ghost || '';
-  if (ghost) {
+  // Big Bebas headline
+  ctx.fillStyle='#ffffff'; ctx.textBaseline='top';
+  const hl=(data?.headline||'YOUR PROJECT HERE').toUpperCase();
+  const hlSize=Math.round(w*0.115);
+  ctx.font=`${hlSize}px 'Bebas Neue',Impact,sans-serif`;
+  ctx.textAlign='left';
+  wrapText(ctx, hl, w*0.075, h*0.61, w*0.86, hlSize*1.05);
+
+  // Subtext
+  if(data?.subtext){
+    ctx.font=`${Math.round(w*0.03)}px 'DM Mono',monospace`;
+    ctx.fillStyle='rgba(255,255,255,0.65)'; ctx.textBaseline='top';
+    wrapTextLeft(ctx, data.subtext, w*0.075, h*0.84, w*0.78, w*0.038);
+  }
+
+  drawLogo(ctx,w,h);
+}
+
+// ── Educational: near-black · gold Bebas headline · ghost word ──
+function drawEdu(ctx, w, h, photo, data) {
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,w,h);
+
+  // Subtle photo texture
+  if(photo?.img){ ctx.globalAlpha=0.12; fillPhoto(ctx,photo.img,0,0,w,h); ctx.globalAlpha=1; }
+
+  // Giant ghost word — behind everything
+  const ghost=(data?.ghost||'').toUpperCase();
+  if(ghost){
     ctx.save();
-    ctx.font = `800 ${Math.round(w*0.22)}px 'Syne', sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(ghost.toUpperCase(), w + w*0.04, h/2);
+    ctx.font=`${Math.round(w*0.38)}px 'Bebas Neue',Impact,sans-serif`;
+    ctx.fillStyle='rgba(255,255,255,0.03)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(ghost, w*0.55, h*0.52);
     ctx.restore();
   }
 
-  // Category pills — top corners
-  const tag = data?.tag || '';
-  if (tag) {
-    const parts = tag.split('·').map(s => s.trim()).filter(Boolean);
-    ctx.font = `500 ${Math.round(w*0.025)}px 'DM Mono', monospace`;
-    const ph = Math.round(w*0.04), pv = Math.round(w*0.018);
-    let px = w*0.05;
-    parts.forEach(p => {
-      const tw = ctx.measureText(p).width;
-      const bw = tw + ph*2, bh = pv*2 + Math.round(w*0.025);
-      const by = w*0.05;
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-      ctx.lineWidth = 1.5;
-      drawRoundedRect(ctx, px, by, bw, bh, bh/2);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(p, px + bw/2, by + bh/2);
-      px += bw + w*0.02;
-    });
+  // Top accent line + tag
+  ctx.fillStyle=brandColor; ctx.fillRect(w*0.06,h*0.1,w*0.08,4);
+  const tag=(data?.tag||'').toUpperCase();
+  if(tag){
+    ctx.font=`${Math.round(w*0.022)}px 'DM Mono',monospace`;
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(tag, w*0.06, h*0.14);
   }
 
-  // Brand color accent line
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(w*0.05, h*0.3, w*0.06, 5);
-
-  // Headline in brand color
-  ctx.font = `800 ${Math.round(w*0.08)}px 'Syne', sans-serif`;
-  ctx.fillStyle = brandColor;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  const hl = data?.headline || 'HEADLINE GOES HERE';
-  const hlH = wrapText(ctx, hl.toUpperCase(), w*0.05, h*0.34, w*0.72, w*0.1);
+  // Bebas headline
+  ctx.fillStyle=brandColor; ctx.textAlign='left'; ctx.textBaseline='top';
+  const hl=(data?.headline||'HEADLINE').toUpperCase();
+  const hlSize=Math.round(w*0.13);
+  ctx.font=`${hlSize}px 'Bebas Neue',Impact,sans-serif`;
+  const hlH=wrapText(ctx, hl, w*0.06, h*0.22, w*0.86, hlSize*1.02);
 
   // Body text
-  if (data?.subtext) {
-    ctx.font = `400 ${Math.round(w*0.033)}px 'DM Mono', monospace`;
-    ctx.fillStyle = 'rgba(240,235,224,0.82)';
-    ctx.textBaseline = 'top';
-    wrapText(ctx, data.subtext, w*0.05, h*0.34 + hlH + h*0.04, w*0.82, w*0.046);
+  if(data?.subtext){
+    ctx.font=`${Math.round(w*0.032)}px 'DM Mono',monospace`;
+    ctx.fillStyle='rgba(255,255,255,0.72)'; ctx.textBaseline='top';
+    wrapTextLeft(ctx, data.subtext, w*0.06, h*0.22+hlH+h*0.03, w*0.86, w*0.044);
   }
 
-  // Bottom: brand name pill
-  const clientName = document.getElementById('clientName').value.trim().toUpperCase();
-  if (clientName) {
-    ctx.font = `600 ${Math.round(w*0.025)}px 'DM Mono', monospace`;
-    const tw = ctx.measureText(clientName).width;
-    const bw = tw + w*0.06, bh = w*0.045;
-    const bx = (w - bw)/2, by = h - bh - h*0.05;
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 1.5;
-    drawRoundedRect(ctx, bx, by, bw, bh, bh/2);
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.65)';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(clientName, w/2, by + bh/2);
-  }
-
-  drawLogo(ctx, w, h);
+  drawLogo(ctx,w,h);
 }
 
-// ── Services grid: dark, big header, 3-photo strip ──
+// ── Services: dark · huge Bebas header · 3-photo strip ──
 function drawServices(ctx, w, h, photo, data) {
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#1e1c19';
-  ctx.fillRect(0, 0, w, h);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,w,h);
 
-  // "OUR SERVICES" header
-  const heading = (data?.headline || 'OUR SERVICES').toUpperCase();
-  ctx.font = `800 ${Math.round(w*0.11)}px 'Syne', sans-serif`;
-  ctx.fillStyle = '#f0ebe0';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(heading, w/2, h*0.06);
+  const heading=(data?.headline||'OUR SERVICES').toUpperCase();
+  ctx.font=`${Math.round(w*0.13)}px 'Bebas Neue',Impact,sans-serif`;
+  ctx.fillStyle='#ffffff'; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText(heading, w*0.06, h*0.06);
 
-  // 3-photo strip (use same photo tiled or split)
-  const stripY = h*0.24, stripH = h*0.42;
-  const gap = w*0.015;
-  const cellW = (w - gap*4) / 3;
+  // Accent underline
+  ctx.fillStyle=brandColor; ctx.fillRect(w*0.06,h*0.24,w*0.12,5);
 
-  for (let i=0; i<3; i++) {
-    const px = gap + i*(cellW + gap);
-    const img = photos[i]?.img || photos[0]?.img;
-    if (img) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(px, stripY, cellW, stripH);
-      ctx.clip();
-      const scale = Math.max(cellW/img.width, stripH/img.height);
-      const sw = img.width*scale, sh = img.height*scale;
-      ctx.drawImage(img, px + (cellW-sw)/2, stripY + (stripH-sh)/2, sw, sh);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = '#3a3530';
-      ctx.fillRect(px, stripY, cellW, stripH);
-    }
-  }
-
-  // Service label below strip
-  const label = data?.subtext || 'Premium Renovation Services';
-  ctx.font = `400 ${Math.round(w*0.032)}px 'DM Mono', monospace`;
-  ctx.fillStyle = 'rgba(240,235,224,0.6)';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(label, w/2, stripY + stripH + h*0.04);
-
-  // Brand line
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(w*0.4, stripY + stripH + h*0.09, w*0.2, 3);
-
-  drawLogo(ctx, w, h);
-}
-
-// ── Editorial: split brand color left, photo right ──
-function drawEditorial(ctx, w, h, photo, data) {
-  ctx.clearRect(0, 0, w, h);
-  const splitX = w * 0.42;
-
-  // Left: brand color block
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(0, 0, splitX, h);
-
-  // Right: photo
-  if (photo?.img) {
-    ctx.save();
-    ctx.rect(splitX, 0, w-splitX, h);
-    ctx.clip();
-    const scale = Math.max((w-splitX)/photo.img.width, h/photo.img.height);
-    const sw = photo.img.width*scale, sh = photo.img.height*scale;
-    ctx.drawImage(photo.img, splitX + ((w-splitX)-sw)/2, (h-sh)/2, sw, sh);
+  // 3-photo strip
+  const stripY=h*0.29, stripH=h*0.44, gap=w*0.015;
+  const cellW=(w-gap*4)/3;
+  for(let i=0;i<3;i++){
+    const px=gap+i*(cellW+gap);
+    const img=photos[i]?.img||photos[0]?.img;
+    ctx.save(); ctx.beginPath(); ctx.rect(px,stripY,cellW,stripH); ctx.clip();
+    if(img) fillPhoto(ctx,img,px,stripY,cellW,stripH);
+    else { ctx.fillStyle='#2a2722'; ctx.fillRect(px,stripY,cellW,stripH); }
+    // Tint overlay
+    ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(px,stripY,cellW,stripH);
     ctx.restore();
-    // Subtle gradient blend
-    const blend = ctx.createLinearGradient(splitX, 0, splitX + w*0.15, 0);
-    blend.addColorStop(0, brandColor);
-    blend.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = blend;
-    ctx.fillRect(splitX, 0, w*0.15, h);
-  } else {
-    ctx.fillStyle = '#1e1b18';
-    ctx.fillRect(splitX, 0, w-splitX, h);
   }
 
-  // Text on brand color block
-  ctx.save();
-  ctx.fillStyle = isBright(brandColor) ? '#1e1b18' : '#ffffff';
-  const textColor = isBright(brandColor) ? '#1e1b18' : '#ffffff';
-  ctx.font = `800 ${Math.round(splitX*0.14)}px 'Syne', sans-serif`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  const hl = data?.headline || 'Your Story Here';
-  wrapText(ctx, hl.toUpperCase(), w*0.07, h*0.18, splitX*0.82, splitX*0.17);
+  if(data?.subtext){
+    ctx.font=`${Math.round(w*0.028)}px 'DM Mono',monospace`;
+    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText(data.subtext, w/2, stripY+stripH+h*0.04);
+  }
 
-  ctx.font = `400 ${Math.round(splitX*0.075)}px 'DM Mono', monospace`;
-  ctx.fillStyle = isBright(brandColor) ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.72)';
-  if (data?.subtext) wrapText(ctx, data.subtext, w*0.07, h*0.52, splitX*0.82, splitX*0.1);
-  ctx.restore();
-
-  // White accent bar
-  ctx.fillStyle = isBright(brandColor) ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.35)';
-  ctx.fillRect(w*0.07, h*0.15, splitX*0.65, 3);
-
-  drawLogo(ctx, w, h);
+  drawLogo(ctx,w,h);
 }
 
-// ── Testimonial: photo bg, dark overlay, stars, quote ──
-function drawTestimonial(ctx, w, h, photo, data) {
-  ctx.clearRect(0, 0, w, h);
-  if (photo?.img) {
-    const scale = Math.max(w/photo.img.width, h/photo.img.height);
-    const sw = photo.img.width*scale, sh = photo.img.height*scale;
-    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
-  } else {
-    ctx.fillStyle = '#2a2722';
-    ctx.fillRect(0, 0, w, h);
-  }
-  ctx.fillStyle = 'rgba(0,0,0,0.72)';
-  ctx.fillRect(0, 0, w, h);
+// ── Editorial: brand-color left block · photo right · Bebas ──
+function drawEditorial(ctx, w, h, photo, data) {
+  ctx.clearRect(0,0,w,h);
+  const splitX=w*0.45;
 
-  // Accent top line
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(w*0.15, h*0.22, w*0.7, 4);
+  ctx.fillStyle=brandColor; ctx.fillRect(0,0,splitX,h);
+
+  if(photo?.img){
+    ctx.save(); ctx.beginPath(); ctx.rect(splitX,0,w-splitX,h); ctx.clip();
+    fillPhoto(ctx,photo.img,splitX,0,w-splitX,h);
+    ctx.restore();
+    const blend=ctx.createLinearGradient(splitX,0,splitX+w*0.12,0);
+    blend.addColorStop(0,brandColor); blend.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=blend; ctx.fillRect(splitX,0,w*0.12,h);
+  } else {
+    ctx.fillStyle='#1a1714'; ctx.fillRect(splitX,0,w-splitX,h);
+  }
+
+  const tc=isBright(brandColor)?'#0d0d0d':'#ffffff';
+  // Top tag
+  ctx.font=`${Math.round(w*0.022)}px 'DM Mono',monospace`;
+  ctx.fillStyle=isBright(brandColor)?'rgba(0,0,0,0.45)':'rgba(255,255,255,0.5)';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  if(data?.tag) ctx.fillText(data.tag.toUpperCase(), w*0.06, h*0.1);
+
+  // Bebas headline
+  ctx.fillStyle=tc; ctx.textBaseline='top';
+  const hl=(data?.headline||'YOUR STORY').toUpperCase();
+  ctx.font=`${Math.round(splitX*0.2)}px 'Bebas Neue',Impact,sans-serif`;
+  wrapText(ctx, hl, w*0.06, h*0.2, splitX*0.84, splitX*0.22);
+
+  // Divider line
+  ctx.fillStyle=isBright(brandColor)?'rgba(0,0,0,0.3)':'rgba(255,255,255,0.4)';
+  ctx.fillRect(w*0.06, h*0.58, splitX*0.55, 3);
+
+  // Body
+  if(data?.subtext){
+    ctx.font=`${Math.round(w*0.028)}px 'DM Mono',monospace`;
+    ctx.fillStyle=isBright(brandColor)?'rgba(0,0,0,0.6)':'rgba(255,255,255,0.68)';
+    ctx.textBaseline='top';
+    wrapTextLeft(ctx, data.subtext, w*0.06, h*0.63, splitX*0.84, w*0.036);
+  }
+
+  drawLogo(ctx,w,h);
+}
+
+// ── Testimonial: photo bg · dark overlay · stars · big italic quote ──
+function drawTestimonial(ctx, w, h, photo, data) {
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,w,h);
+  if(photo?.img){ ctx.globalAlpha=0.35; fillPhoto(ctx,photo.img,0,0,w,h); ctx.globalAlpha=1; }
+
+  // Vertical accent bar left
+  ctx.fillStyle=brandColor; ctx.fillRect(w*0.06,h*0.15,5,h*0.7);
 
   // Stars
-  ctx.font = `${Math.round(w*0.055)}px serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = brandColor;
-  ctx.fillText('★ ★ ★ ★ ★', w/2, h*0.26);
+  ctx.font=`${Math.round(w*0.05)}px serif`;
+  ctx.fillStyle=brandColor; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('★★★★★', w*0.1, h*0.18);
 
-  // Quote
-  const quote = document.getElementById('testimonialText')?.value || (data?.headline || '"Exceptional work from start to finish."');
-  ctx.font = `600 italic ${Math.round(w*0.048)}px 'Syne', sans-serif`;
-  ctx.fillStyle = '#ffffff';
-  ctx.textBaseline = 'top';
-  wrapText(ctx, `"${quote}"`, w/2, h*0.36, w*0.78, w*0.062);
+  // Big italic quote using Syne (Bebas has no italic)
+  const quote=document.getElementById('testimonialText')?.value||(data?.headline||'Exceptional work from start to finish');
+  ctx.font=`italic 700 ${Math.round(w*0.068)}px 'Syne',sans-serif`;
+  ctx.fillStyle='#ffffff'; ctx.textBaseline='top';
+  wrapText(ctx, `"${quote}"`, w*0.1, h*0.28, w*0.82, w*0.08);
 
-  // Client attribution
-  if (data?.subtext) {
-    ctx.font = `400 ${Math.round(w*0.03)}px 'DM Mono', monospace`;
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.fillText('— ' + data.subtext, w/2, h*0.7);
-  }
+  // Attribution
+  const attr=data?.subtext||'Happy Client';
+  ctx.font=`${Math.round(w*0.028)}px 'DM Mono',monospace`;
+  ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.textBaseline='top';
+  ctx.fillText('— '+attr, w*0.1, h*0.74);
 
-  ctx.fillStyle = brandColor;
-  ctx.fillRect(w*0.15, h*0.76, w*0.7, 4);
+  // Bottom accent
+  ctx.fillStyle=brandColor; ctx.fillRect(w*0.1,h*0.82,w*0.55,3);
 
-  drawLogo(ctx, w, h);
+  drawLogo(ctx,w,h);
 }
 
-// ── Promotion: dark bg, bold offer, CTA block ──
+// ── Promotion: photo bg · bold CTA · Bebas offer ──
 function drawPromotion(ctx, w, h, photo, data) {
-  ctx.clearRect(0, 0, w, h);
-  if (photo?.img) {
-    const scale = Math.max(w/photo.img.width, h/photo.img.height);
-    const sw = photo.img.width*scale, sh = photo.img.height*scale;
-    ctx.drawImage(photo.img, (w-sw)/2, (h-sh)/2, sw, sh);
-    ctx.fillStyle = 'rgba(0,0,0,0.62)';
-    ctx.fillRect(0, 0, w, h);
-  } else {
-    ctx.fillStyle = '#1e1b18';
-    ctx.fillRect(0, 0, w, h);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,w,h);
+  if(photo?.img){ fillPhoto(ctx,photo.img,0,0,w,h); }
+  // Dark overlay
+  ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(0,0,w,h);
+  // Accent bar top
+  ctx.fillStyle=brandColor; ctx.fillRect(0,0,w,8);
+  // Accent bar bottom
+  ctx.fillStyle=brandColor; ctx.fillRect(0,h-8,w,8);
+
+  const hl=(data?.headline||'LIMITED TIME OFFER').toUpperCase();
+  const hlSize=Math.round(w*0.145);
+  ctx.fillStyle=brandColor; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`${hlSize}px 'Bebas Neue',Impact,sans-serif`;
+  ctx.fillText(hl, w/2, h*0.38);
+
+  if(data?.subtext){
+    ctx.font=`${Math.round(w*0.034)}px 'DM Mono',monospace`;
+    ctx.fillStyle='#ffffff'; ctx.textBaseline='top'; ctx.textAlign='center';
+    wrapText(ctx, data.subtext, w/2, h*0.52, w*0.78, w*0.048);
   }
 
-  const hl = (data?.headline || 'LIMITED TIME OFFER').toUpperCase();
-  ctx.font = `800 ${Math.round(w*0.095)}px 'Syne', sans-serif`;
-  ctx.fillStyle = brandColor;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  wrapText(ctx, hl, w/2, h*0.38, w*0.84, w*0.11);
+  // CTA pill
+  const ctaTxt='BOOK NOW';
+  ctx.font=`${Math.round(w*0.05)}px 'Bebas Neue',Impact,sans-serif`;
+  const ctaW=ctx.measureText(ctaTxt).width+w*0.12, ctaH=w*0.1;
+  const ctaX=(w-ctaW)/2, ctaY=h*0.72;
+  ctx.fillStyle=brandColor;
+  drawRoundedRect(ctx,ctaX,ctaY,ctaW,ctaH,ctaH/2); ctx.fill();
+  ctx.fillStyle=isBright(brandColor)?'#0d0d0d':'#ffffff';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(ctaTxt, w/2, ctaY+ctaH/2);
 
-  if (data?.subtext) {
-    ctx.font = `400 ${Math.round(w*0.036)}px 'DM Mono', monospace`;
-    ctx.fillStyle = '#fff';
-    ctx.textBaseline = 'top';
-    wrapText(ctx, data.subtext, w/2, h*0.58, w*0.78, w*0.05);
-  }
-
-  // CTA button
-  const ctaText = 'BOOK NOW';
-  ctx.font = `700 ${Math.round(w*0.038)}px 'Syne', sans-serif`;
-  const ctaW = ctx.measureText(ctaText).width + w*0.1;
-  const ctaH = w*0.09, ctaX = (w-ctaW)/2, ctaY = h*0.74;
-  ctx.fillStyle = brandColor;
-  drawRoundedRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH/2);
-  ctx.fill();
-  ctx.fillStyle = isBright(brandColor) ? '#1e1b18' : '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(ctaText, w/2, ctaY + ctaH/2);
-
-  drawLogo(ctx, w, h);
+  drawLogo(ctx,w,h);
 }
 
 function isBright(hex) {
@@ -1730,8 +1702,13 @@ Fill in real content for ALL 9 posts. Be specific to the client industry. No pla
     const raw = await callClaude(prompt, 4000);
     setProgress(70, 'Building grid…');
 
-    const strategy = safeParseJson(raw);
+    let strategy = safeParseJson(raw);
     if (!strategy) throw new Error('Could not parse strategy response — try again.');
+    // Pad posts array to 12 by cycling if AI returned fewer
+    if (strategy.posts && strategy.posts.length < 12) {
+      const base = [...strategy.posts];
+      while (strategy.posts.length < 12) strategy.posts.push(base[strategy.posts.length % base.length]);
+    }
 
     // Update Bio tab
     document.getElementById('bioText').textContent = strategy.bio || '';
@@ -1767,7 +1744,7 @@ Fill in real content for ALL 9 posts. Be specific to the client industry. No pla
     // Render IG grid with mini canvas posts
     setProgress(85, 'Rendering grid…');
     await renderStrategyGrid(posts);
-    document.getElementById('igPostCount').textContent = posts.length;
+    document.getElementById('igPostCount').textContent = 36;
     document.getElementById('igGridEmpty').style.display = 'none';
 
     setProgress(100, 'Done!');
@@ -1788,36 +1765,78 @@ Fill in real content for ALL 9 posts. Be specific to the client industry. No pla
   }
 }
 
+// Grid pattern: 0=carousel/graphic, 1=photo, 2=graphic, 3=photo, 4=3D-placeholder (every 5th)
+function gridCellType(idx) {
+  const mod = idx % 3;
+  if (mod === 1) return 'photo';       // every 2nd = real photo
+  if (idx % 9 === 6) return '3d';      // every 9th row middle = 3D placeholder
+  return 'graphic';
+}
+
 async function renderStrategyGrid(posts) {
   const grid = document.getElementById('igGrid');
   grid.innerHTML = '';
   gridPosts = [];
+  gridCaptions = [];
+  const TOTAL = 36;
 
-  for (let i = 0; i < Math.min(posts.length, 9); i++) {
-    const post = posts[i];
+  for (let i = 0; i < TOTAL; i++) {
+    const cellKind = gridCellType(i);
+    const post = posts[i % posts.length] || posts[0];
+    const photoObj = photos[i % Math.max(photos.length, 1)];
+
     const cv = document.createElement('canvas');
     cv.width = 300; cv.height = 300;
     const ctx2 = cv.getContext('2d');
-    const photo = photos[i % Math.max(photos.length, 1)];
 
-    // Temporarily set postType for drawing
-    const savedType = postType;
-    postType = post.type || 'showcase';
-    drawPostToCtx(ctx2, 300, 300, photo, post);
-    postType = savedType;
+    if (cellKind === '3d') {
+      // 3D render placeholder slot
+      ctx2.fillStyle = '#1a1714';
+      ctx2.fillRect(0,0,300,300);
+      ctx2.fillStyle = brandColor;
+      ctx2.fillRect(0,0,300,6);
+      ctx2.font = `48px 'Bebas Neue',Impact,sans-serif`;
+      ctx2.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+      ctx2.fillText('3D RENDER', 150, 120);
+      ctx2.font = `18px 'DM Mono',monospace`;
+      ctx2.fillStyle = brandColor;
+      ctx2.fillText('VIDEO SLOT', 150, 170);
+      ctx2.font = `13px 'DM Mono',monospace`;
+      ctx2.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx2.fillText('Generate with 3D Render Agent', 150, 205);
+      if (logoImg) {
+        const lh=40, lw=lh*(logoImg.width/logoImg.height);
+        ctx2.globalAlpha=0.7;
+        ctx2.drawImage(logoImg,300-lw-12,300-lh-12,lw,lh);
+        ctx2.globalAlpha=1;
+      }
+    } else if (cellKind === 'photo' && photoObj?.img) {
+      // Raw photo post — photo fills frame with subtle text overlay
+      const savedType = postType;
+      postType = 'showcase';
+      drawPostToCtx(ctx2, 300, 300, photoObj, post);
+      postType = savedType;
+    } else {
+      // Graphic / carousel post
+      const savedType = postType;
+      postType = post.type || 'edu';
+      drawPostToCtx(ctx2, 300, 300, photoObj, post);
+      postType = savedType;
+    }
 
     const cell = document.createElement('div');
     cell.className = 'ig-cell';
     cell.appendChild(cv);
     const ov = document.createElement('div');
     ov.className = 'ig-cell-ov';
-    ov.textContent = 'VIEW';
+    ov.textContent = cellKind === '3d' ? '3D SLOT' : 'VIEW';
     cell.appendChild(ov);
     const idx = i;
-    cell.onclick = () => openLbxFromGrid(idx, posts);
+    cell.onclick = () => { if(cellKind!=='3d') openLbxFromGrid(idx, posts); };
     grid.appendChild(cell);
     gridPosts.push(cv);
-    gridCaptions = posts.map(p => p.caption || '');
+    gridCaptions.push(post.caption || '');
   }
 }
 
