@@ -89,9 +89,10 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 
 /* Post type pills */
 .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}
-.type-btn{padding:0.55rem 0.65rem;border:1.5px solid var(--border2);border-radius:9px;background:var(--surface2);cursor:pointer;transition:all 0.15s;text-align:left}
+.type-btn{padding:0.55rem 0.65rem;border:1.5px solid var(--border2);border-radius:9px;background:var(--surface2);cursor:pointer;transition:all 0.15s;text-align:left;position:relative}
 .type-btn:hover{border-color:var(--accent)}
 .type-btn.active{border-color:var(--accent);background:var(--accent-dim)}
+.type-btn.active::after{content:'✓';position:absolute;top:5px;right:7px;font-size:0.62rem;color:var(--accent);font-weight:700}
 .type-icon{font-size:1rem;margin-bottom:0.15rem}
 .type-name{font-size:0.68rem;font-weight:700;color:var(--text)}
 .type-sub{font-size:0.55rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:1px}
@@ -366,7 +367,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     </div>
 
     <!-- Post Type -->
-    <div class="sec-lbl">Post Type</div>
+    <div class="sec-lbl">Post Types <span class="sec-tag">select multiple</span></div>
     <div class="type-grid">
       <button class="type-btn active" data-type="showcase" onclick="setType(this)">
         <div class="type-icon">🏠</div><div class="type-name">Showcase</div><div class="type-sub">Full bleed · bold title</div>
@@ -440,7 +441,14 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
           <div class="preview-meta" id="previewMeta">Upload photos and click Generate to create your post</div>
         </div>
         <div class="preview-acts">
+          <!-- Batch nav (hidden until multiple posts generated) -->
+          <div id="batchNav" style="display:none;align-items:center;gap:0.35rem">
+            <button class="act-btn sec" onclick="batchNav(-1)" style="padding:5px 10px">←</button>
+            <span id="batchPos" style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);min-width:42px;text-align:center">1 / 1</span>
+            <button class="act-btn sec" onclick="batchNav(1)" style="padding:5px 10px">→</button>
+          </div>
           <button class="act-btn sec" id="regenBtn" onclick="regenCaption()" disabled>↺ New Caption</button>
+          <button class="act-btn sec" id="dlAllBtn" onclick="downloadAll()" disabled style="display:none">⬇ All</button>
           <button class="act-btn pri" id="dlBtn" onclick="downloadPost()" disabled>⬇ Download PNG</button>
         </div>
       </div>
@@ -683,9 +691,12 @@ let photos = [];           // [{file, dataUrl, img, name}]
 let drivePhotos = [];      // [{id, name, thumbUrl, img}]
 let logoImg = null;
 let brandColor = '#1a1917';
-let postType = 'showcase';
+let selectedTypes = ['showcase']; // multi-select
+let postType = 'showcase';        // current active (for drawing)
 let format = 'square';
-let generatedData = null;  // {caption, hashtags, story, hook, headline, subtext}
+let generatedData = null;  // current post's data
+let generatedBatch = [];   // [{type, data, canvas}] one per selected type
+let batchIdx = 0;
 let activeCapTab = 'caption';
 
 // Carousel state
@@ -966,10 +977,19 @@ function pickColor(el) {
 }
 
 function setType(btn) {
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  postType = btn.dataset.type;
-  document.getElementById('testimonialField').style.display = postType === 'testimonial' ? 'block' : 'none';
+  const t = btn.dataset.type;
+  const idx = selectedTypes.indexOf(t);
+  if (idx === -1) {
+    selectedTypes.push(t);
+    btn.classList.add('active');
+  } else {
+    // don't deselect the last one
+    if (selectedTypes.length === 1) return;
+    selectedTypes.splice(idx, 1);
+    btn.classList.remove('active');
+  }
+  postType = selectedTypes[selectedTypes.length - 1];
+  document.getElementById('testimonialField').style.display = selectedTypes.includes('testimonial') ? 'block' : 'none';
 }
 
 function setFormat(btn) {
@@ -1432,15 +1452,22 @@ async function generate() {
   }
   const btn = document.getElementById('genBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span>Generating…';
   setStatus('');
+  generatedBatch = [];
+  batchIdx = 0;
 
-  try {
-    const ctx = buildClientContext();
-    const typeName = document.querySelector('.type-btn.active')?.querySelector('.type-name')?.textContent || postType;
-    const prompt = `You are a premium social media content creator for a trade and renovation company.
+  const types = [...selectedTypes];
+  const clientCtx = buildClientContext();
 
-${ctx}
+  for (let i = 0; i < types.length; i++) {
+    const t = types[i];
+    const typeName = document.querySelector(`.type-btn[data-type="${t}"] .type-name`)?.textContent || t;
+    btn.innerHTML = `<span class="spin"></span>${i+1}/${types.length} · ${typeName}…`;
+
+    try {
+      const prompt = `You are a premium social media content creator for a trade and renovation company.
+
+${clientCtx}
 
 Post type: ${typeName}
 Format: ${format}
@@ -1459,23 +1486,90 @@ Generate post content. Respond with ONLY valid JSON (no markdown), exactly this 
 
 Be specific to the industry and client. NO generic filler. Make it premium and authentic.`;
 
-    const raw = await callClaude(prompt);
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Could not parse AI response — try again.');
-    generatedData = JSON.parse(jsonMatch[0]);
+      const raw = await callClaude(prompt);
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Could not parse AI response for ' + typeName);
+      const data = JSON.parse(jsonMatch[0]);
 
-    drawPost(generatedData);
-    showCaption(generatedData);
-    document.getElementById('regenBtn').disabled = false;
-    document.getElementById('previewMeta').textContent = `${typeName} · ${format} · ${FMTS[format].w}×${FMTS[format].h}`;
-    setStatus('');
+      // Render to an offscreen canvas
+      const {w, h} = FMTS[format];
+      const offscreen = document.createElement('canvas');
+      offscreen.width = w; offscreen.height = h;
+      const savedType = postType;
+      postType = t;
+      drawPostToCtx(offscreen.getContext('2d'), w, h, photos[getSelectedPhotoIdx()], data);
+      postType = savedType;
 
-  } catch(err) {
-    setStatus(err.message, 'err');
-  } finally {
+      generatedBatch.push({type: t, typeName, data, canvas: offscreen});
+
+    } catch(err) {
+      setStatus('⚠ ' + typeName + ': ' + err.message, 'err');
+    }
+  }
+
+  if (!generatedBatch.length) {
     btn.disabled = false;
     btn.innerHTML = '✨ Generate Post';
+    return;
   }
+
+  showBatchPost(0);
+  btn.disabled = false;
+  btn.innerHTML = '✨ Generate Post';
+  setStatus('');
+}
+
+function showBatchPost(idx) {
+  if (!generatedBatch.length) return;
+  idx = Math.max(0, Math.min(generatedBatch.length - 1, idx));
+  batchIdx = idx;
+  const item = generatedBatch[idx];
+
+  // Copy offscreen canvas → visible canvas
+  const {w, h} = FMTS[format];
+  const cv = document.getElementById('postCanvas');
+  cv.width = w; cv.height = h;
+  cv.getContext('2d').drawImage(item.canvas, 0, 0);
+
+  generatedData = item.data;
+  postType = item.type;
+
+  document.getElementById('canvasPh').style.display = 'none';
+  document.getElementById('canvasWrap').style.display = 'block';
+  document.getElementById('dlBtn').disabled = false;
+  document.getElementById('regenBtn').disabled = false;
+
+  showCaption(item.data);
+
+  const meta = `${item.typeName} · ${format} · ${FMTS[format].w}×${FMTS[format].h}`;
+  document.getElementById('previewMeta').textContent = meta;
+
+  // Show batch nav if more than one post
+  const nav = document.getElementById('batchNav');
+  const dlAll = document.getElementById('dlAllBtn');
+  if (generatedBatch.length > 1) {
+    nav.style.display = 'flex';
+    dlAll.style.display = 'inline-flex';
+    dlAll.disabled = false;
+    document.getElementById('batchPos').textContent = `${idx + 1} / ${generatedBatch.length}`;
+  } else {
+    nav.style.display = 'none';
+    dlAll.style.display = 'none';
+  }
+}
+
+function batchNav(dir) {
+  showBatchPost(batchIdx + dir);
+}
+
+function downloadAll() {
+  const clientName = document.getElementById('clientName').value.trim().replace(/\s+/g,'-').toLowerCase() || 'post';
+  generatedBatch.forEach((item, i) => {
+    const a = document.createElement('a');
+    a.href = item.canvas.toDataURL('image/png');
+    a.download = `${clientName}-${item.type}-${format}-${i+1}.png`;
+    a.click();
+  });
 }
 
 async function regenCaption() {
@@ -1924,11 +2018,13 @@ function copyBio() {
 // DOWNLOAD / LIGHTBOX
 // ════════════════════════════════════════════════
 function downloadPost() {
-  const cv = document.getElementById('postCanvas');
+  const item = generatedBatch[batchIdx];
+  const cv = item ? item.canvas : document.getElementById('postCanvas');
   const a = document.createElement('a');
   const name = document.getElementById('clientName').value.trim().replace(/\s+/g,'-').toLowerCase() || 'post';
+  const t = item ? item.type : postType;
   a.href = cv.toDataURL('image/png');
-  a.download = `${name}-${postType}-${format}.png`;
+  a.download = `${name}-${t}-${format}.png`;
   a.click();
 }
 
