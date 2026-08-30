@@ -410,10 +410,10 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
       <textarea id="extraCtx" placeholder="e.g. This is a $55k kitchen renovation in Brighton. Clients wanted high-end integrated look with Caesarstone benchtops." style="min-height:50px"></textarea>
     </div>
 
-    <button class="gen-btn" id="genBtn" onclick="generate()">✨ Generate Post</button>
+    <button class="gen-btn" id="stratBtn" onclick="generateStrategy()">⚡ Generate Full Strategy & Grid</button>
     <div class="status-line" id="genStatus"></div>
 
-    <button class="sec-btn" id="stratBtn" onclick="generateStrategy()">⚡ Generate Full Strategy & Grid</button>
+    <button class="sec-btn" id="genBtn" onclick="generate()">✨ Generate Single Post Variation</button>
     <div class="prog-wrap" id="progWrap">
       <div class="prog-track"><div class="prog-bar" id="progBar"></div></div>
       <div class="prog-lbl" id="progLbl">Generating strategy…</div>
@@ -1448,25 +1448,33 @@ function isBright(hex) {
 // ════════════════════════════════════════════════
 async function callClaude(prompt) {
   const key = localStorage.getItem('qj_social_claude_key') || '';
-  if (!key) throw new Error('Add your Anthropic API key in 🔑 API Keys first.');
+  if (!key) throw new Error('No Claude API key — click 🔑 API Keys in the top right and paste your Anthropic key.');
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 1500,
-      messages: [{role: 'user', content: prompt}]
-    })
-  });
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
+        messages: [{role: 'user', content: prompt}]
+      })
+    });
+  } catch(netErr) {
+    throw new Error('Network error — check your internet connection and that your API key is correct.');
+  }
   if (!resp.ok) {
     const e = await resp.json().catch(()=>({error:{message:'Unknown error'}}));
-    throw new Error(e.error?.message || 'API error ' + resp.status);
+    const msg = e.error?.message || 'API error ' + resp.status;
+    if (resp.status === 401) throw new Error('Invalid API key — check it in 🔑 API Keys.');
+    if (resp.status === 429) throw new Error('Rate limited — wait a moment and try again.');
+    throw new Error(msg);
   }
   const data = await resp.json();
   return data.content?.[0]?.text || '';
