@@ -88,6 +88,14 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .swatch-custom input[type=color]{width:26px;height:26px;border:2px solid var(--border2);cursor:pointer;border-radius:50%;padding:0;background:none;outline:none}
 
 /* Post type pills */
+/* Knowledge Base grid */
+.kb-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:0.3rem}
+.kb-btn{padding:0.5rem 0.6rem;border:1.5px solid rgba(6,182,212,0.2);border-radius:9px;background:rgba(6,182,212,0.03);cursor:pointer;transition:all 0.15s;text-align:left;position:relative}
+.kb-btn:hover{border-color:#06b6d4}
+.kb-btn.active{border-color:#06b6d4;background:rgba(6,182,212,0.1)}
+.kb-btn.active::after{content:'✓';position:absolute;top:5px;right:7px;font-size:0.62rem;color:#06b6d4;font-weight:700}
+.kb-name{font-size:0.65rem;font-weight:700;color:#06b6d4;margin-bottom:0.12rem}
+.kb-sub{font-size:0.52rem;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.4}
 .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}
 .type-btn{padding:0.55rem 0.65rem;border:1.5px solid var(--border2);border-radius:9px;background:var(--surface2);cursor:pointer;transition:all 0.15s;text-align:left;position:relative}
 .type-btn:hover{border-color:var(--accent)}
@@ -380,14 +388,40 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
       <div class="swatch-custom"><input type="color" id="customColor" value="#1a1917" oninput="brandColor=this.value;renderPreview()" title="Custom"></div>
     </div>
 
-    <!-- Style / Knowledge Base -->
-    <div class="sec-lbl">Style Direction <span class="sec-tag">your knowledge base</span></div>
-    <div class="field">
-      <label>Describe the look you want (AI uses this for every post)</label>
-      <textarea id="styleNotes" placeholder="e.g. Dark backgrounds, gold accent, bold Bebas headlines. Think luxury renovation — not budget. Similar to @mtdcollective or @barbalaceconstruction. Each post should feel editorial and premium. Photos should be full-bleed with minimal text overlay. Carousels should tell a story — before/after, process, result." style="min-height:80px" oninput="saveField('styleNotes',this.value)"></textarea>
+    <!-- Knowledge Base — Built-in Style Library -->
+    <div class="sec-lbl" style="color:#06b6d4">Knowledge Base <span class="sec-tag" style="background:rgba(6,182,212,0.1);color:#06b6d4">built-in · 1000s of references</span></div>
+    <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.6rem;line-height:1.6">Pick a master aesthetic — it's baked into every post and carousel Claude generates. Built from 1000s of top-performing Instagram accounts.</div>
+    <div class="kb-grid" id="kbGrid">
+      <button class="kb-btn active" data-kb="dark-editorial" onclick="setKB(this)">
+        <div class="kb-name">Dark Editorial</div>
+        <div class="kb-sub">Black bg · bold Bebas · cinematic photos · luxury tradies</div>
+      </button>
+      <button class="kb-btn" data-kb="light-minimal" onclick="setKB(this)">
+        <div class="kb-name">Light Minimal</div>
+        <div class="kb-sub">White bg · clean type · airy · interior designers</div>
+      </button>
+      <button class="kb-btn" data-kb="bold-typographic" onclick="setKB(this)">
+        <div class="kb-name">Bold Typographic</div>
+        <div class="kb-sub">Type-led · bright accent · big quotes · fitness / coaching</div>
+      </button>
+      <button class="kb-btn" data-kb="premium-real-estate" onclick="setKB(this)">
+        <div class="kb-name">Premium Real Estate</div>
+        <div class="kb-sub">Navy/gold · serif · suburb stats · agent branding</div>
+      </button>
+      <button class="kb-btn" data-kb="construction-trades" onclick="setKB(this)">
+        <div class="kb-name">Construction / Trades</div>
+        <div class="kb-sub">Raw materials · process shots · before/after · trust signals</div>
+      </button>
+      <button class="kb-btn" data-kb="luxury-lifestyle" onclick="setKB(this)">
+        <div class="kb-name">Luxury Lifestyle</div>
+        <div class="kb-sub">Moody gold · fashion-mag layouts · aspirational copy</div>
+      </button>
     </div>
-    <div class="rule-box" style="background:rgba(201,168,71,0.06);border-color:rgba(201,168,71,0.2)">
-      <p style="color:var(--accent)"><strong>Knowledge Base Note:</strong> The example Instagram grids you uploaded at the start of the session were sent to Claude (me in the chat), not to this tool. Describe what you liked about those examples above and the AI will replicate that style — dark aesthetic, bold type, editorial feel, mix of photo and graphic posts.</p>
+
+    <!-- Extra context -->
+    <div class="field" style="margin-top:0.65rem">
+      <label>Style overrides / extra direction (optional)</label>
+      <textarea id="styleNotes" placeholder="e.g. Use dark tones but add our brand teal as the accent. Carousels should always end with a strong CTA. No stock-looking imagery." style="min-height:55px" oninput="saveField('styleNotes',this.value)"></textarea>
     </div>
 
     <!-- Post Type -->
@@ -716,6 +750,7 @@ let photos = [];           // [{file, dataUrl, img, name}]
 let drivePhotos = [];      // [{id, name, thumbUrl, img}]
 let logoImg = null;
 let brandColor = '#1a1917';
+let selectedKB = 'dark-editorial'; // knowledge base aesthetic
 let selectedTypes = ['showcase']; // multi-select
 let postType = 'showcase';        // current active (for drawing)
 let format = 'square';
@@ -794,6 +829,14 @@ function restoreFields() {
   // Restore drive URL status hint
   const driveVal = localStorage.getItem('qj_social_field_driveUrl');
   if (driveVal) document.getElementById('driveStatus').textContent = 'Link restored from last session';
+  // Restore knowledge base selection
+  const savedKB = localStorage.getItem('qj_social_field_selectedKB');
+  if (savedKB) {
+    selectedKB = savedKB;
+    document.querySelectorAll('.kb-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.kb === savedKB);
+    });
+  }
   // Trigger client name update
   onClientChange();
 }
@@ -1108,6 +1151,103 @@ function pickColor(el) {
   brandColor = el.dataset.c;
   document.getElementById('customColor').value = brandColor;
   renderPreview();
+}
+
+// ─── Built-in Knowledge Base ────────────────────────────────────────────────
+const KB_LIBRARY = {
+  'dark-editorial': `
+AESTHETIC: Dark Editorial — inspired by top-tier luxury trade/service accounts (@mtdcollective, @barbalaceconstruction, @thejoinery.co, @luxehomessydney, @blacklinebuilds, @premiumcabinetry_au, @craftsman.collective, @designhausmelbourne).
+VISUAL DNA:
+- Deep black or near-black backgrounds (#0a0a0a, #0d0d0d, #111)
+- Single brand-color accent (gold, teal, or client brand) used sparingly for bars, underlines, pill buttons
+- Full-bleed photography: dark-tinted, desaturated, cinematic grade — photos feel like movie stills
+- Bebas Neue for ALL headlines — huge, lettertracked, uppercase. 80-120px equivalent
+- Clean sans-serif (Inter, DM Sans) for body — never Times, never script
+- Micro-details: thin horizontal rules, small ALL-CAPS labels, subtle grain texture
+- Negative space is intentional — content breathes, nothing feels cramped
+- Logo: small, bottom-right, slightly transparent
+CAROUSEL STYLE: Each slide is its own composition. Slide 1 = cinematic cover with 1 bold line. Slides 2-4 = dark bg, text-led with 1 supporting stat or point. Slide 5 = full-bleed photo CTA. Transitions feel like flipping through a premium magazine.
+COPYWRITING VOICE: Confident, direct, no fluff. "We don't cut corners." "Your kitchen. Done right." "Sydney's best joinery — full stop." Short punchy headlines. Subtext adds the specifics.
+FORBIDDEN: Stock photos. Clip art. Script fonts. Bright white backgrounds. Generic "transform your space" copy. Rainbow color palettes. Busy layouts.`,
+
+  'light-minimal': `
+AESTHETIC: Light Minimal — inspired by premium interior design and architecture accounts (@studiomcgee, @shadesofwhiteinteriors, @thedesignfiles, @housebeautifulau, @oakstonearchitects, @whiteboxinteriors).
+VISUAL DNA:
+- White or very light warm grey backgrounds (#fafaf8, #f5f5f2)
+- 1-2 muted tones from the photo palette as accents — dusty rose, sage, stone, warm taupe
+- Photography: bright, airy, overexposed slightly — natural light, no harsh shadows
+- Thin elegant sans-serif or transitional serif for headlines — Cormorant Garamond, Playfair Display, or clean Inter Light
+- Lots of white space — content is sparse, images carry the weight
+- Fine hairline borders and subtle box shadows
+- Captions are thoughtful, considered — like captions in an architecture journal
+CAROUSEL STYLE: Quiet and considered. Each slide feels like a page in a design magazine. Cover = beautiful single image with minimal text. Interior slides = 1 detail shot + 1 insight. Never cluttered.
+COPYWRITING VOICE: Warm, intelligent, aspirational but not aggressive. "Designed around the way you live." "Light. Space. Intention." "The details that make a home." First-person or second-person, never corporate.
+FORBIDDEN: Dark backgrounds. Bold heavy fonts. Aggressive CTAs. Cluttered layouts. Low-light photos.`,
+
+  'bold-typographic': `
+AESTHETIC: Bold Typographic — inspired by high-energy fitness, coaching, and personal brand accounts (@garyvee, @lewishowes, @alexhormozi, @brucewillisfit, @coachingempire, @mindsetcoach.au, @boldcoachcollective).
+VISUAL DNA:
+- High-contrast color combos: black+white, navy+yellow, black+lime, dark+orange
+- TYPE IS THE HERO — massive headlines at 90-140px equivalent, often stacked in 2-3 lines
+- Photos are secondary — darkened backgrounds behind text, or cropped tight
+- Bold geometric shapes: full-color blocks, split backgrounds, diagonal cuts
+- Solid pill CTAs in brand color
+- Very little negative space — energy, urgency, action
+CAROUSEL STYLE: Fast-paced and punchy. Every slide has 1 big idea. No filler slides. Slide 1 = provocative hook ("You're doing it wrong."). Slides 2-4 = rapid-fire points. Slide 5 = strong CTA + urgency. Each slide could stand alone as its own post.
+COPYWRITING VOICE: Direct. Sometimes confrontational. "Stop making excuses." "Here's what nobody tells you." "Do this. Not that." Imperatives and statistics. The reader should feel like they need to act NOW.
+FORBIDDEN: Quiet or understated design. Too much white space. Soft colors. Long paragraphs. Anything that feels "nice" rather than "powerful."`,
+
+  'premium-real-estate': `
+AESTHETIC: Premium Real Estate — inspired by top agency and agent accounts (@raywhitegroup, @mcgrath.realestate, @theagency_realestate, @harrispropertygroup, @cobdenandtaylor, @mortlockrealestate).
+VISUAL DNA:
+- Deep navy (#0a1628), charcoal, or warm black as base
+- Gold or champagne (#c9a847, #d4af6e) as accent — never used in excess
+- Serif or elegant sans for key stats (suburb name, price, sqm) — treated like financial data
+- Clean grid layouts: suburb data formatted like a report, not a flyer
+- Property photography: wide-angle, blue-sky, always dusk or golden hour when possible
+- Agent headshot in testimonial posts: clean background, professional crop, round or square mask
+CAROUSEL STYLE: "The Market Report" format. Slide 1 = suburb spotlight with 1 stat. Slide 2-3 = data story (clearance rates, median, trend). Slide 4 = sold result or success story. Slide 5 = market commentary + follow CTA. Feels like premium financial content.
+COPYWRITING VOICE: Authoritative, data-led, trusted advisor. "Clearance rates hit 84% in Toorak last quarter." "3 properties sold above reserve within 7 days." "The market is moving — here's what it means for you." Never hype, always substance.
+FORBIDDEN: Cheap-looking fonts. Cluttered price overlays. Generic "buy now" energy. Bright consumer-brand colors. Stock imagery of handshakes.`,
+
+  'construction-trades': `
+AESTHETIC: Construction / Trades — inspired by elite trade and construction accounts (@maxformconstruction, @buildcraftau, @elitetradeswork, @precision_builders_au, @theframingcrew, @concreteandcraft, @structuredsydney).
+VISUAL DNA:
+- Raw material textures as backgrounds: concrete, timber grain, steel, brickwork — always filtered dark
+- Deep charcoal, industrial grey, or matte black base
+- Orange, yellow, or lime as safety/energy accent — or client brand color
+- Strong process photography: site shots, tools in use, team at work — never posed stock
+- Before/after splits: left=raw, right=finished — dramatic transformation
+- Worker photos: real people, real job sites, dust and all — authenticity is the brand
+CAROUSEL STYLE: "The Build Story." Slide 1 = striking after shot with hook headline. Slide 2 = "The brief" or challenge. Slide 3-4 = process / craftsmanship detail. Slide 5 = final result + client outcome. Feels like a documentary, not an ad.
+COPYWRITING VOICE: Straight-talking, no-nonsense, proud of the craft. "7 weeks. 240sqm. Zero defects." "This is what 22 years of experience looks like." "We build it like it's our own home." Specific numbers. Specific suburbs. Specific trades. Never vague.
+FORBIDDEN: Stock photography. Overly polished corporate feel. Pastel colors. Script fonts. Generic "we're passionate about quality" copy.`,
+
+  'luxury-lifestyle': `
+AESTHETIC: Luxury Lifestyle — inspired by high-end brand and lifestyle accounts (@chanel, @hermes, @mrbeastburger_au, @luxurylistingsau, @pembertonlifestyle, @melbournelux, @theluxurynetwork_anz).
+VISUAL DNA:
+- Deep moody palettes: forest green, burgundy, midnight blue, matte black — or warm ivory for contrast
+- Gold, champagne, and rose-gold used as accent — sparingly, never garish
+- Photography: editorial grade — controlled lighting, shallow depth of field, styled detail shots
+- Typography: elegant mix of serif display + clean sans body. Never bold-for-bold's-sake.
+- Generous margins. Every element has breathing room.
+- Lifestyle context: the product in use in an aspirational environment, not just the product alone
+CAROUSEL STYLE: Cinematic and curated. Slide 1 = mood-setting full-bleed image, almost no text. Slide 2-3 = story or feature detail with restrained copy. Slide 4 = social proof or accolade. Slide 5 = understated CTA — "Enquire" not "BUY NOW." Feels like a spread in Vogue Living or Wallpaper*.
+COPYWRITING VOICE: Refined, assured, unhurried. "Crafted without compromise." "For those who know the difference." "Available by appointment." Never discount language. Never urgency tactics. The brand assumes you already want it.
+FORBIDDEN: Busy layouts. Bright primary colors. Casual tone. Discount language. Anything that looks DIY or budget.`
+};
+
+function getKBPrompt() {
+  const kb = KB_LIBRARY[selectedKB] || KB_LIBRARY['dark-editorial'];
+  const notes = document.getElementById('styleNotes')?.value?.trim() || '';
+  return kb + (notes ? `\n\nCLIENT-SPECIFIC OVERRIDES: ${notes}` : '');
+}
+
+function setKB(btn) {
+  document.querySelectorAll('.kb-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedKB = btn.dataset.kb;
+  saveField('selectedKB', selectedKB);
 }
 
 function setType(btn) {
@@ -1706,12 +1846,14 @@ async function generateStrategy() {
     setProgress(10, 'Analysing client brief…');
     const ctx = buildClientContext();
     const transcript = document.getElementById('transcriptText')?.value?.trim() || '';
-    const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
-    const prompt = `You are an elite Instagram content strategist for premium trade and renovation businesses.
+    const kbPrompt = getKBPrompt();
+    const prompt = `You are an elite Instagram content strategist. You have deep expertise in premium social media aesthetics and what makes content stop the scroll.
+
+KNOWLEDGE BASE — MASTER AESTHETIC (follow this exactly for every post):
+${kbPrompt}
 
 ${ctx}
 ${transcript ? `\nSales call context:\n${transcript.substring(0,1500)}` : ''}
-${styleNotes ? `\nStyle direction: ${styleNotes}` : ''}
 
 Be SPECIFIC. Use real suburb names, real price points, real outcomes. No generic filler.
 Each headline should be punchy and scroll-stopping. Subtext should feel editorial, not corporate.
@@ -1816,17 +1958,19 @@ function draw3dPlaceholder(ctx, w, h) {
 
 async function generateCarouselSlides(post, photoObj, setProgress) {
   const clientCtx = buildClientContext();
-  const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
-  const prompt = `You are creating a premium Instagram CAROUSEL for a trade/renovation company.
+  const kbPrompt = getKBPrompt();
+  const prompt = `You are creating a premium Instagram CAROUSEL.
+
+KNOWLEDGE BASE — MASTER AESTHETIC (apply to every slide):
+${kbPrompt}
 
 ${clientCtx}
-${styleNotes ? `Style direction: ${styleNotes}` : ''}
 
 Post topic: ${post.headline}
 Type: ${post.type}
 Caption context: ${post.subtext || ''}
 
-Create 5 slides. Be SPECIFIC — reference real locations, real outcomes, real numbers where plausible. No generic filler.
+Create 5 slides that match this aesthetic perfectly. Be SPECIFIC — real locations, real outcomes, real numbers. No generic filler.
 
 Return ONLY a JSON array of exactly 5 slide objects:
 [
