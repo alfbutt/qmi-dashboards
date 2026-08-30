@@ -289,11 +289,11 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="sec-lbl">Client Setup</div>
     <div class="field">
       <label>Client name</label>
-      <input type="text" id="clientName" placeholder="e.g. Boss Carpentry" oninput="onClientChange()">
+      <input type="text" id="clientName" placeholder="e.g. Boss Carpentry" oninput="onClientChange();saveField('clientName',this.value)">
     </div>
     <div class="field">
       <label>Industry / specialty</label>
-      <input type="text" id="clientNiche" placeholder="e.g. Custom Joinery · Melbourne">
+      <input type="text" id="clientNiche" placeholder="e.g. Custom Joinery · Melbourne" oninput="saveField('clientNiche',this.value)">
     </div>
 
     <!-- Logo -->
@@ -316,7 +316,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="sec-lbl">Company Brief <span class="sec-tag">context for AI</span></div>
     <div class="field">
       <label>Paste overview or upload a doc</label>
-      <textarea id="clientBrief" placeholder="Tell the AI about this client — their services, location, target customer, tone of voice, key offers, what makes them different…" style="min-height:90px"></textarea>
+      <textarea id="clientBrief" placeholder="Tell the AI about this client — their services, location, target customer, tone of voice, key offers, what makes them different…" style="min-height:90px" oninput="saveField('clientBrief',this.value)"></textarea>
     </div>
     <div class="upz" id="briefZone" onclick="document.getElementById('briefInput').click()">
       <input type="file" id="briefInput" accept=".pdf,.doc,.docx,.txt" onchange="loadBrief(event)" style="display:none">
@@ -330,7 +330,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="sec-lbl" style="color:#a855f7">Sales Call Transcript <span class="sec-tag" style="background:rgba(168,85,247,0.12);color:#a855f7">shapes strategy</span></div>
     <div class="field">
       <label style="color:#a855f7">Paste transcript or upload TXT/DOCX</label>
-      <textarea id="transcriptText" placeholder="Paste your sales call transcript here — the AI will use it to understand the client's pain points, goals, offers and tone of voice when building the content strategy…" style="min-height:80px;border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.05)"></textarea>
+      <textarea id="transcriptText" placeholder="Paste your sales call transcript here — the AI will use it to understand the client's pain points, goals, offers and tone of voice when building the content strategy…" style="min-height:80px;border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.05)" oninput="saveField('transcriptText',this.value)"></textarea>
     </div>
     <div class="upz" id="transcriptZone" onclick="document.getElementById('transcriptInput').click()" style="border-color:rgba(168,85,247,0.3);background:rgba(168,85,247,0.05)">
       <input type="file" id="transcriptInput" accept=".txt,.doc,.docx,.pdf" onchange="loadTranscript(event)" style="display:none">
@@ -345,7 +345,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="field">
       <label>Public folder link</label>
       <div style="display:flex;gap:0.4rem">
-        <input type="url" id="driveUrl" placeholder="https://drive.google.com/drive/folders/…" style="flex:1">
+        <input type="url" id="driveUrl" placeholder="https://drive.google.com/drive/folders/…" style="flex:1" oninput="saveField('driveUrl',this.value)">
         <button onclick="loadDriveFolder()" id="driveBtn" style="flex-shrink:0;padding:0.45rem 0.7rem;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;font-size:0.65rem;font-family:'DM Mono',monospace;cursor:pointer;color:var(--muted);white-space:nowrap;transition:all 0.15s" onmouseenter="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.color='var(--muted)';this.style.borderColor='var(--border2)'">↓ Load</button>
       </div>
       <div id="driveStatus" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:0.25rem;min-height:0.9rem"></div>
@@ -421,7 +421,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
     <!-- Extra context -->
     <div class="field" style="margin-top:0.85rem">
       <label>Extra context for this post (optional)</label>
-      <textarea id="extraCtx" placeholder="e.g. This is a $55k kitchen renovation in Brighton. Clients wanted high-end integrated look with Caesarstone benchtops." style="min-height:50px"></textarea>
+      <textarea id="extraCtx" placeholder="e.g. This is a $55k kitchen renovation in Brighton. Clients wanted high-end integrated look with Caesarstone benchtops." style="min-height:50px" oninput="saveField('extraCtx',this.value)"></textarea>
     </div>
 
     <button class="gen-btn" id="stratBtn" onclick="generateStrategy()">⚡ Generate Full Strategy & Grid</button>
@@ -768,11 +768,31 @@ function safeParseJson(raw, label) {
 // ════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════
+const SAVED_FIELDS = ['clientName','clientNiche','clientBrief','transcriptText','driveUrl','extraCtx'];
+
+function saveField(key, val) {
+  try { localStorage.setItem('qj_social_field_' + key, val); } catch(e) {}
+}
+
+function restoreFields() {
+  SAVED_FIELDS.forEach(key => {
+    const val = localStorage.getItem('qj_social_field_' + key);
+    const el = document.getElementById(key);
+    if (val && el) el.value = val;
+  });
+  // Restore drive URL status hint
+  const driveVal = localStorage.getItem('qj_social_field_driveUrl');
+  if (driveVal) document.getElementById('driveStatus').textContent = 'Link restored from last session';
+  // Trigger client name update
+  onClientChange();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const keys = loadKeys();
   if (keys.claude) document.querySelector('.hdr-btn').textContent = '🔑 Keys ✓';
   if (keys.drive) document.getElementById('driveKeyInput').value = keys.drive;
 
+  restoreFields();
   initCarousel();
   renderIgGrid();
 });
