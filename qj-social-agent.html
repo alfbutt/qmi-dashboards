@@ -716,6 +716,42 @@ const FMTS = {
 };
 
 // ════════════════════════════════════════════════
+// SAFE JSON PARSER — handles truncated / extra-text responses
+// ════════════════════════════════════════════════
+function safeParseJson(raw, label) {
+  // Try to extract the first { } block and repair common truncation issues
+  const objMatch = raw.match(/\{[\s\S]*\}/);
+  const arrMatch = raw.match(/\[[\s\S]*\]/);
+
+  // Decide which to try first based on content
+  const candidates = [];
+  if (objMatch) candidates.push(objMatch[0]);
+  if (arrMatch) candidates.push(arrMatch[0]);
+
+  for (let src of candidates) {
+    try { return JSON.parse(src); } catch(e) {
+      // Try progressive truncation repair: strip from last complete key
+      let fixed = src;
+      // Remove trailing incomplete string values
+      fixed = fixed.replace(/,\s*"[^"]*":\s*"[^"]*$/, '');
+      // Close open arrays/objects
+      let opens = 0, inStr = false, esc = false;
+      for (const ch of fixed) {
+        if (esc) { esc=false; continue; }
+        if (ch==='\\' && inStr) { esc=true; continue; }
+        if (ch==='"') { inStr=!inStr; continue; }
+        if (!inStr) { if (ch==='{'||ch==='[') opens++; else if (ch==='}'||ch===']') opens--; }
+      }
+      // Append closing braces as needed
+      while (opens > 0) { fixed += '}'; opens--; }
+      try { return JSON.parse(fixed); } catch(e2) {}
+    }
+  }
+  console.warn('safeParseJson failed' + (label ? ' for ' + label : ''), raw.slice(0,200));
+  return null;
+}
+
+// ════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
@@ -1487,9 +1523,7 @@ Generate post content. Respond with ONLY valid JSON (no markdown), exactly this 
 Be specific to the industry and client. NO generic filler. Make it premium and authentic.`;
 
       const raw = await callClaude(prompt);
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Could not parse AI response for ' + typeName);
-      const data = JSON.parse(jsonMatch[0]);
+      const data = safeParseJson(raw, typeName);
 
       // Render to an offscreen canvas
       const {w, h} = FMTS[format];
@@ -1593,9 +1627,8 @@ Give me a completely different caption angle. Respond with ONLY JSON:
   "hook": "..."
 }`;
     const raw = await callClaude(prompt);
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const newData = JSON.parse(jsonMatch[0]);
+    const newData = safeParseJson(raw);
+    if (newData) {
       generatedData = {...generatedData, ...newData};
       showCaption(generatedData);
     }
@@ -1642,9 +1675,8 @@ Make the 9 posts genuinely varied: mix project showcases, educational tips, a se
     const raw = await callClaude(prompt);
     setProgress(70, 'Building grid…');
 
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Could not parse strategy response.');
-    const strategy = JSON.parse(jsonMatch[0]);
+    const strategy = safeParseJson(raw);
+    if (!strategy) throw new Error('Could not parse strategy response — try again.');
 
     // Update Bio tab
     document.getElementById('bioText').textContent = strategy.bio || '';
@@ -1924,9 +1956,8 @@ Respond with ONLY JSON array of ${count} slide objects:
 ${ctx}
 Return JSON: {"caption":"...","hashtags":"..."}`;
     const capRaw = await callClaude(capPrompt);
-    const capMatch = capRaw.match(/\{[\s\S]*\}/);
-    if (capMatch) {
-      const capData = JSON.parse(capMatch[0]);
+    const capData = safeParseJson(capRaw);
+    if (capData) {
       carCaptions = capData;
       const capEl = document.getElementById('carCapText');
       capEl.textContent = capData.caption || '';
