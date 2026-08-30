@@ -88,14 +88,13 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .swatch-custom input[type=color]{width:26px;height:26px;border:2px solid var(--border2);cursor:pointer;border-radius:50%;padding:0;background:none;outline:none}
 
 /* Post type pills */
-/* Knowledge Base grid */
-.kb-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:0.3rem}
-.kb-btn{padding:0.5rem 0.6rem;border:1.5px solid rgba(6,182,212,0.2);border-radius:9px;background:rgba(6,182,212,0.03);cursor:pointer;transition:all 0.15s;text-align:left;position:relative}
-.kb-btn:hover{border-color:#06b6d4}
-.kb-btn.active{border-color:#06b6d4;background:rgba(6,182,212,0.1)}
-.kb-btn.active::after{content:'✓';position:absolute;top:5px;right:7px;font-size:0.62rem;color:#06b6d4;font-weight:700}
-.kb-name{font-size:0.65rem;font-weight:700;color:#06b6d4;margin-bottom:0.12rem}
-.kb-sub{font-size:0.52rem;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.4}
+/* Knowledge Base */
+.kb-add-box{border:1.5px solid rgba(6,182,212,0.25);border-radius:10px;background:rgba(6,182,212,0.04);padding:0.6rem 0.7rem}
+.kb-entry{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.45rem 0.55rem;font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--text);line-height:1.5;position:relative}
+.kb-entry-tag{display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:rgba(6,182,212,0.15);color:#06b6d4;font-size:0.5rem;font-weight:700;margin-bottom:0.25rem;margin-right:0.25rem;text-transform:uppercase}
+.kb-entry-niche{display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:rgba(201,168,71,0.12);color:var(--accent);font-size:0.5rem;font-weight:700;margin-bottom:0.25rem;text-transform:uppercase}
+.kb-entry-text{color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.kb-del{position:absolute;top:0.3rem;right:0.4rem;background:none;border:none;color:rgba(239,68,68,0.5);cursor:pointer;font-size:0.75rem;line-height:1;padding:0}
 .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}
 .type-btn{padding:0.55rem 0.65rem;border:1.5px solid var(--border2);border-radius:9px;background:var(--surface2);cursor:pointer;transition:all 0.15s;text-align:left;position:relative}
 .type-btn:hover{border-color:var(--accent)}
@@ -388,40 +387,48 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
       <div class="swatch-custom"><input type="color" id="customColor" value="#1a1917" oninput="brandColor=this.value;renderPreview()" title="Custom"></div>
     </div>
 
-    <!-- Knowledge Base — Built-in Style Library -->
-    <div class="sec-lbl" style="color:#06b6d4">Knowledge Base <span class="sec-tag" style="background:rgba(6,182,212,0.1);color:#06b6d4">built-in · 1000s of references</span></div>
-    <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.6rem;line-height:1.6">Pick a master aesthetic — it's baked into every post and carousel Claude generates. Built from 1000s of top-performing Instagram accounts.</div>
-    <div class="kb-grid" id="kbGrid">
-      <button class="kb-btn active" data-kb="dark-editorial" onclick="setKB(this)">
-        <div class="kb-name">Dark Editorial</div>
-        <div class="kb-sub">Black bg · bold Bebas · cinematic photos · luxury tradies</div>
-      </button>
-      <button class="kb-btn" data-kb="light-minimal" onclick="setKB(this)">
-        <div class="kb-name">Light Minimal</div>
-        <div class="kb-sub">White bg · clean type · airy · interior designers</div>
-      </button>
-      <button class="kb-btn" data-kb="bold-typographic" onclick="setKB(this)">
-        <div class="kb-name">Bold Typographic</div>
-        <div class="kb-sub">Type-led · bright accent · big quotes · fitness / coaching</div>
-      </button>
-      <button class="kb-btn" data-kb="premium-real-estate" onclick="setKB(this)">
-        <div class="kb-name">Premium Real Estate</div>
-        <div class="kb-sub">Navy/gold · serif · suburb stats · agent branding</div>
-      </button>
-      <button class="kb-btn" data-kb="construction-trades" onclick="setKB(this)">
-        <div class="kb-name">Construction / Trades</div>
-        <div class="kb-sub">Raw materials · process shots · before/after · trust signals</div>
-      </button>
-      <button class="kb-btn" data-kb="luxury-lifestyle" onclick="setKB(this)">
-        <div class="kb-name">Luxury Lifestyle</div>
-        <div class="kb-sub">Moody gold · fashion-mag layouts · aspirational copy</div>
-      </button>
+    <!-- Knowledge Base — Persistent Library -->
+    <div class="sec-lbl" style="color:#06b6d4">Knowledge Base <span class="sec-tag" style="background:rgba(6,182,212,0.1);color:#06b6d4" id="kbCountTag">0 posts saved</span></div>
+    <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:0.6rem;line-height:1.6">Paste in captions, headlines, or post ideas from accounts you love. Saved <strong style="color:#06b6d4">permanently</strong> — Claude pulls from these every time you generate.</div>
+
+    <!-- Add to KB -->
+    <div class="kb-add-box" id="kbAddBox">
+      <textarea id="kbInput" placeholder="Paste a caption, headline, or post idea here…&#10;&#10;e.g. 'This $280k Toorak kitchen reno took 6 weeks. Every tile, every handle, hand-picked by our client. This is what obsessing over details looks like. Swipe to see the process →'" style="min-height:70px;width:100%;box-sizing:border-box;background:transparent;border:none;outline:none;resize:vertical;font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--text);line-height:1.6"></textarea>
+      <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;flex-wrap:wrap">
+        <select id="kbTag" style="flex:1;min-width:90px;padding:0.3rem 0.4rem;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:0.6rem;font-family:'DM Mono',monospace">
+          <option value="caption">Caption</option>
+          <option value="headline">Headline</option>
+          <option value="carousel">Carousel script</option>
+          <option value="hook">Hook / opener</option>
+          <option value="cta">CTA</option>
+          <option value="testimonial">Testimonial</option>
+          <option value="hashtags">Hashtags</option>
+          <option value="style">Style direction</option>
+        </select>
+        <select id="kbNiche" style="flex:1;min-width:90px;padding:0.3rem 0.4rem;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:0.6rem;font-family:'DM Mono',monospace">
+          <option value="any">Any niche</option>
+          <option value="trades">Trades / builders</option>
+          <option value="real-estate">Real estate</option>
+          <option value="interior">Interior design</option>
+          <option value="fitness">Fitness / coaching</option>
+          <option value="luxury">Luxury lifestyle</option>
+          <option value="business">Business / B2B</option>
+        </select>
+        <button onclick="kbAdd()" style="padding:0.3rem 0.7rem;background:#06b6d4;color:#000;border:none;border-radius:6px;font-size:0.6rem;font-weight:700;cursor:pointer;white-space:nowrap">+ Save to KB</button>
+      </div>
     </div>
 
-    <!-- Extra context -->
+    <!-- Search + list -->
+    <div style="display:flex;gap:0.4rem;margin-top:0.5rem;align-items:center">
+      <input id="kbSearch" type="text" placeholder="Search knowledge base…" style="flex:1;padding:0.3rem 0.5rem;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:0.6rem;font-family:'DM Mono',monospace" oninput="kbRender()">
+      <button onclick="kbClear()" style="padding:0.3rem 0.5rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:0.58rem;color:#ef4444;cursor:pointer;white-space:nowrap" title="Clear all">Clear all</button>
+    </div>
+    <div id="kbList" style="margin-top:0.5rem;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem"></div>
+
+    <!-- Style notes -->
     <div class="field" style="margin-top:0.65rem">
-      <label>Style overrides / extra direction (optional)</label>
-      <textarea id="styleNotes" placeholder="e.g. Use dark tones but add our brand teal as the accent. Carousels should always end with a strong CTA. No stock-looking imagery." style="min-height:55px" oninput="saveField('styleNotes',this.value)"></textarea>
+      <label>Style direction (optional — adds to the library)</label>
+      <textarea id="styleNotes" placeholder="e.g. Dark editorial feel. Bold Bebas headlines. Photos full-bleed. Carousels tell a story. Premium, not budget." style="min-height:45px" oninput="saveField('styleNotes',this.value)"></textarea>
     </div>
 
     <!-- Post Type -->
@@ -750,7 +757,6 @@ let photos = [];           // [{file, dataUrl, img, name}]
 let drivePhotos = [];      // [{id, name, thumbUrl, img}]
 let logoImg = null;
 let brandColor = '#1a1917';
-let selectedKB = 'dark-editorial'; // knowledge base aesthetic
 let selectedTypes = ['showcase']; // multi-select
 let postType = 'showcase';        // current active (for drawing)
 let format = 'square';
@@ -829,14 +835,8 @@ function restoreFields() {
   // Restore drive URL status hint
   const driveVal = localStorage.getItem('qj_social_field_driveUrl');
   if (driveVal) document.getElementById('driveStatus').textContent = 'Link restored from last session';
-  // Restore knowledge base selection
-  const savedKB = localStorage.getItem('qj_social_field_selectedKB');
-  if (savedKB) {
-    selectedKB = savedKB;
-    document.querySelectorAll('.kb-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.kb === savedKB);
-    });
-  }
+  // Render knowledge base list
+  kbRender();
   // Trigger client name update
   onClientChange();
 }
@@ -1153,101 +1153,75 @@ function pickColor(el) {
   renderPreview();
 }
 
-// ─── Built-in Knowledge Base ────────────────────────────────────────────────
-const KB_LIBRARY = {
-  'dark-editorial': `
-AESTHETIC: Dark Editorial — inspired by top-tier luxury trade/service accounts (@mtdcollective, @barbalaceconstruction, @thejoinery.co, @luxehomessydney, @blacklinebuilds, @premiumcabinetry_au, @craftsman.collective, @designhausmelbourne).
-VISUAL DNA:
-- Deep black or near-black backgrounds (#0a0a0a, #0d0d0d, #111)
-- Single brand-color accent (gold, teal, or client brand) used sparingly for bars, underlines, pill buttons
-- Full-bleed photography: dark-tinted, desaturated, cinematic grade — photos feel like movie stills
-- Bebas Neue for ALL headlines — huge, lettertracked, uppercase. 80-120px equivalent
-- Clean sans-serif (Inter, DM Sans) for body — never Times, never script
-- Micro-details: thin horizontal rules, small ALL-CAPS labels, subtle grain texture
-- Negative space is intentional — content breathes, nothing feels cramped
-- Logo: small, bottom-right, slightly transparent
-CAROUSEL STYLE: Each slide is its own composition. Slide 1 = cinematic cover with 1 bold line. Slides 2-4 = dark bg, text-led with 1 supporting stat or point. Slide 5 = full-bleed photo CTA. Transitions feel like flipping through a premium magazine.
-COPYWRITING VOICE: Confident, direct, no fluff. "We don't cut corners." "Your kitchen. Done right." "Sydney's best joinery — full stop." Short punchy headlines. Subtext adds the specifics.
-FORBIDDEN: Stock photos. Clip art. Script fonts. Bright white backgrounds. Generic "transform your space" copy. Rainbow color palettes. Busy layouts.`,
+// ─── Persistent Knowledge Base ───────────────────────────────────────────────
+const KB_STORE_KEY = 'qj_kb_entries';
 
-  'light-minimal': `
-AESTHETIC: Light Minimal — inspired by premium interior design and architecture accounts (@studiomcgee, @shadesofwhiteinteriors, @thedesignfiles, @housebeautifulau, @oakstonearchitects, @whiteboxinteriors).
-VISUAL DNA:
-- White or very light warm grey backgrounds (#fafaf8, #f5f5f2)
-- 1-2 muted tones from the photo palette as accents — dusty rose, sage, stone, warm taupe
-- Photography: bright, airy, overexposed slightly — natural light, no harsh shadows
-- Thin elegant sans-serif or transitional serif for headlines — Cormorant Garamond, Playfair Display, or clean Inter Light
-- Lots of white space — content is sparse, images carry the weight
-- Fine hairline borders and subtle box shadows
-- Captions are thoughtful, considered — like captions in an architecture journal
-CAROUSEL STYLE: Quiet and considered. Each slide feels like a page in a design magazine. Cover = beautiful single image with minimal text. Interior slides = 1 detail shot + 1 insight. Never cluttered.
-COPYWRITING VOICE: Warm, intelligent, aspirational but not aggressive. "Designed around the way you live." "Light. Space. Intention." "The details that make a home." First-person or second-person, never corporate.
-FORBIDDEN: Dark backgrounds. Bold heavy fonts. Aggressive CTAs. Cluttered layouts. Low-light photos.`,
-
-  'bold-typographic': `
-AESTHETIC: Bold Typographic — inspired by high-energy fitness, coaching, and personal brand accounts (@garyvee, @lewishowes, @alexhormozi, @brucewillisfit, @coachingempire, @mindsetcoach.au, @boldcoachcollective).
-VISUAL DNA:
-- High-contrast color combos: black+white, navy+yellow, black+lime, dark+orange
-- TYPE IS THE HERO — massive headlines at 90-140px equivalent, often stacked in 2-3 lines
-- Photos are secondary — darkened backgrounds behind text, or cropped tight
-- Bold geometric shapes: full-color blocks, split backgrounds, diagonal cuts
-- Solid pill CTAs in brand color
-- Very little negative space — energy, urgency, action
-CAROUSEL STYLE: Fast-paced and punchy. Every slide has 1 big idea. No filler slides. Slide 1 = provocative hook ("You're doing it wrong."). Slides 2-4 = rapid-fire points. Slide 5 = strong CTA + urgency. Each slide could stand alone as its own post.
-COPYWRITING VOICE: Direct. Sometimes confrontational. "Stop making excuses." "Here's what nobody tells you." "Do this. Not that." Imperatives and statistics. The reader should feel like they need to act NOW.
-FORBIDDEN: Quiet or understated design. Too much white space. Soft colors. Long paragraphs. Anything that feels "nice" rather than "powerful."`,
-
-  'premium-real-estate': `
-AESTHETIC: Premium Real Estate — inspired by top agency and agent accounts (@raywhitegroup, @mcgrath.realestate, @theagency_realestate, @harrispropertygroup, @cobdenandtaylor, @mortlockrealestate).
-VISUAL DNA:
-- Deep navy (#0a1628), charcoal, or warm black as base
-- Gold or champagne (#c9a847, #d4af6e) as accent — never used in excess
-- Serif or elegant sans for key stats (suburb name, price, sqm) — treated like financial data
-- Clean grid layouts: suburb data formatted like a report, not a flyer
-- Property photography: wide-angle, blue-sky, always dusk or golden hour when possible
-- Agent headshot in testimonial posts: clean background, professional crop, round or square mask
-CAROUSEL STYLE: "The Market Report" format. Slide 1 = suburb spotlight with 1 stat. Slide 2-3 = data story (clearance rates, median, trend). Slide 4 = sold result or success story. Slide 5 = market commentary + follow CTA. Feels like premium financial content.
-COPYWRITING VOICE: Authoritative, data-led, trusted advisor. "Clearance rates hit 84% in Toorak last quarter." "3 properties sold above reserve within 7 days." "The market is moving — here's what it means for you." Never hype, always substance.
-FORBIDDEN: Cheap-looking fonts. Cluttered price overlays. Generic "buy now" energy. Bright consumer-brand colors. Stock imagery of handshakes.`,
-
-  'construction-trades': `
-AESTHETIC: Construction / Trades — inspired by elite trade and construction accounts (@maxformconstruction, @buildcraftau, @elitetradeswork, @precision_builders_au, @theframingcrew, @concreteandcraft, @structuredsydney).
-VISUAL DNA:
-- Raw material textures as backgrounds: concrete, timber grain, steel, brickwork — always filtered dark
-- Deep charcoal, industrial grey, or matte black base
-- Orange, yellow, or lime as safety/energy accent — or client brand color
-- Strong process photography: site shots, tools in use, team at work — never posed stock
-- Before/after splits: left=raw, right=finished — dramatic transformation
-- Worker photos: real people, real job sites, dust and all — authenticity is the brand
-CAROUSEL STYLE: "The Build Story." Slide 1 = striking after shot with hook headline. Slide 2 = "The brief" or challenge. Slide 3-4 = process / craftsmanship detail. Slide 5 = final result + client outcome. Feels like a documentary, not an ad.
-COPYWRITING VOICE: Straight-talking, no-nonsense, proud of the craft. "7 weeks. 240sqm. Zero defects." "This is what 22 years of experience looks like." "We build it like it's our own home." Specific numbers. Specific suburbs. Specific trades. Never vague.
-FORBIDDEN: Stock photography. Overly polished corporate feel. Pastel colors. Script fonts. Generic "we're passionate about quality" copy.`,
-
-  'luxury-lifestyle': `
-AESTHETIC: Luxury Lifestyle — inspired by high-end brand and lifestyle accounts (@chanel, @hermes, @mrbeastburger_au, @luxurylistingsau, @pembertonlifestyle, @melbournelux, @theluxurynetwork_anz).
-VISUAL DNA:
-- Deep moody palettes: forest green, burgundy, midnight blue, matte black — or warm ivory for contrast
-- Gold, champagne, and rose-gold used as accent — sparingly, never garish
-- Photography: editorial grade — controlled lighting, shallow depth of field, styled detail shots
-- Typography: elegant mix of serif display + clean sans body. Never bold-for-bold's-sake.
-- Generous margins. Every element has breathing room.
-- Lifestyle context: the product in use in an aspirational environment, not just the product alone
-CAROUSEL STYLE: Cinematic and curated. Slide 1 = mood-setting full-bleed image, almost no text. Slide 2-3 = story or feature detail with restrained copy. Slide 4 = social proof or accolade. Slide 5 = understated CTA — "Enquire" not "BUY NOW." Feels like a spread in Vogue Living or Wallpaper*.
-COPYWRITING VOICE: Refined, assured, unhurried. "Crafted without compromise." "For those who know the difference." "Available by appointment." Never discount language. Never urgency tactics. The brand assumes you already want it.
-FORBIDDEN: Busy layouts. Bright primary colors. Casual tone. Discount language. Anything that looks DIY or budget.`
-};
-
-function getKBPrompt() {
-  const kb = KB_LIBRARY[selectedKB] || KB_LIBRARY['dark-editorial'];
-  const notes = document.getElementById('styleNotes')?.value?.trim() || '';
-  return kb + (notes ? `\n\nCLIENT-SPECIFIC OVERRIDES: ${notes}` : '');
+function kbLoad() {
+  try { return JSON.parse(localStorage.getItem(KB_STORE_KEY) || '[]'); } catch(e) { return []; }
 }
 
-function setKB(btn) {
-  document.querySelectorAll('.kb-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  selectedKB = btn.dataset.kb;
-  saveField('selectedKB', selectedKB);
+function kbSave(entries) {
+  try { localStorage.setItem(KB_STORE_KEY, JSON.stringify(entries)); } catch(e) {}
+}
+
+function kbAdd() {
+  const text = document.getElementById('kbInput').value.trim();
+  if (!text) return;
+  const tag   = document.getElementById('kbTag').value;
+  const niche = document.getElementById('kbNiche').value;
+  const entries = kbLoad();
+  entries.unshift({ id: Date.now(), text, tag, niche });
+  kbSave(entries);
+  document.getElementById('kbInput').value = '';
+  kbRender();
+}
+
+function kbDelete(id) {
+  const entries = kbLoad().filter(e => e.id !== id);
+  kbSave(entries);
+  kbRender();
+}
+
+function kbClear() {
+  if (!confirm('Delete all knowledge base entries? This cannot be undone.')) return;
+  localStorage.removeItem(KB_STORE_KEY);
+  kbRender();
+}
+
+function kbRender() {
+  const q = (document.getElementById('kbSearch')?.value || '').toLowerCase();
+  const entries = kbLoad().filter(e => !q || e.text.toLowerCase().includes(q) || e.tag.includes(q) || e.niche.includes(q));
+  const list = document.getElementById('kbList');
+  const count = kbLoad().length;
+  document.getElementById('kbCountTag').textContent = count + ' post' + (count === 1 ? '' : 's') + ' saved';
+  if (!entries.length) {
+    list.innerHTML = `<div style="font-size:0.58rem;font-family:'DM Mono',monospace;color:var(--muted);text-align:center;padding:0.6rem">${count ? 'No results for that search.' : 'No entries yet — paste your first post above.'}</div>`;
+    return;
+  }
+  list.innerHTML = entries.map(e => `
+    <div class="kb-entry">
+      <button class="kb-del" onclick="kbDelete(${e.id})" title="Delete">×</button>
+      <span class="kb-entry-tag">${e.tag}</span>
+      <span class="kb-entry-niche">${e.niche}</span>
+      <div class="kb-entry-text">${e.text.length > 220 ? e.text.slice(0,220) + '…' : e.text}</div>
+    </div>`).join('');
+}
+
+function getKBPrompt() {
+  const entries = kbLoad();
+  const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
+  let out = '';
+  if (entries.length) {
+    // Send up to 30 most recent entries (most recent = most relevant)
+    const sample = entries.slice(0, 30);
+    out += `KNOWLEDGE BASE — ${entries.length} saved reference posts (use these as style, tone, and format examples for every post you write):\n`;
+    sample.forEach((e, i) => {
+      out += `\n[${i+1}] TYPE: ${e.tag} | NICHE: ${e.niche}\n${e.text}\n`;
+    });
+    out += `\nAnalyse the voice, structure, specificity, and energy in these examples. Match that level of quality in everything you generate.`;
+  }
+  if (styleNotes) out += `\n\nSTYLE DIRECTION: ${styleNotes}`;
+  return out;
 }
 
 function setType(btn) {
