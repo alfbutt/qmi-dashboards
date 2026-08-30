@@ -1233,22 +1233,43 @@ async function kbRender() {
 async function getKBImages() {
   try {
     const images = await kbLoadAll();
-    const sample = images.slice(0, 8);
+    if (!images.length) return [];
+    // Sample up to 5 images — spread across the library for variety
+    const total = images.length;
+    const picks = total <= 5 ? images : [0,1,2,3,4].map(i => images[Math.floor(i * total / 5)]);
     const result = [];
-    for (const img of sample) {
+    for (const img of picks) {
       try {
-        const resp = await fetch(img.url);
+        const resp = await fetch(img.url, { mode: 'cors' });
+        if (!resp.ok) continue;
         const blob = await resp.blob();
-        const b64 = await new Promise(res => {
-          const r = new FileReader();
-          r.onload = e => res(e.target.result.split(',')[1]);
-          r.readAsDataURL(blob);
-        });
-        result.push({ mediaType: blob.type || 'image/jpeg', data: b64 });
+        // Resize to max 600px to keep payload small
+        const b64 = await resizeImageBlob(blob, 600);
+        if (b64) result.push({ mediaType: 'image/jpeg', data: b64 });
       } catch(e) {}
     }
     return result;
   } catch(e) { return []; }
+}
+
+function resizeImageBlob(blob, maxPx) {
+  return new Promise(res => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(cv.toDataURL('image/jpeg', 0.75).split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+  });
 }
 
 function getKBPrompt() {
