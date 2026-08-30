@@ -1657,14 +1657,17 @@ async function generate() {
   const types = [...selectedTypes];
   const clientCtx = buildClientContext();
 
+  const kbImages = await getKBImages();
+  const hasKB = kbImages.length > 0;
+
   for (let i = 0; i < types.length; i++) {
     const t = types[i];
     const typeName = document.querySelector(`.type-btn[data-type="${t}"] .type-name`)?.textContent || t;
     btn.innerHTML = `<span class="spin"></span>${i+1}/${types.length} · ${typeName}…`;
 
     try {
-      const prompt = `You are a premium social media content creator for a trade and renovation company.
-
+      const prompt = `You are a premium social media content creator.
+${hasKB ? `\n${getKBPrompt()}\n` : ''}
 ${clientCtx}
 
 Post type: ${typeName}
@@ -1684,7 +1687,7 @@ Generate post content. Respond with ONLY valid JSON (no markdown), exactly this 
 
 Be specific to the industry and client. NO generic filler. Make it premium and authentic.`;
 
-      const raw = await callClaude(prompt);
+      const raw = await callClaude(prompt, 1800, kbImages);
       const data = safeParseJson(raw, typeName);
 
       // Render to an offscreen canvas
@@ -2212,12 +2215,12 @@ async function genCarouselWithAI() {
                 document.getElementById('clientNiche').value.trim() ||
                 'our premium services';
   const ctx = buildClientContext();
-  const styleNotes = document.getElementById('styleNotes')?.value?.trim() || '';
+  const kbImages = await getKBImages();
+  const hasKB = kbImages.length > 0;
 
-  const prompt = `Create a 5-slide Instagram carousel for a premium trade/renovation company.
-
+  const prompt = `Create a 5-slide Instagram carousel.
+${hasKB ? `\n${getKBPrompt()}\n` : ''}
 ${ctx}
-${styleNotes ? `Style: ${styleNotes}` : ''}
 Topic: ${topic}
 Template: ${carTemplate}
 
@@ -2235,7 +2238,7 @@ Return ONLY a JSON array of exactly 5 objects:
   const btn = document.getElementById('carAiBtn');
   try {
     if(btn){btn.innerHTML='<span class="spin"></span>Generating…';btn.disabled=true;}
-    const raw = await callClaude(prompt, 2000);
+    const raw = await callClaude(prompt, 2000, kbImages);
     const slides = safeParseJson(raw);
     if (!Array.isArray(slides) || !slides.length) throw new Error('Could not parse carousel response — try again.');
     carSlides = slides;
