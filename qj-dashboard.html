@@ -10728,6 +10728,22 @@ function _invBuildPDF(jsPDFClass, data) {
     : 'GST of $' + data.gstCalc.gst.toFixed(2) + ' has been added to the subtotal of $' + data.gstCalc.subtotal.toFixed(2) + '.';
   doc.text(gstNote, ml, y);
 
+  // Bank details
+  y += 14;
+  doc.setDrawColor(220, 215, 205);
+  doc.setLineWidth(0.3);
+  doc.line(ml, y, W - mr, y);
+  y += 8;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 92, 82);
+  doc.text('PAYMENT DETAILS', ml, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(154, 146, 128);
+  doc.text('BSB: 013 423', ml, y);
+  doc.text('Account Number: 801085315', ml + 50, y);
+
   // Footer
   doc.setFillColor(248, 245, 237);
   doc.rect(0, H - 24, W, 24, 'F');
