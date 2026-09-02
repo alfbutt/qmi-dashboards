@@ -10539,6 +10539,10 @@ async function _invGenerate() {
   var defService  = (document.getElementById('inv-service')     ? document.getElementById('inv-service').value             : 'marketing');
   var gstSetting  = (document.getElementById('inv-gst')         ? document.getElementById('inv-gst').value                 : 'included');
   var invStatus   = (document.getElementById('inv-status')      ? document.getElementById('inv-status').value              : 'paid');
+  var bsb         = (document.getElementById('inv-bsb')         ? document.getElementById('inv-bsb').value.trim()          : '') || localStorage.getItem('qj_inv_bsb') || '013 423';
+  var accountNum  = (document.getElementById('inv-account')     ? document.getElementById('inv-account').value.trim()      : '') || localStorage.getItem('qj_inv_account') || '801085315';
+  if (document.getElementById('inv-bsb'))     localStorage.setItem('qj_inv_bsb',     bsb);
+  if (document.getElementById('inv-account')) localStorage.setItem('qj_inv_account', accountNum);
 
   if (!clientName) { alert('Please enter the client name.'); return; }
 
@@ -10570,7 +10574,7 @@ async function _invGenerate() {
       var invoiceNum = _invNextNumber();
       var gstCalc    = _invCalcGST(p.amount, gstSetting);
       var dateStr    = _invFormatDate(p.date) || todayStr;
-      _invBuildPDF(jsPDFClass, { clientName: clientName, company: company, service: p.service, status: invStatus, gstCalc: gstCalc, invoiceNum: invoiceNum, dateStr: dateStr, gstSetting: gstSetting });
+      _invBuildPDF(jsPDFClass, { clientName: clientName, company: company, service: p.service, status: invStatus, gstCalc: gstCalc, invoiceNum: invoiceNum, dateStr: dateStr, gstSetting: gstSetting, bsb: bsb, accountNum: accountNum });
       if (statusMsg) statusMsg.textContent = 'Generated ' + (i + 1) + ' of ' + payments.length + '…';
       if (payments.length > 1 && i < payments.length - 1) await new Promise(function(r) { setTimeout(r, 400); });
     }
@@ -10741,8 +10745,8 @@ function _invBuildPDF(jsPDFClass, data) {
   y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(154, 146, 128);
-  doc.text('BSB: 013 423', ml, y);
-  doc.text('Account Number: 801085315', ml + 50, y);
+  doc.text('BSB: ' + (data.bsb || '013 423'), ml, y);
+  doc.text('Account: ' + (data.accountNum || '801085315'), ml + 50, y);
 
   // Footer
   doc.setFillColor(248, 245, 237);
@@ -10881,6 +10885,20 @@ function renderInvoicePage() {
     '</div>' +
 
     amountSection +
+
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.85rem;">' +
+      '<div style="font-size:0.62rem;font-family:\'DM Mono\',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">Payment Details</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">BSB</label>' +
+          '<input id="inv-bsb" type="text" placeholder="013 423" value="' + (localStorage.getItem('qj_inv_bsb') || '013 423') + '" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.82rem;font-family:\'DM Mono\',monospace;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border2)\'">' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">ACCOUNT NUMBER</label>' +
+          '<input id="inv-account" type="text" placeholder="801085315" value="' + (localStorage.getItem('qj_inv_account') || '801085315') + '" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.82rem;font-family:\'DM Mono\',monospace;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border2)\'">' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
 
     '<button onclick="_invGenerate()" id="inv-generate-btn" style="padding:0.85rem;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all 0.15s;letter-spacing:0.01em">' +
       genBtnLabel +
