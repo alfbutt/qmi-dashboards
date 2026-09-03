@@ -1771,6 +1771,11 @@ const AGENT_OVERRIDES = {
   "Canterbury Steelworks": "Ayessa"
 };
 
+// Shared localStorage overrides (managed from QJ Command Centre → Our Clients)
+function _getLocalAgentOverrides() {
+  try { return JSON.parse(localStorage.getItem('qj_agent_overrides') || '{}'); } catch(_) { return {}; }
+}
+
 // Clients who are active but NOT on the call centre — shown in Ad Clients tab only
 const NON_CC_CLIENTS = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms", "Moonlight Doors and Windows", "Favourite Home", "Silk Touch Joinery"];
 function isNonCC(name) {
@@ -1861,6 +1866,17 @@ window._clearOwed = _clearOwed;
 const _isHardPaused = n => PAUSED_HARDCODED.some(p => p.toLowerCase() === (n||'').toLowerCase());
 let JULES_ACCOUNTS  = JULES_FALLBACK.filter(n => !_churnedLocally(n) && !_pausedLocally(n) && !_isHardPaused(n));
 let AYESSA_ACCOUNTS = AYESSA_FALLBACK.filter(n => !_churnedLocally(n) && !_pausedLocally(n) && !_isHardPaused(n));
+// Apply localStorage agent overrides to fallback lists
+(function() {
+  const ov = _getLocalAgentOverrides();
+  for (const [client, agent] of Object.entries(ov)) {
+    const lc = client.toLowerCase();
+    JULES_ACCOUNTS  = JULES_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+    AYESSA_ACCOUNTS = AYESSA_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+    if (agent === 'Jules'  && !JULES_ACCOUNTS.some(a => a.toLowerCase() === lc))  JULES_ACCOUNTS.push(client);
+    if (agent === 'Ayessa' && !AYESSA_ACCOUNTS.some(a => a.toLowerCase() === lc)) AYESSA_ACCOUNTS.push(client);
+  }
+})();
 
 async function fetchClientsData() {
   try {
@@ -1878,7 +1894,7 @@ async function fetchClientsData() {
       if (name) window._clientsRaw.push({ name, agent, chatId, status });
       if (!name || status === 'Churned' || _churnedLocally(name) || _pausedLocally(name) || _isHardPaused(name)) continue;
       if (isNonCC(name)) continue; // non-CC clients excluded from call centre views
-      const effectiveAgent = AGENT_OVERRIDES[name] || agent;
+      const effectiveAgent = _getLocalAgentOverrides()[name] || AGENT_OVERRIDES[name] || agent;
       if (effectiveAgent === 'Ads Only') continue; // ads-only clients excluded from call centre views
       if (effectiveAgent === 'Jules')  jules.push(name);
       if (effectiveAgent === 'Ayessa') ayessa.push(name);
@@ -1890,6 +1906,15 @@ async function fetchClientsData() {
     // Always merge permanently-pinned clients that may not be in the sheet yet
     for (const p of JULES_PERMANENT)  { if (!JULES_ACCOUNTS.some(a=>a.toLowerCase()===p.toLowerCase()))  JULES_ACCOUNTS.push(p); }
     for (const p of AYESSA_PERMANENT) { if (!AYESSA_ACCOUNTS.some(a=>a.toLowerCase()===p.toLowerCase())) AYESSA_ACCOUNTS.push(p); }
+    // Re-apply localStorage overrides on top of sheet data
+    const _localOv = _getLocalAgentOverrides();
+    for (const [client, agent] of Object.entries(_localOv)) {
+      const lc = client.toLowerCase();
+      JULES_ACCOUNTS  = JULES_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+      AYESSA_ACCOUNTS = AYESSA_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+      if (agent === 'Jules'  && !JULES_ACCOUNTS.some(a => a.toLowerCase() === lc))  JULES_ACCOUNTS.push(client);
+      if (agent === 'Ayessa' && !AYESSA_ACCOUNTS.some(a => a.toLowerCase() === lc)) AYESSA_ACCOUNTS.push(client);
+    }
   } catch(e) {
     // silently fall back to hardcoded lists
   }

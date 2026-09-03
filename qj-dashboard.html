@@ -1685,6 +1685,23 @@ const AGENT_OVERRIDES = {
   "Woodstock Building Services (VIC)": "Ayessa"
 };
 
+// User-editable agent overrides (localStorage) — take priority over everything
+function _getLocalAgentOverrides() {
+  try { return JSON.parse(localStorage.getItem('qj_agent_overrides') || '{}'); } catch(_) { return {}; }
+}
+function _setLocalAgentOverride(clientName, agent) {
+  const ov = _getLocalAgentOverrides();
+  if (agent) ov[clientName] = agent; else delete ov[clientName];
+  localStorage.setItem('qj_agent_overrides', JSON.stringify(ov));
+}
+// Seed: Quality Custom Homes → Ayessa if not already overridden
+(function() {
+  const ov = _getLocalAgentOverrides();
+  if (!ov['Quality Custom Homes'])     { ov['Quality Custom Homes'] = 'Ayessa'; }
+  if (!ov['Quality Custom Homes PTY LTD']) { ov['Quality Custom Homes PTY LTD'] = 'Ayessa'; }
+  localStorage.setItem('qj_agent_overrides', JSON.stringify(ov));
+})();
+
 // Clients who are active but NOT on the call centre — shown in Ad Clients tab only
 const NON_CC_CLIENTS = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms", "Moonlight Doors and Windows"];
 function isNonCC(name) {
@@ -1775,6 +1792,17 @@ window._clearOwed = _clearOwed;
 const _isHardPaused = n => PAUSED_HARDCODED.some(p => p.toLowerCase() === (n||'').toLowerCase());
 let JULES_ACCOUNTS  = JULES_FALLBACK.filter(n => !_churnedLocally(n) && !_pausedLocally(n) && !_isHardPaused(n));
 let AYESSA_ACCOUNTS = AYESSA_FALLBACK.filter(n => !_churnedLocally(n) && !_pausedLocally(n) && !_isHardPaused(n));
+// Apply localStorage agent overrides to the fallback lists immediately
+(function() {
+  const ov = _getLocalAgentOverrides();
+  for (const [client, agent] of Object.entries(ov)) {
+    const lc = client.toLowerCase();
+    JULES_ACCOUNTS  = JULES_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+    AYESSA_ACCOUNTS = AYESSA_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+    if (agent === 'Jules'  && !JULES_ACCOUNTS.some(a => a.toLowerCase() === lc))  JULES_ACCOUNTS.push(client);
+    if (agent === 'Ayessa' && !AYESSA_ACCOUNTS.some(a => a.toLowerCase() === lc)) AYESSA_ACCOUNTS.push(client);
+  }
+})();
 
 async function fetchClientsData() {
   try {
@@ -1792,7 +1820,7 @@ async function fetchClientsData() {
       if (name) window._clientsRaw.push({ name, agent, chatId, status });
       if (!name || status === 'Churned' || _churnedLocally(name) || _pausedLocally(name) || _isHardPaused(name)) continue;
       if (isNonCC(name)) continue; // non-CC clients excluded from call centre views
-      const effectiveAgent = AGENT_OVERRIDES[name] || agent;
+      const effectiveAgent = _getLocalAgentOverrides()[name] || AGENT_OVERRIDES[name] || agent;
       if (effectiveAgent === 'Ads Only') continue; // ads-only clients excluded from call centre views
       if (effectiveAgent === 'Jules')  jules.push(name);
       if (effectiveAgent === 'Ayessa') ayessa.push(name);
@@ -1804,6 +1832,15 @@ async function fetchClientsData() {
     // Always merge permanently-pinned clients that may not be in the sheet yet
     for (const p of JULES_PERMANENT)  { if (!JULES_ACCOUNTS.some(a=>a.toLowerCase()===p.toLowerCase()))  JULES_ACCOUNTS.push(p); }
     for (const p of AYESSA_PERMANENT) { if (!AYESSA_ACCOUNTS.some(a=>a.toLowerCase()===p.toLowerCase())) AYESSA_ACCOUNTS.push(p); }
+    // Re-apply localStorage overrides on top of sheet data (they always win)
+    const _localOv = _getLocalAgentOverrides();
+    for (const [client, agent] of Object.entries(_localOv)) {
+      const lc = client.toLowerCase();
+      JULES_ACCOUNTS  = JULES_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+      AYESSA_ACCOUNTS = AYESSA_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+      if (agent === 'Jules'  && !JULES_ACCOUNTS.some(a => a.toLowerCase() === lc))  JULES_ACCOUNTS.push(client);
+      if (agent === 'Ayessa' && !AYESSA_ACCOUNTS.some(a => a.toLowerCase() === lc)) AYESSA_ACCOUNTS.push(client);
+    }
   } catch(e) {
     // silently fall back to hardcoded lists
   }
@@ -3249,13 +3286,16 @@ function _renderClientsGrid(rows, filter='') {
         const owedBadge = _owedEntry
           ? `<span class="client-badge" style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.25)">💸 Owes £${_owedEntry.amount}</span>`
           : '';
+        const _localOvAgent = _getLocalAgentOverrides()[c.name];
+        const _displayAgent = _localOvAgent || c.agent || 'Jules';
+        const _agentClass2  = _displayAgent.toLowerCase() === 'jules' ? 'jules' : 'ayessa';
         return `<div class="client-card" onclick="openClientModal(window._renderedClients[${idx}])">
           <div class="client-card-head">
             <div>
               <div class="client-card-name">${c.name}</div>
               ${c.businessName && c.businessName !== c.name ? `<div style="font-size:0.72rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">${c.businessName}</div>` : ''}
               <div class="client-card-meta">
-                <span class="client-badge ${agentClass}">${c.agent}</span>
+                <span class="client-badge ${_agentClass2}" onclick="event.stopPropagation();window._showAgentMenu(event,'${c.name.replace(/'/g,"\\'")}','${_displayAgent}')" title="Click to reassign" style="cursor:pointer">${_displayAgent} ▾</span>
                 ${statusBadge}
                 ${freeBadge}
                 ${owedBadge}
@@ -4053,6 +4093,39 @@ function renderFinanceView(payLog, clients) {
 
     </div>`;
 }
+
+// ════════════════════════════════════════════════
+// CLIENT AGENT REASSIGNMENT
+// ════════════════════════════════════════════════
+window._showAgentMenu = function(evt, clientName, currentAgent) {
+  document.querySelectorAll('.agent-reassign-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'agent-reassign-menu';
+  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:6px;min-width:140px';
+  menu.innerHTML = ['Jools','Ayessa'].map(a => {
+    const stored = a === 'Jools' ? 'Jules' : a;
+    const active = currentAgent === stored || (currentAgent === 'Jules' && a === 'Jools');
+    return `<button onclick="window._doReassign('${clientName.replace(/'/g,"\\'")}','${stored}')" style="display:block;width:100%;text-align:left;padding:7px 12px;border:none;border-radius:7px;background:${active?'var(--accent)':'transparent'};color:${active?'#fff':'var(--text)'};font-size:0.82rem;font-weight:${active?'700':'400'};cursor:pointer;font-family:inherit">${a}${active?' ✓':''}</button>`;
+  }).join('');
+  document.body.appendChild(menu);
+  const r = evt.target.getBoundingClientRect();
+  menu.style.left = r.left + 'px';
+  menu.style.top  = (r.bottom + 4) + 'px';
+  setTimeout(() => document.addEventListener('click', function _close() { menu.remove(); document.removeEventListener('click', _close); }, { once: true }), 0);
+};
+
+window._doReassign = function(clientName, agent) {
+  _setLocalAgentOverride(clientName, agent);
+  // Update in-memory account lists
+  const lc = clientName.toLowerCase();
+  JULES_ACCOUNTS  = JULES_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+  AYESSA_ACCOUNTS = AYESSA_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+  if (agent === 'Jules')  JULES_ACCOUNTS.push(clientName);
+  if (agent === 'Ayessa') AYESSA_ACCOUNTS.push(clientName);
+  // Re-render
+  if (window._clientsPageData) _renderClientsGrid(window._clientsPageData, document.getElementById('clients-search-input')?.value || '');
+  document.querySelectorAll('.agent-reassign-menu').forEach(m => m.remove());
+};
 
 // ════════════════════════════════════════════════
 // CLIENT MODAL — HEADLINES & AD COPY
