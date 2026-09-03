@@ -3348,7 +3348,9 @@ function _renderClientsGrid(rows, filter='') {
     </div>
     <div class="clients-grid">
       ${filtered.map((c,idx)=>{
-        const agentClass = c.agent.toLowerCase()==='jules'?'jules':'ayessa';
+        const _localOvAgent = _getLocalAgentOverrides()[c.name];
+        const _displayAgent = _localOvAgent || c.agent || 'Jules';
+        const agentClass = _displayAgent.toLowerCase()==='jules'?'jules':'ayessa';
         const driveLink = c.website ? `<span class="client-badge" onclick="event.stopPropagation();window.open('${c.website.startsWith('http')?c.website:'https://'+c.website}','_blank')" style="background:rgba(52,211,153,0.08);color:var(--green);border:1px solid rgba(52,211,153,0.2);cursor:pointer">📁 Drive</span>` : '';
         const statsLink = `<span class="client-badge" onclick="event.stopPropagation();window.open('https://drive.google.com/drive/folders/1hKiXSFlLhYcS2p5OPjSsVq-55y-fPs_q?usp=drive_link','_blank')" style="background:rgba(96,165,250,0.08);color:var(--blue);border:1px solid rgba(96,165,250,0.2);cursor:pointer">📊 Stats</span>`;
         const docLink = c.overviewDocUrl ? `<span class="client-badge" onclick="event.stopPropagation();window.open('${c.overviewDocUrl}','_blank')" style="background:rgba(66,133,244,0.08);color:#4285f4;border:1px solid rgba(66,133,244,0.25);cursor:pointer">📄 Brief</span>` : '';
@@ -3374,7 +3376,7 @@ function _renderClientsGrid(rows, filter='') {
               <div class="client-card-name">${c.name}</div>
               ${c.businessName && c.businessName !== c.name ? `<div style="font-size:0.72rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">${c.businessName}</div>` : ''}
               <div class="client-card-meta">
-                <span class="client-badge ${agentClass}">${c.agent}</span>
+                <span class="client-badge ${agentClass}" onclick="event.stopPropagation();window._showAgentMenu(event,'${c.name.replace(/'/g,"\\'")}','${_displayAgent}')" title="Click to reassign" style="cursor:pointer">${_displayAgent} ▾</span>
                 ${statusBadge}
                 ${freeBadge}
                 ${owedBadge}
@@ -4168,6 +4170,43 @@ function renderFinanceView(payLog, clients) {
 
     </div>`;
 }
+
+// ════════════════════════════════════════════════
+// CLIENT AGENT REASSIGNMENT
+// ════════════════════════════════════════════════
+function _setLocalAgentOverride(clientName, agent) {
+  const ov = _getLocalAgentOverrides();
+  if (agent) ov[clientName] = agent; else delete ov[clientName];
+  localStorage.setItem('qj_agent_overrides', JSON.stringify(ov));
+}
+
+window._showAgentMenu = function(evt, clientName, currentAgent) {
+  document.querySelectorAll('.agent-reassign-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'agent-reassign-menu';
+  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:6px;min-width:140px';
+  menu.innerHTML = ['Jools','Ayessa'].map(a => {
+    const stored = a === 'Jools' ? 'Jules' : a;
+    const active = currentAgent === stored || (currentAgent === 'Jules' && a === 'Jools');
+    return `<button onclick="window._doReassign('${clientName.replace(/'/g,"\\'")}','${stored}')" style="display:block;width:100%;text-align:left;padding:7px 12px;border:none;border-radius:7px;background:${active?'var(--accent)':'transparent'};color:${active?'#fff':'var(--text)'};font-size:0.82rem;font-weight:${active?'700':'400'};cursor:pointer;font-family:inherit">${a}${active?' ✓':''}</button>`;
+  }).join('');
+  document.body.appendChild(menu);
+  const r = evt.target.getBoundingClientRect();
+  menu.style.left = r.left + 'px';
+  menu.style.top  = (r.bottom + 4) + 'px';
+  setTimeout(() => document.addEventListener('click', function _close() { menu.remove(); document.removeEventListener('click', _close); }, { once: true }), 0);
+};
+
+window._doReassign = function(clientName, agent) {
+  _setLocalAgentOverride(clientName, agent);
+  const lc = clientName.toLowerCase();
+  JULES_ACCOUNTS  = JULES_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+  AYESSA_ACCOUNTS = AYESSA_ACCOUNTS.filter(a => a.toLowerCase() !== lc);
+  if (agent === 'Jules')  JULES_ACCOUNTS.push(clientName);
+  if (agent === 'Ayessa') AYESSA_ACCOUNTS.push(clientName);
+  if (window._clientsPageData) _renderClientsGrid(window._clientsPageData, document.getElementById('clients-search-input')?.value || '');
+  document.querySelectorAll('.agent-reassign-menu').forEach(m => m.remove());
+};
 
 // ════════════════════════════════════════════════
 // CLIENT MODAL — HEADLINES & AD COPY
