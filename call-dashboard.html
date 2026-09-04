@@ -10144,10 +10144,42 @@ const CEO_CLIENT_PACKAGES = {
   'favourite home':                  { type: 'weekly',    weeklyRate: 330 },
   'moonlight doors & windows':       { type: 'monthly',   mrr: 2000 },
   'moonlight doors and windows':     { type: 'monthly',   mrr: 2000 },
+  'apex woodworks':                  { type: 'monthly',   mrr: 0    },
+  'canterbury steelworks':           { type: 'monthly',   mrr: 0    },
+  'barbalace':                       { type: 'monthly',   mrr: 0    },
+  'barbalace construction':          { type: 'monthly',   mrr: 0    },
   // ── 3-month programmes ──────────────────────────────────────────────────
   'bisdaq build':                    { type: 'programme', total: 5000,  months: 3, start: '2026-07-12', end: '2026-10-12' },
   'integra renovations':             { type: 'programme', total: 7500,  months: 3, start: '2026-08-02', end: '2026-11-02' },
   'betterbuilding and construction': { type: 'programme', total: 5000,  months: 3, start: '2026-08-24', end: '2026-11-24' },
+};
+
+// ── Correct billing day of month per client (overrides sheet billingStartDate) ──
+const BILLING_DAYS = {
+  'spa space':                       29,
+  'citiwide group':                  29,
+  'apex woodworks':                  24,
+  'canterbury steelworks':           24,
+  'silk touch joinery':              18,
+  'moonlight doors and windows':     18,
+  'moonlight doors & windows':       18,
+  'woodstock building services':     18,
+  'woodstock building services (vic)': 18,
+  'dws building co':                  7,
+  'dws building company':             7,
+  'barbalace':                       18,
+  'barbalace construction':          18,
+  'mkcb renovations':                 4,
+  'boss carpentry group':            23,
+  'rapid bathroom specialist':       18,
+  'rapid bathroom specialists':      18,
+  'barco build':                     10,
+  'streamline building projects':     6,
+};
+
+// Apex Woodworks + Canterbury Steelworks → shown as one combined card
+const CEO_MERGED_CLIENTS = {
+  'canterbury steelworks': 'apex woodworks',
 };
 
 // ── CEO Overview ─────────────────────────────────
@@ -10322,11 +10354,16 @@ async function renderCEOOverview() {
   }
 
   // ── Next-payment countdown helper ────────────────────────────────────────
-  function nextPaymentInfo(billingStartDate) {
-    if (!billingStartDate) return null;
-    const parsed = parseDateStr(billingStartDate) || (billingStartDate ? new Date(billingStartDate) : null);
-    if (!parsed || isNaN(parsed)) return null;
-    const billingDay = parsed.getDate();
+  function nextPaymentInfo(clientName, billingStartDate) {
+    // BILLING_DAYS takes priority over sheet data
+    const hardcoded = clientName ? BILLING_DAYS[clientName.toLowerCase()] : null;
+    let billingDay = hardcoded || null;
+    if (!billingDay) {
+      if (!billingStartDate) return null;
+      const parsed = parseDateStr(billingStartDate) || (billingStartDate ? new Date(billingStartDate) : null);
+      if (!parsed || isNaN(parsed)) return null;
+      billingDay = parsed.getDate();
+    }
     const today = new Date(); today.setHours(0,0,0,0);
     let next = new Date(today.getFullYear(), today.getMonth(), billingDay);
     if (next <= today) next = new Date(today.getFullYear(), today.getMonth() + 1, billingDay);
@@ -10336,11 +10373,33 @@ async function renderCEOOverview() {
     return { days, ordinal, urgency };
   }
 
-  const ccClients    = clients.filter(c => c.hasCC && !isNonCC(c.name));
-  const nonCCClients = clients.filter(c => isNonCC(c.name));
-  const total  = clients.length;
+  // ── Merge paired clients (e.g. Apex Woodworks + Canterbury Steelworks → one card) ──
+  const _mergedInto = {}; // secondary → primary name
+  clients.forEach(c => {
+    const primary = CEO_MERGED_CLIENTS[c.name.toLowerCase()];
+    if (primary) {
+      const prim = clients.find(x => x.name.toLowerCase() === primary);
+      if (prim) {
+        prim.mergedAlias = (prim.mergedAlias ? prim.mergedAlias + ' / ' : '') + c.name;
+        _mergedInto[c.name.toLowerCase()] = true;
+      }
+    }
+  });
+  const visibleClients = clients.filter(c => !_mergedInto[c.name.toLowerCase()]);
+
+  const ccClients    = visibleClients.filter(c => c.hasCC && !isNonCC(c.name));
+  const nonCCClients = visibleClients.filter(c => isNonCC(c.name));
+  const total  = visibleClients.length;
   const onCC   = ccClients.length;
   const offCC  = nonCCClients.length;
+
+  // ── Monthly recurring revenue (retainer clients only) ──
+  const mrrMonthly = Object.entries(CEO_CLIENT_PACKAGES)
+    .filter(([k, v]) => v.type === 'monthly' && v.mrr > 0 &&
+      // dedupe PTY LTD variants — only count each real business once
+      !k.endsWith(' pty ltd') && !k.endsWith(' (vic)'))
+    .reduce((sum, [, v]) => sum + v.mrr, 0);
+  const mrrFmt = '$' + (mrrMonthly >= 1000 ? (mrrMonthly/1000).toFixed(1).replace(/\.0$/,'') + 'k' : mrrMonthly);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -10370,11 +10429,13 @@ async function renderCEOOverview() {
       </span>`;
     }
 
-    const pmt = nextPaymentInfo(c.billingStartDate);
+    const pmt = nextPaymentInfo(c.name, c.billingStartDate);
     if (!pmt) return '';
-    return `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px">
-      <span style="color:${pmt.urgency};font-weight:700">💳 ${pmt.days}d</span>
-      <span style="color:var(--muted)">· bills ${pmt.ordinal} each month</span>
+    const bgColor = pmt.days <= 3 ? 'rgba(248,113,113,0.1)' : pmt.days <= 7 ? 'rgba(251,191,36,0.1)' : 'rgba(52,211,153,0.07)';
+    const borderColor = pmt.days <= 3 ? 'rgba(248,113,113,0.35)' : pmt.days <= 7 ? 'rgba(251,191,36,0.35)' : 'rgba(52,211,153,0.25)';
+    return `<span style="font-family:'DM Mono',monospace;background:${bgColor};border:1px solid ${borderColor};border-radius:7px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px">
+      <span style="color:${pmt.urgency};font-weight:800;font-size:1rem;letter-spacing:-0.03em;line-height:1">💳 ${pmt.days}</span><span style="color:${pmt.urgency};font-size:0.65rem;font-weight:700">days</span>
+      <span style="color:var(--muted);font-size:0.6rem">· ${pmt.ordinal} every month</span>
     </span>`;
   }
 
@@ -10405,7 +10466,7 @@ async function renderCEOOverview() {
     <div class="ceo-client-row" style="flex-direction:column;align-items:stretch;gap:0.55rem">
       <div style="display:flex;align-items:flex-start;gap:0.5rem">
         <div style="flex:1;min-width:0">
-          <div class="ceo-client-name">${c.name}</div>
+          <div class="ceo-client-name">${c.mergedAlias ? c.name + ' / ' + c.mergedAlias : c.name}</div>
           ${c.overviewDocUrl ? `<a href="${c.overviewDocUrl}" target="_blank" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">📄 Overview Doc</a>` : ''}
         </div>
         <div class="ceo-client-badges" style="flex-shrink:0">
@@ -10422,11 +10483,11 @@ async function renderCEOOverview() {
       </div>
     </div>`;
 
-  const julesCC    = clients.filter(c => (c.agent||'').toLowerCase()==='jules' && !isNonCC(c.name));
-  const julesAds   = clients.filter(c => (c.agent||'').toLowerCase()==='jules' && isNonCC(c.name));
-  const ayessaCC   = clients.filter(c => (c.agent||'').toLowerCase()!=='jules' && !isNonCC(c.name));
-  const ayessaAds  = clients.filter(c => (c.agent||'').toLowerCase()!=='jules' && isNonCC(c.name));
-  const nonCCClients2 = clients.filter(c => isNonCC(c.name));
+  const julesCC    = visibleClients.filter(c => (c.agent||'').toLowerCase()==='jules' && !isNonCC(c.name));
+  const julesAds   = visibleClients.filter(c => (c.agent||'').toLowerCase()==='jules' && isNonCC(c.name));
+  const ayessaCC   = visibleClients.filter(c => (c.agent||'').toLowerCase()!=='jules' && !isNonCC(c.name));
+  const ayessaAds  = visibleClients.filter(c => (c.agent||'').toLowerCase()!=='jules' && isNonCC(c.name));
+  const nonCCClients2 = visibleClients.filter(c => isNonCC(c.name));
 
   el.innerHTML = `
   <div class="main" style="padding-top:1.5rem">
@@ -10467,6 +10528,11 @@ async function renderCEOOverview() {
           <div class="ceo-stat-label">Jules / Ayessa</div>
           <div class="ceo-stat-val" style="font-size:1.4rem">${julesCC.length} / ${ayessaCC.length}</div>
           <div class="ceo-stat-sub">client split</div>
+        </div>
+        <div class="ceo-stat-card green-card">
+          <div class="ceo-stat-label">Monthly MRR</div>
+          <div class="ceo-stat-val">${mrrFmt}</div>
+          <div class="ceo-stat-sub">retainers only</div>
         </div>
       </div>
 
