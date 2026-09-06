@@ -1768,7 +1768,8 @@ const PAUSED_HARDCODED  = ["Kogalo Trades - Renovations & Maintenance"];
 // Agent overrides — correct agent regardless of what the sheet says
 const AGENT_OVERRIDES = {
   "Woodstock Building Services (VIC)": "Ayessa",
-  "Canterbury Steelworks": "Ayessa"
+  "Canterbury Steelworks": "Ayessa",
+  "Apex Woodworks": "Ayessa"
 };
 
 // Shared localStorage overrides (managed from QJ Command Centre → Our Clients)
@@ -10177,6 +10178,12 @@ const BILLING_DAYS = {
   'streamline building projects':     6,
 };
 
+// ── Correct campaign live date per client (overrides sheet liveDate) ────────
+const CLIENT_LIVE_DATES = {
+  'apex woodworks':      '2026-08-29',
+  'canterbury steelworks': '2026-08-29',
+};
+
 // Apex Woodworks + Canterbury Steelworks → shown as one combined card
 const CEO_MERGED_CLIENTS = {
   'canterbury steelworks': 'apex woodworks',
@@ -10389,6 +10396,9 @@ async function renderCEOOverview() {
       const fallback = signupMRR[c.name.toLowerCase()];
       if (fallback > 0) c.mrr = fallback;
     }
+    // Apply hardcoded live dates (overrides sheet)
+    const hardLive = CLIENT_LIVE_DATES[c.name.toLowerCase()];
+    if (hardLive) c.liveDate = hardLive;
   }
 
   // ── Next-payment countdown helper ────────────────────────────────────────
