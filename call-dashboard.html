@@ -10354,6 +10354,18 @@ async function renderCEOOverview() {
   }
 
   // ── Overlay onboarding form data (liveDate, billingStartDate, mrr) ───────
+  // Build a lookup from qj_signup_events for MRR fallback (clients onboarded before qj_ceo_overrides existed)
+  const signupMRR = {};
+  try {
+    const signups = JSON.parse(localStorage.getItem('qj_signup_events') || '[]');
+    for (const s of signups) {
+      if (s.name && s.mrr > 0) {
+        const k = s.name.toLowerCase();
+        if (!signupMRR[k] || s.mrr > signupMRR[k]) signupMRR[k] = s.mrr;
+      }
+    }
+  } catch(_) {}
+
   try {
     const ceoOverrides = JSON.parse(localStorage.getItem('qj_ceo_overrides') || '[]');
     for (const ov of ceoOverrides) {
@@ -10370,6 +10382,14 @@ async function renderCEOOverview() {
       }
     }
   } catch(_) {}
+
+  // Apply signup MRR for clients where mrr is still 0 and CEO_CLIENT_PACKAGES has no entry
+  for (const c of clients) {
+    if (c.mrr === 0 && !CEO_CLIENT_PACKAGES[c.name.toLowerCase()]) {
+      const fallback = signupMRR[c.name.toLowerCase()];
+      if (fallback > 0) c.mrr = fallback;
+    }
+  }
 
   // ── Next-payment countdown helper ────────────────────────────────────────
   function nextPaymentInfo(clientName, billingStartDate) {
@@ -10416,15 +10436,12 @@ async function renderCEOOverview() {
     .filter(([k, v]) => v.type === 'monthly' && v.mrr > 0 &&
       !k.endsWith(' pty ltd') && !k.endsWith(' (vic)'))
     .reduce((sum, [, v]) => sum + v.mrr, 0);
-  // Also add MRR from freshly onboarded clients not yet in CEO_CLIENT_PACKAGES
-  const mrrOverrides = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('qj_ceo_overrides') || '[]')
-        .filter(ov => ov.mrr > 0 && !CEO_CLIENT_PACKAGES[ov.name.toLowerCase()])
-        .reduce((sum, ov) => sum + ov.mrr, 0);
-    } catch(_) { return 0; }
-  })();
-  const mrrMonthly = mrrPackages + mrrOverrides;
+  // Add MRR from all clients not covered by CEO_CLIENT_PACKAGES (from signupMRR + ceo_overrides)
+  const coveredByPkg = new Set(Object.keys(CEO_CLIENT_PACKAGES));
+  const mrrExtra = clients
+    .filter(c => !coveredByPkg.has(c.name.toLowerCase()) && c.mrr > 0)
+    .reduce((sum, c) => sum + c.mrr, 0);
+  const mrrMonthly = mrrPackages + mrrExtra;
   const mrrFmt = '$' + (mrrMonthly >= 1000 ? (mrrMonthly/1000).toFixed(1).replace(/\.0$/,'') + 'k' : mrrMonthly);
 
   const hour = new Date().getHours();
