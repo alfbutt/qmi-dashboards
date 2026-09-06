@@ -10353,6 +10353,24 @@ async function renderCEOOverview() {
     clients = [];
   }
 
+  // ── Overlay onboarding form data (liveDate, billingStartDate, mrr) ───────
+  try {
+    const ceoOverrides = JSON.parse(localStorage.getItem('qj_ceo_overrides') || '[]');
+    for (const ov of ceoOverrides) {
+      if (!ov.name) continue;
+      const idx = clients.findIndex(c => c.name.toLowerCase() === ov.name.toLowerCase());
+      if (idx >= 0) {
+        if (ov.liveDate)         clients[idx].liveDate         = ov.liveDate;
+        if (ov.billingStartDate) clients[idx].billingStartDate = ov.billingStartDate;
+        if (ov.mrr > 0)          clients[idx].mrr              = ov.mrr;
+      } else if (!_churnedLocally(ov.name) && !_pausedLocally(ov.name)) {
+        // Client not yet in sheet — surface them immediately
+        clients.push({ name: ov.name, agent: '', overviewDocUrl: '', liveDate: ov.liveDate,
+          billingStartDate: ov.billingStartDate, mrr: ov.mrr, hasCC: false });
+      }
+    }
+  } catch(_) {}
+
   // ── Next-payment countdown helper ────────────────────────────────────────
   function nextPaymentInfo(clientName, billingStartDate) {
     // BILLING_DAYS takes priority over sheet data
@@ -10394,11 +10412,19 @@ async function renderCEOOverview() {
   const offCC  = nonCCClients.length;
 
   // ── Monthly recurring revenue (retainer clients only) ──
-  const mrrMonthly = Object.entries(CEO_CLIENT_PACKAGES)
+  const mrrPackages = Object.entries(CEO_CLIENT_PACKAGES)
     .filter(([k, v]) => v.type === 'monthly' && v.mrr > 0 &&
-      // dedupe PTY LTD variants — only count each real business once
       !k.endsWith(' pty ltd') && !k.endsWith(' (vic)'))
     .reduce((sum, [, v]) => sum + v.mrr, 0);
+  // Also add MRR from freshly onboarded clients not yet in CEO_CLIENT_PACKAGES
+  const mrrOverrides = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('qj_ceo_overrides') || '[]')
+        .filter(ov => ov.mrr > 0 && !CEO_CLIENT_PACKAGES[ov.name.toLowerCase()])
+        .reduce((sum, ov) => sum + ov.mrr, 0);
+    } catch(_) { return 0; }
+  })();
+  const mrrMonthly = mrrPackages + mrrOverrides;
   const mrrFmt = '$' + (mrrMonthly >= 1000 ? (mrrMonthly/1000).toFixed(1).replace(/\.0$/,'') + 'k' : mrrMonthly);
 
   const hour = new Date().getHours();
