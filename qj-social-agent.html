@@ -575,7 +575,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
         <div class="car-preview-main">
           <div>
             <div class="car-canvas-wrap">
-              <canvas id="carCanvas" width="400" height="400"></canvas>
+              <canvas id="carCanvas" width="1080" height="1080" style="width:100%;height:auto"></canvas>
             </div>
             <div class="car-nav">
               <button class="car-nav-btn" onclick="carNav(-1)">← Prev</button>
@@ -1050,11 +1050,15 @@ async function loadDriveFolder() {
       const existing = photos.findIndex(p => p.driveId === f.id);
       if (existing !== -1) { loaded++; return; }
 
-      // Try full-res first via alt=media, fall back to hi-res thumbnail
-      const fullUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${apiKey}`;
-      const thumbUrl = (f.thumbnailLink||'').replace(/=s\d+/, '=s1600');
+      // Load sequence: full Drive file → s4096 thumbnail → s1600 fallback
+      // lh3.googleusercontent.com URLs support CORS; alt=media often fails (tainted canvas)
+      const rawThumb = (f.thumbnailLink || '');
+      const fullResUrl  = rawThumb.replace(/=s\d+/, '');          // strip size → original resolution
+      const hiResUrl    = rawThumb.replace(/=s\d+/, '=s4096');    // 4096px — enough for any canvas
+      const medResUrl   = rawThumb.replace(/=s\d+/, '=s1600');    // safe fallback
 
-      const tryLoad = (url, isFallback) => {
+      const tryLoad = (url, nextUrl) => {
+        if (!url) { loaded++; if (loaded >= total && loaded > 0) { status.textContent = `✓ ${loaded} images loaded`; renderPhotoThumbs(); } return; }
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
@@ -1069,12 +1073,11 @@ async function loadDriveFolder() {
           if (loaded >= total) { status.textContent = `✓ ${total} images loaded at full quality`; renderPhotoThumbs(); }
         };
         img.onerror = () => {
-          if (!isFallback && thumbUrl) tryLoad(thumbUrl, true);
-          else { loaded++; if (loaded >= total && loaded > 0) { status.textContent = `✓ ${loaded} images loaded`; renderPhotoThumbs(); } }
+          tryLoad(nextUrl, nextUrl === hiResUrl ? medResUrl : null);
         };
         img.src = url;
       };
-      tryLoad(fullUrl, false);
+      tryLoad(fullResUrl, hiResUrl);
     });
 
   } catch(err) {
@@ -2331,7 +2334,7 @@ function carNav(dir) {
 
 function renderCarSlide() {
   const cv = document.getElementById('carCanvas');
-  cv.width = 400; cv.height = 400;
+  cv.width = 1080; cv.height = 1080;
   const s = {
     type:     document.getElementById('slideType').value,
     headline: document.getElementById('slideHeadline').value,
@@ -2340,7 +2343,7 @@ function renderCarSlide() {
     ghost:    document.getElementById('slideGhost').value,
     bgPhoto:  document.getElementById('slideBgPhoto').value
   };
-  drawCarSlideToCanvas(cv.getContext('2d'), 400, 400, s);
+  drawCarSlideToCanvas(cv.getContext('2d'), 1080, 1080, s);
 }
 
 function drawCarSlideToCanvas(ctx, w, h, s) {
