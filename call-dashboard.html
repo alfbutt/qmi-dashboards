@@ -10139,13 +10139,13 @@ const CEO_CLIENT_PACKAGES = {
   'performance building solutions':  { type: 'monthly',   mrr: 1750 },
   'dws building co':                 { type: 'monthly',   mrr: 2000 },
   'citiwide group':                  { type: 'monthly',   mrr: 1800 },
-  'mk1 renovations':                 { type: 'monthly',   mrr: 0    },
+  'mk1 renovations':                 { type: 'monthly',   mrr: 2000 },
   'kbg renovations':                 { type: 'programme', total: 7500, months: 3, start: '2026-06-29', end: '2026-09-29' },
   'favourite home':                  { type: 'weekly',    weeklyRate: 330 },
   'moonlight doors & windows':       { type: 'monthly',   mrr: 2000 },
   'moonlight doors and windows':     { type: 'monthly',   mrr: 2000 },
-  'apex woodworks':                  { type: 'monthly',   mrr: 0    },
-  'canterbury steelworks':           { type: 'monthly',   mrr: 0    },
+  'apex woodworks':                  { type: 'monthly',   mrr: 2200 },
+  'canterbury steelworks':           { type: 'monthly',   mrr: 2200 },
   'barbalace':                       { type: 'monthly',   mrr: 0    },
   'barbalace construction':          { type: 'monthly',   mrr: 0    },
   // ── 3-month programmes ──────────────────────────────────────────────────
@@ -10434,7 +10434,8 @@ async function renderCEOOverview() {
   // ── Monthly recurring revenue (retainer clients only) ──
   const mrrPackages = Object.entries(CEO_CLIENT_PACKAGES)
     .filter(([k, v]) => v.type === 'monthly' && v.mrr > 0 &&
-      !k.endsWith(' pty ltd') && !k.endsWith(' (vic)'))
+      !k.endsWith(' pty ltd') && !k.endsWith(' (vic)') &&
+      !CEO_MERGED_CLIENTS[k])  // exclude merged secondaries (e.g. Canterbury → Apex card)
     .reduce((sum, [, v]) => sum + v.mrr, 0);
   // Add MRR from all clients not covered by CEO_CLIENT_PACKAGES (from signupMRR + ceo_overrides)
   const coveredByPkg = new Set(Object.keys(CEO_CLIENT_PACKAGES));
