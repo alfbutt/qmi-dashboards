@@ -1769,6 +1769,7 @@ const PAUSED_HARDCODED  = ["Kogalo Trades - Renovations & Maintenance"];
 const AGENT_OVERRIDES = {
   "Woodstock Building Services (VIC)": "Ayessa",
   "Canterbury Steelworks": "Ayessa",
+  "Canterbury Steel Works": "Ayessa",
   "Apex Woodworks": "Ayessa"
 };
 
@@ -10147,6 +10148,7 @@ const CEO_CLIENT_PACKAGES = {
   'moonlight doors and windows':     { type: 'monthly',   mrr: 2000 },
   'apex woodworks':                  { type: 'monthly',   mrr: 2200 },
   'canterbury steelworks':           { type: 'monthly',   mrr: 2200 },
+  'canterbury steel works':          { type: 'monthly',   mrr: 2200 },
   'barbalace':                       { type: 'monthly',   mrr: 0    },
   'barbalace construction':          { type: 'monthly',   mrr: 0    },
   // ── 3-month programmes ──────────────────────────────────────────────────
@@ -10161,6 +10163,7 @@ const BILLING_DAYS = {
   'citiwide group':                  29,
   'apex woodworks':                  24,
   'canterbury steelworks':           24,
+  'canterbury steel works':          24,
   'silk touch joinery':              18,
   'moonlight doors and windows':     18,
   'moonlight doors & windows':       18,
@@ -10180,13 +10183,15 @@ const BILLING_DAYS = {
 
 // ── Correct campaign live date per client (overrides sheet liveDate) ────────
 const CLIENT_LIVE_DATES = {
-  'apex woodworks':      '2026-08-29',
+  'apex woodworks':        '2026-08-29',
   'canterbury steelworks': '2026-08-29',
+  'canterbury steel works':'2026-08-29',
 };
 
 // Apex Woodworks + Canterbury Steelworks → shown as one combined card
 const CEO_MERGED_CLIENTS = {
-  'canterbury steelworks': 'apex woodworks',
+  'canterbury steelworks':   'apex woodworks',
+  'canterbury steel works':  'apex woodworks',
 };
 
 // ── CEO Overview ─────────────────────────────────
@@ -10445,7 +10450,7 @@ async function renderCEOOverview() {
   const mrrPackages = Object.entries(CEO_CLIENT_PACKAGES)
     .filter(([k, v]) => v.type === 'monthly' && v.mrr > 0 &&
       !k.endsWith(' pty ltd') && !k.endsWith(' (vic)') &&
-      !CEO_MERGED_CLIENTS[k])  // exclude merged secondaries (e.g. Canterbury → Apex card)
+      !CEO_MERGED_CLIENTS[k])  // exclude merged secondaries (e.g. Canterbury Steel Works → Apex card)
     .reduce((sum, [, v]) => sum + v.mrr, 0);
   // Add MRR from all clients not covered by CEO_CLIENT_PACKAGES (from signupMRR + ceo_overrides)
   const coveredByPkg = new Set(Object.keys(CEO_CLIENT_PACKAGES));
