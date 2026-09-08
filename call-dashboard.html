@@ -1452,6 +1452,7 @@
   <div id="page-ceo-overview" class="page"><div id="app-ceo-overview"></div></div>
   <div id="page-ceo-todos"    class="page"><div id="app-ceo-todos"></div></div>
   <div id="page-ceo-agents"   class="page"><div id="app-ceo-agents"></div></div>
+  <div id="page-ceo-speed"    class="page"><div id="app-ceo-speed"></div></div>
   <div id="page-pm-ob-deck"   class="page"><div id="app-pm-ob-deck"></div></div>
   <div id="page-ceo-reel" class="page" style="padding:0;margin:-2rem -2.5rem;width:calc(100vw - 230px);height:100vh;max-width:none;overflow:hidden;">
     <iframe src="http://localhost:8766/quality_jobs_reel_agent%20(1).html"
@@ -2748,6 +2749,7 @@ const NAV_STRUCTURE = {
       { id: 'ceo-overview',      label: 'Overview'          },
       { id: 'ceo-todos',         label: 'To-Do'             },
       { id: 'ceo-agents',        label: 'Agents'            },
+      { id: 'ceo-speed',         label: '⚡ Speed to Lead'  },
       { id: 'finance',           label: 'Finance'           },
       { id: 'finance-bank',      label: 'Bank & P&L'        },
       { id: 'pitch-canvas',      label: '🎯 Pitch Canvas'    },
@@ -2901,6 +2903,7 @@ function switchPage(page) {
   if (page === 'ceo-overview')  renderCEOOverview();
   if (page === 'ceo-todos')     renderCEOTodos();
   if (page === 'ceo-agents')    renderCEOAgents();
+  if (page === 'ceo-speed')     renderSpeedToLead();
   if (page === 'invoices')      renderInvoicePage();
   if (page === 'finance-bank')  renderFinanceBankPage();
 
@@ -10919,6 +10922,207 @@ function _ceoSaveObsidian() {
   localStorage.setItem('qj_obs_note', note);
   const status = document.getElementById('ceo-obs-status');
   if(status) { status.textContent = '✓ Saved'; status.className = 'ceo-obsidian-status ok'; }
+}
+
+// ── Speed to Lead ──────────────────────────────────────────────────────────────
+// Sheet ID — paste your Speed to Lead Google Sheet ID here once created
+const SPEED_TO_LEAD_SHEET_ID = '';  // ← fill in after Make.com setup
+
+async function renderSpeedToLead() {
+  const el = document.getElementById('app-ceo-speed');
+
+  const fmt = secs => {
+    if (secs == null || isNaN(secs)) return '—';
+    if (secs < 60)   return `${Math.round(secs)}s`;
+    if (secs < 3600) return `${Math.floor(secs/60)}m ${Math.round(secs%60)}s`;
+    const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60);
+    return `${h}h ${m}m`;
+  };
+
+  const chip = secs => {
+    if (secs == null || isNaN(secs)) return '#6b7280';
+    if (secs <= 300)  return '#10b981'; // ≤5 min — green
+    if (secs <= 1800) return '#f59e0b'; // ≤30 min — amber
+    return '#ef4444';                   // >30 min — red
+  };
+
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+
+  el.innerHTML = `<div class="main" style="padding-top:1.5rem"><div class="ceo-page">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">
+      <div style="font-size:1.4rem;font-weight:900;letter-spacing:-0.04em;color:var(--text)">⚡ Speed to Lead</div>
+      <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px">outbound · first contact only</div>
+      <button onclick="renderSpeedToLead()" style="margin-left:auto;background:none;border:1px solid var(--border2);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:0.62rem;font-family:'DM Mono',monospace;cursor:pointer">↻ refresh</button>
+    </div>
+    <div style="text-align:center;padding:3rem;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.78rem">Loading…</div>
+  </div></div>`;
+
+  if (!SPEED_TO_LEAD_SHEET_ID) {
+    el.innerHTML = `<div class="main" style="padding-top:1.5rem"><div class="ceo-page">
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">
+        <div style="font-size:1.4rem;font-weight:900;letter-spacing:-0.04em;color:var(--text)">⚡ Speed to Lead</div>
+      </div>
+      ${_speedSetupCard()}
+    </div></div>`;
+    return;
+  }
+
+  let rows = [];
+  try {
+    const res = await fetchWT(`${PROXY_URL}?id=${SPEED_TO_LEAD_SHEET_ID}&sheet=Speed+to+Lead+Log`);
+    rows = await res.json();
+  } catch(e) {
+    el.innerHTML = `<div class="main" style="padding-top:1.5rem"><div class="ceo-page">
+      <div style="color:#ef4444;font-family:'DM Mono',monospace;font-size:0.8rem;padding:2rem">Could not load sheet — check the Sheet ID and sharing permissions.</div>
+      ${_speedSetupCard()}
+    </div></div>`;
+    return;
+  }
+
+  // Expected columns (row 0 = headers):
+  // 0:contact_id 1:contact_name 2:phone 3:client 4:agent 5:lead_created_at 6:first_call_at 7:speed_seconds
+  if (rows.length < 2) {
+    el.innerHTML = `<div class="main" style="padding-top:1.5rem"><div class="ceo-page">
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">
+        <div style="font-size:1.4rem;font-weight:900;letter-spacing:-0.04em;color:var(--text)">⚡ Speed to Lead</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:2rem;text-align:center;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.78rem">
+        No data yet — once your Make.com scenario starts logging calls, results will appear here.
+      </div>
+      ${_speedSetupCard()}
+    </div></div>`;
+    return;
+  }
+
+  const data = rows.slice(1).map(r => ({
+    id:         String(r[0]||''),
+    name:       String(r[1]||'Unknown'),
+    phone:      String(r[2]||''),
+    client:     String(r[3]||''),
+    agent:      String(r[4]||''),
+    leadAt:     r[5] ? new Date(r[5]) : null,
+    callAt:     r[6] ? new Date(r[6]) : null,
+    secs:       parseFloat(r[7]) || null,
+  })).filter(r => r.secs != null);
+
+  // ── Overall stats ──
+  const overallAvg  = avg(data.map(r=>r.secs));
+
+  // ── Per agent ──
+  const agentMap = {};
+  data.forEach(r => {
+    const a = (r.agent||'Unknown').trim();
+    if (!agentMap[a]) agentMap[a] = [];
+    agentMap[a].push(r.secs);
+  });
+
+  // ── Per client ──
+  const clientMap = {};
+  data.forEach(r => {
+    const c = (r.client||'Unknown').trim();
+    if (!clientMap[c]) clientMap[c] = [];
+    clientMap[c].push(r.secs);
+  });
+
+  // ── Stat cards ──
+  const statCard = (label, secs, sub) => `
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:1.1rem 1.3rem;min-width:140px;flex:1">
+      <div style="font-size:0.58rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem">${label}</div>
+      <div style="font-size:1.6rem;font-weight:900;letter-spacing:-0.04em;color:${chip(secs)};line-height:1">${fmt(secs)}</div>
+      ${sub ? `<div style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:0.3rem">${sub}</div>` : ''}
+    </div>`;
+
+  const agentCards = Object.entries(agentMap).map(([agent, secsArr]) =>
+    statCard(agent, avg(secsArr), `${secsArr.length} lead${secsArr.length!==1?'s':''}`)).join('');
+
+  // ── Per-client breakdown ──
+  const clientRows = Object.entries(clientMap)
+    .sort((a,b) => avg(a[1]) - avg(b[1]))
+    .map(([client, secsArr]) => {
+      const a = avg(secsArr); const col = chip(a);
+      return `<tr>
+        <td style="padding:0.6rem 0.75rem;font-size:0.78rem;color:var(--text);font-weight:600">${client}</td>
+        <td style="padding:0.6rem 0.75rem;font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace">${secsArr.length}</td>
+        <td style="padding:0.6rem 0.75rem"><span style="color:${col};font-weight:800;font-family:'DM Mono',monospace;font-size:0.82rem">${fmt(a)}</span></td>
+      </tr>`;
+    }).join('');
+
+  // ── Recent leads log ──
+  const recentRows = [...data].sort((a,b)=>(b.callAt||0)-(a.callAt||0)).slice(0,50).map(r => {
+    const col = chip(r.secs);
+    const callDate = r.callAt ? r.callAt.toLocaleDateString('en-AU',{day:'numeric',month:'short'}) + ' ' + r.callAt.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<tr>
+      <td style="padding:0.55rem 0.75rem;font-size:0.75rem;color:var(--text);font-weight:600">${r.name}</td>
+      <td style="padding:0.55rem 0.75rem;font-size:0.7rem;color:var(--muted);font-family:'DM Mono',monospace">${r.client}</td>
+      <td style="padding:0.55rem 0.75rem;font-size:0.7rem;color:var(--muted);font-family:'DM Mono',monospace">${r.agent}</td>
+      <td style="padding:0.55rem 0.75rem;font-size:0.7rem;color:var(--muted);font-family:'DM Mono',monospace">${callDate}</td>
+      <td style="padding:0.55rem 0.75rem">
+        <span style="color:${col};font-weight:800;font-family:'DM Mono',monospace;font-size:0.82rem">${fmt(r.secs)}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<div class="main" style="padding-top:1.5rem"><div class="ceo-page">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap">
+      <div style="font-size:1.4rem;font-weight:900;letter-spacing:-0.04em;color:var(--text)">⚡ Speed to Lead</div>
+      <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px">outbound · first contact only · ${data.length} leads tracked</div>
+      <button onclick="renderSpeedToLead()" style="margin-left:auto;background:none;border:1px solid var(--border2);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:0.62rem;font-family:'DM Mono',monospace;cursor:pointer">↻ refresh</button>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      ${statCard('Overall Average', overallAvg, `${data.length} leads total`)}
+      ${agentCards}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;overflow:hidden">
+        <div style="padding:0.85rem 1rem;font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border2)">By Client</div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid var(--border2)">
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">CLIENT</th>
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">LEADS</th>
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">AVG</th>
+          </tr></thead>
+          <tbody>${clientRows}</tbody>
+        </table>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;overflow:hidden">
+        <div style="padding:0.85rem 1rem;font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border2)">Colour Key</div>
+        <div style="padding:1rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="display:flex;align-items:center;gap:0.6rem"><div style="width:10px;height:10px;border-radius:50%;background:#10b981"></div><span style="font-size:0.72rem;color:var(--text)">Under 5 minutes — excellent</span></div>
+          <div style="display:flex;align-items:center;gap:0.6rem"><div style="width:10px;height:10px;border-radius:50%;background:#f59e0b"></div><span style="font-size:0.72rem;color:var(--text)">5 – 30 minutes — acceptable</span></div>
+          <div style="display:flex;align-items:center;gap:0.6rem"><div style="width:10px;height:10px;border-radius:50%;background:#ef4444"></div><span style="font-size:0.72rem;color:var(--text)">Over 30 minutes — needs improvement</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;overflow:hidden">
+      <div style="padding:0.85rem 1rem;font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border2)">Recent Leads — First Contact Log</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid var(--border2)">
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">NAME</th>
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">CLIENT</th>
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">AGENT</th>
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">FIRST CALL</th>
+            <th style="padding:0.5rem 0.75rem;text-align:left;font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--muted);font-weight:600">SPEED</th>
+          </tr></thead>
+          <tbody>${recentRows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+function _speedSetupCard() {
+  return `<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:1.5rem;margin-top:1rem">
+    <div style="font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:0.75rem">⚙️ Setup required — paste your Sheet ID into <code style="font-size:0.72rem;background:rgba(0,0,0,0.1);padding:1px 5px;border-radius:4px">SPEED_TO_LEAD_SHEET_ID</code> in the dashboard code once your Make.com scenario is running.</div>
+    <div style="font-size:0.7rem;color:var(--muted);line-height:1.7;font-family:'DM Mono',monospace">
+      Sheet must have a tab named <strong>Speed to Lead Log</strong> with columns:<br>
+      <span style="color:var(--text)">A: contact_id &nbsp;|&nbsp; B: contact_name &nbsp;|&nbsp; C: phone &nbsp;|&nbsp; D: client &nbsp;|&nbsp; E: agent &nbsp;|&nbsp; F: lead_created_at &nbsp;|&nbsp; G: first_call_at &nbsp;|&nbsp; H: speed_seconds</span>
+    </div>
+  </div>`;
 }
 
 function renderCEOTodos() {
