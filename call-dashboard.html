@@ -878,8 +878,8 @@
   .overview-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem; }
   .overview-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-    padding: 1rem 1.5rem; display: grid;
-    grid-template-columns: 1fr 80px 75px 75px 85px 70px 70px 90px 90px 100px;
+    padding: 1.1rem 1.5rem; display: grid;
+    grid-template-columns: 1fr 80px 75px 75px 85px 70px 90px 90px 110px 100px;
     align-items: center; gap: 0.75rem; transition: background 0.15s;
   }
   .period-select {
@@ -2650,6 +2650,32 @@ function renderOverview(callsData, apptsData) {
     return total;
   }
 
+  // Colour helpers for overview metrics
+  function cplColor(cpl) {
+    if (!cpl || isNaN(cpl)) return 'var(--muted)';
+    if (cpl <= 40)  return '#10b981';
+    if (cpl <= 80)  return '#f59e0b';
+    return '#ef4444';
+  }
+  function cpbColor(cpb) {
+    if (!cpb || isNaN(cpb)) return 'var(--muted)';
+    if (cpb <= 250) return '#10b981';
+    if (cpb <= 500) return '#f59e0b';
+    return '#ef4444';
+  }
+  function ratioColor(ratio) {
+    if (!ratio || isNaN(ratio)) return 'var(--muted)';
+    if (ratio <= 10) return '#10b981';
+    if (ratio <= 20) return '#f59e0b';
+    return '#ef4444';
+  }
+  function lbpColor(pct) {
+    if (!pct || isNaN(pct)) return 'var(--muted)';
+    if (pct >= 30) return '#10b981';
+    if (pct >= 10) return '#f59e0b';
+    return '#ef4444';
+  }
+
   function buildRows(clientNames, agent) {
     return clientNames.map(name => {
       const calls = clientCallsInPeriod(name, overviewPeriod);
@@ -2657,7 +2683,8 @@ function renderOverview(callsData, apptsData) {
       const apptMatch = apptClients.find(c => c.name.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,''))
                      || apptClients.find(c => name.toLowerCase().includes(c.name.toLowerCase().slice(0,6)));
       const appts = apptMatch?.last30 ?? null;
-      const callRatio = (appts && appts > 0) ? (calls / appts).toFixed(1) : '—';
+      const ratioNum = (appts && appts > 0) ? calls / appts : null;
+      const callRatio = ratioNum !== null ? ratioNum.toFixed(1) : null;
       const cfg = getConfig(apptMatch?.name || name);
       const cls = (typeof appts === 'number') ? kpiClass(appts, cfg.daysLive) : 'neutral';
       const agentColor = agent==='Jules' ? 'var(--jules)' : 'var(--ayessa)';
@@ -2665,10 +2692,11 @@ function renderOverview(callsData, apptsData) {
       const ads = getAds(name);
       const spent  = ads ? fmtCurrency(ads.spent) : '—';
       const leads  = ads ? fmt(ads.leads) : '—';
-      const leadBookPct = (ads && ads.leads > 0 && appts !== null)
-        ? Math.round((appts / ads.leads) * 100) + '%' : '—';
-      const costPerBooking = (ads && ads.spent > 0 && appts)
-        ? fmtCurrency(ads.spent / appts) : '—';
+      const lbpNum = (ads && ads.leads > 0 && appts !== null) ? Math.round((appts / ads.leads) * 100) : null;
+      const leadBookPct = lbpNum !== null ? lbpNum + '%' : '—';
+      const cpbNum = (ads && ads.spent > 0 && appts) ? ads.spent / appts : null;
+      const costPerBooking = cpbNum !== null ? fmtCurrency(cpbNum) : '—';
+      const cplNum = ads ? ads.cpl : null;
 
       return `
         <div class="overview-card">
@@ -2678,12 +2706,18 @@ function renderOverview(callsData, apptsData) {
           </div>
           <div class="ov-val" style="color:${agentColor}">${fmt(calls)}</div>
           <div class="ov-val">${appts !== null ? fmt(appts) : '—'}</div>
-          <div class="ov-val">${callRatio !== '—' ? callRatio+':1' : '—'}</div>
+          <div class="ov-val" style="color:${ratioColor(ratioNum)};font-weight:${ratioNum?'700':'400'}">${callRatio ? callRatio+':1' : '—'}</div>
           <div class="ov-val" style="color:var(--amber)">${spent}</div>
           <div class="ov-val">${leads}</div>
-          <div class="ov-val">${ads ? fmtCurrency(ads.cpl) : '—'}</div>
-          <div class="ov-val">${leadBookPct}</div>
-          <div class="ov-val" style="color:var(--green)">${costPerBooking}</div>
+          <div class="ov-val" style="display:flex;flex-direction:column;align-items:center;gap:1px">
+            <span style="color:${cplColor(cplNum)};font-size:1.05rem;font-weight:800;font-family:'DM Mono',monospace;letter-spacing:-0.02em;line-height:1">${cplNum ? fmtCurrency(cplNum) : '—'}</span>
+            <span style="font-size:0.52rem;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.05em">CPL</span>
+          </div>
+          <div class="ov-val" style="color:${lbpColor(lbpNum)};font-weight:${lbpNum?'700':'400'}">${leadBookPct}</div>
+          <div class="ov-val" style="display:flex;flex-direction:column;align-items:center;gap:1px">
+            <span style="color:${cpbColor(cpbNum)};font-size:1.05rem;font-weight:800;font-family:'DM Mono',monospace;letter-spacing:-0.02em;line-height:1">${costPerBooking}</span>
+            <span style="font-size:0.52rem;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.05em">COST/BOOK</span>
+          </div>
           <div class="ov-val">${kpiDot(cls)}</div>
         </div>`;
     }).join('');
