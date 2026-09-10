@@ -10341,9 +10341,10 @@ async function renderCEOOverview() {
 
   let clients = [], churnedClients = [], pausedClients = [];
   let mrrByClient = {};   // name (lower) → mrr number
+  let _ceoFromCache = false;
   try {
     const [clientsRes, payLogRes] = await Promise.all([
-      fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`),
+      fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`, {}, 20000),
       fetchWT(`${PROXY_URL}?id=${PAYMENT_LOG_ID}&sheet=02%3A%20Payment%20Log`).catch(() => null)
     ]);
 
@@ -10384,7 +10385,10 @@ async function renderCEOOverview() {
         continue;
       }
       const mrr = mrrByClient[name.toLowerCase()] || 0;
-      clients.push({ name, agent, overviewDocUrl, liveDate, billingStartDate, mrr,
+      // Apply agent overrides (localStorage + hardcoded AGENT_OVERRIDES)
+      const _localOvs = _getLocalAgentOverrides();
+      const effectiveAgent = _localOvs[name] || AGENT_OVERRIDES[name] || agent;
+      clients.push({ name, agent: effectiveAgent, overviewDocUrl, liveDate, billingStartDate, mrr,
         hasCC: !!(statsUrl && statsUrl.length > 4 && !statsUrl.toLowerCase().includes('not yet')) });
     }
     const localChurned = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
@@ -10398,8 +10402,22 @@ async function renderCEOOverview() {
           !churnedClients.some(c => c.name.toLowerCase() === p.name.toLowerCase()))
         pausedClients.push({ name: p.name, agent: '—', pausedAt: p.pausedAt || '', reason: p.reason || '' });
     });
+    // Cache the fresh result
+    if (clients.length > 0) {
+      try { localStorage.setItem('qj_ceo_clients_cache', JSON.stringify({ clients, churnedClients, pausedClients, mrrByClient, ts: Date.now() })); } catch(_) {}
+    }
   } catch(e) {
-    clients = [];
+    // Fetch failed — try cache
+    try {
+      const cached = JSON.parse(localStorage.getItem('qj_ceo_clients_cache') || 'null');
+      if (cached && cached.clients && cached.clients.length > 0) {
+        clients = cached.clients;
+        churnedClients = cached.churnedClients || [];
+        pausedClients  = cached.pausedClients  || [];
+        mrrByClient    = cached.mrrByClient    || {};
+        _ceoFromCache  = true;
+      }
+    } catch(_) {}
   }
 
   // ── Overlay onboarding form data (liveDate, billingStartDate, mrr) ───────
@@ -10433,15 +10451,17 @@ async function renderCEOOverview() {
   } catch(_) {}
 
   // Apply signup MRR for clients where mrr is still 0 and CEO_CLIENT_PACKAGES has no entry
-  for (const c of clients) {
-    if (c.mrr === 0 && !CEO_CLIENT_PACKAGES[c.name.toLowerCase()]) {
-      const fallback = signupMRR[c.name.toLowerCase()];
-      if (fallback > 0) c.mrr = fallback;
+  try {
+    for (const c of clients) {
+      if ((c.mrr === 0 || c.mrr == null) && !CEO_CLIENT_PACKAGES[c.name.toLowerCase()]) {
+        const fallback = signupMRR[c.name.toLowerCase()];
+        if (fallback > 0) c.mrr = fallback;
+      }
+      // Apply hardcoded live dates (overrides sheet)
+      const hardLive = CLIENT_LIVE_DATES[c.name.toLowerCase()];
+      if (hardLive) c.liveDate = hardLive;
     }
-    // Apply hardcoded live dates (overrides sheet)
-    const hardLive = CLIENT_LIVE_DATES[c.name.toLowerCase()];
-    if (hardLive) c.liveDate = hardLive;
-  }
+  } catch(_) {}
 
   // ── Next-payment countdown helper ────────────────────────────────────────
   function nextPaymentInfo(clientName, billingStartDate) {
@@ -10592,7 +10612,7 @@ async function renderCEOOverview() {
       <div class="ceo-greeting">
         <div class="ceo-greeting-text">
           <h2>Welcome, Alfie 👑</h2>
-          <p>${new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+          <p>${new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}${_ceoFromCache ? ' <span style="color:#f59e0b;font-size:0.6rem;font-family:\'DM Mono\',monospace;border:1px solid rgba(245,158,11,0.4);border-radius:4px;padding:1px 6px;margin-left:6px">⚠ cached — sheet unreachable, refresh to retry</span>' : ''}</p>
         </div>
         <div class="ceo-greeting-actions">
           <a href="${GHL_URL}" target="_blank" class="ceo-ghl-btn">
