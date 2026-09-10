@@ -10342,11 +10342,27 @@ async function renderCEOOverview() {
   let clients = [], churnedClients = [], pausedClients = [];
   let mrrByClient = {};   // name (lower) → mrr number
   let _ceoFromCache = false;
-  try {
-    const [clientsRes, payLogRes] = await Promise.all([
+
+  // Helper: try the sheet fetch with one automatic retry
+  async function _fetchClientsSheet() {
+    const urls = [
       fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`, {}, 20000),
       fetchWT(`${PROXY_URL}?id=${PAYMENT_LOG_ID}&sheet=02%3A%20Payment%20Log`).catch(() => null)
-    ]);
+    ];
+    try {
+      return await Promise.all(urls);
+    } catch(_) {
+      // Wait 4 seconds then retry once — handles Apps Script busy while onboarding writes
+      await new Promise(r => setTimeout(r, 4000));
+      return Promise.all([
+        fetchWT(`${PROXY_URL}?id=${CLIENTS_SHEET_ID}&sheet=Clients`, {}, 20000),
+        fetchWT(`${PROXY_URL}?id=${PAYMENT_LOG_ID}&sheet=02%3A%20Payment%20Log`).catch(() => null)
+      ]);
+    }
+  }
+
+  try {
+    const [clientsRes, payLogRes] = await _fetchClientsSheet();
 
     // ── Parse payment log for MRR per client ──────────────────────────────
     if (payLogRes) {
@@ -10407,7 +10423,7 @@ async function renderCEOOverview() {
       try { localStorage.setItem('qj_ceo_clients_cache', JSON.stringify({ clients, churnedClients, pausedClients, mrrByClient, ts: Date.now() })); } catch(_) {}
     }
   } catch(e) {
-    // Fetch failed — try cache
+    // Both attempts failed — try cache
     try {
       const cached = JSON.parse(localStorage.getItem('qj_ceo_clients_cache') || 'null');
       if (cached && cached.clients && cached.clients.length > 0) {
@@ -10418,6 +10434,18 @@ async function renderCEOOverview() {
         _ceoFromCache  = true;
       }
     } catch(_) {}
+
+    // No cache either — show retry UI and bail out
+    if (!_ceoFromCache && clients.length === 0) {
+      el.innerHTML = `<div class="main" style="padding-top:3rem;text-align:center">
+        <div style="font-size:0.85rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.2rem">
+          Google Sheets is busy — likely because a client was just onboarded or churned.<br>
+          <span style="font-size:0.72rem;opacity:0.7">The Apps Script needs a moment to finish writing before it can be read.</span>
+        </div>
+        <button onclick="renderCEOOverview()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:0.8rem;font-family:'DM Mono',monospace;font-weight:700;cursor:pointer">↻ Try again</button>
+      </div>`;
+      return;
+    }
   }
 
   // ── Overlay onboarding form data (liveDate, billingStartDate, mrr) ───────
