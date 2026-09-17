@@ -10841,6 +10841,7 @@ async function renderCEOOverview() {
               </div>
               <div class="ceo-client-badges">
                 <span class="ceo-badge" style="background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.25)">Churned</span>
+                <button class="ceo-action-btn restore" onclick="_ceoReactivateClient('${c.name.replace(/'/g,"\\'")}')">↩ Reactivate</button>
               </div>
             </div>`).join('')}
         </div>
@@ -10907,8 +10908,40 @@ function _ceoMakeActiveClient(name) {
   fetchClientsData().then(() => renderCEOOverview());
 }
 
+function _ceoReactivateClient(name) {
+  if (!confirm(`Reactivate "${name}" and move them back to active clients?`)) return;
+
+  // Remove from localStorage churned blacklist
+  try {
+    let churned = JSON.parse(localStorage.getItem('qj_churned_clients') || '[]');
+    churned = churned.filter(n => n.toLowerCase() !== name.toLowerCase());
+    localStorage.setItem('qj_churned_clients', JSON.stringify(churned));
+  } catch(_) {}
+
+  // Remove from churn events log
+  try {
+    let events = JSON.parse(localStorage.getItem('qj_churn_events') || '[]');
+    events = events.filter(e => e.name?.toLowerCase() !== name.toLowerCase());
+    localStorage.setItem('qj_churn_events', JSON.stringify(events));
+  } catch(_) {}
+
+  // Remove from offboarding projects
+  try {
+    let off = JSON.parse(localStorage.getItem('qj_off_projects') || '[]');
+    off = off.filter(p => p.client?.toLowerCase() !== name.toLowerCase());
+    localStorage.setItem('qj_off_projects', JSON.stringify(off));
+  } catch(_) {}
+
+  // Update Google Sheet status back to Active
+  _updateClientStatusInSheet(name, 'Active');
+
+  // Refresh and re-render
+  fetchClientsData().then(() => renderCEOOverview());
+}
+
 window._ceoPauseClient      = _ceoPauseClient;
 window._ceoMakeActiveClient = _ceoMakeActiveClient;
+window._ceoReactivateClient = _ceoReactivateClient;
 
 // ── CEO To-Do ─────────────────────────────────────
 let _ceoTodos = JSON.parse(localStorage.getItem('qj_ceo_todos') || '[]');
