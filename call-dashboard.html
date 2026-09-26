@@ -7033,7 +7033,7 @@ function renderPMSetterPage() {
     { id: 'new-leads',   label: '🔔 New Leads'      },
     { id: 'followups',   label: '🔥 Hot List'       },
     { id: 'scripts',     label: '💬 Scripts'         },
-    { id: 'sops',        label: '📚 SOPs'            },
+    { id: 'sops',        label: '🎬 Video Modules'   },
     { id: 'offer',       label: '🎯 Our Offer'       },
   ];
 
@@ -7202,11 +7202,11 @@ function renderPMSetterPage() {
     return `<div id="setter-perf-panel"><div class="loading"><div class="spinner"></div>Loading setter performance…</div></div>`;
   };
 
-  // ── Tab: SOPs ─────────────────────────────────────────────────────────────
+  // ── Tab: Video Modules ────────────────────────────────────────────────────
   const tabSOPs = () => {
     const watched   = _ccSopWatched();
     const setterMod = (typeof CC_SOP_MODULES !== 'undefined') ? CC_SOP_MODULES.find(m => m.id === 'setter') : null;
-    if (!setterMod) return `<p style="color:var(--muted);font-size:0.82rem">SOP module not loaded yet.</p>`;
+    if (!setterMod) return `<p style="color:var(--muted);font-size:0.82rem">Module not loaded yet.</p>`;
     const total = setterMod.videos.length;
     const done  = setterMod.videos.filter(v => watched[v.id]).length;
     const pct   = total ? Math.round(done/total*100) : 0;
@@ -7214,8 +7214,8 @@ function renderPMSetterPage() {
       <div style="max-width:820px">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
           <div>
-            <div style="font-size:1rem;font-weight:800">📚 Setter SOPs</div>
-            <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Standard operating procedures for the B2B Setter role</div>
+            <div style="font-size:1rem;font-weight:800">🎬 Setter Video Modules</div>
+            <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Training video library for the Quality Jobs B2B Setter role</div>
           </div>
           <div style="display:flex;align-items:center;gap:.75rem">
             <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted)">${done}/${total} completed</div>
@@ -7224,7 +7224,7 @@ function renderPMSetterPage() {
             </div>
             <button onclick="switchMain('sops');setTimeout(()=>switchSub('sops-setter'),80)"
               style="padding:5px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit">
-              ↗ Full SOP Library
+              ↗ Full Video Library
             </button>
           </div>
         </div>
@@ -8734,12 +8734,18 @@ const CC_SOP_MODULES = [
   {
     id: 'setter',
     icon: '🎯',
-    title: 'Setter SOPs',
+    title: 'Setter Video Modules',
     videos: [
-      { id: 'set-1', title: 'Setter Role Overview', url: '', description: 'Overview of the setter role — responsibilities, targets, how setters fit within the sales process.', docs: [] },
-      { id: 'set-2', title: 'Outreach & Lead Engagement', url: '', description: 'How to engage leads across channels, open conversations, and qualify prospects before passing to a closer.', docs: [] },
-      { id: 'set-3', title: 'Setting Appointments', url: '', description: 'The exact process and script for setting qualified appointments for the closer.', docs: [] },
-      { id: 'set-4', title: 'CRM Management for Setters', url: '', description: 'How setters update GHL, track pipeline stages, and keep records accurate at every step.', docs: [] },
+      { id: 'set-1', title: 'Introduction to Quality Jobs', url: '', description: 'Your first watch. Learn what Quality Jobs is, what we do, who we work with, and where you fit as a setter inside the business.', docs: [] },
+      { id: 'set-2', title: 'The Offer', url: '', description: 'A full walkthrough of exactly what our offer is for bathroom renovation companies — what we deliver, what makes it different, and why it works.', docs: [] },
+      { id: 'set-3', title: 'Industry Knowledge', url: '', description: 'Everything you need to know about the building industry before you pick up the phone. Who builders are, what they do, how they operate, and the terminology you\'ll hear on every call.', docs: [] },
+      { id: 'set-4', title: 'The Script', url: '', description: 'A complete walkthrough of the setter script — how to hold yourself on the call, the exact information to collect, and the ammunition you need to set the closer up for a successful sales call.', docs: [] },
+      { id: 'set-5', title: 'How to Make Calls Through GoHighLevel', url: '', description: 'Step-by-step: what to do when a lead comes through, how to book appointments inside GHL, and a full walkthrough of the CRM so you know exactly where everything lives.', docs: [] },
+      { id: 'set-6', title: 'Live Call Examples', url: '', description: 'Real call recordings covering at least five different outcomes and prospect types — motivated, hesitant, burned before, not ready, and ready to book. Watch how appointments get set in each scenario.', docs: [] },
+      { id: 'set-7', title: 'Objection Handling', url: '', description: 'A full deep-dive on handling objections. Learn why prospects push back, how to address the "been burned by a marketing agency" objection, and how to position Quality Jobs as completely different from anything they\'ve seen before.', docs: [] },
+      { id: 'set-8', title: 'Following Up with the Hot List', url: '', description: 'How to use the hot list to make sure no lead gets left unturned. Covers follow-up cadence, how to build real relationships with builders over time, and how to keep warm leads moving even when they\'re not ready to book yet.', docs: [] },
+      { id: 'set-9', title: 'Re-engaging Previous Conversations', url: '', description: 'This is where the money is. Learn the exact language to use when picking up conversations that went cold — how to re-open, re-qualify, and convert leads you\'ve already spoken to into booked appointments.', docs: [] },
+      { id: 'set-10', title: 'How You Get Paid', url: '', description: 'Your complete guide to the payment structure — base rate, commission structure, and how to use the projection sheet to map out exactly how much you can earn.', docs: [] },
     ]
   },
   {
