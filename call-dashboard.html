@@ -7365,7 +7365,8 @@ function _renderSetterPerfPanel(panel, calls, appts) {
   const apptsIn  = n => appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= eod).length;
   const showRate = n => {
     const cohort   = appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= eod);
-    const happened = cohort.filter(a => a.apptDate && a.apptDate <= eod);
+    // Only count appointments where Y/N was explicitly entered in col K — blank = outcome not yet recorded
+    const happened = cohort.filter(a => a.apptDate && a.apptDate <= eod && a.outcomeRecorded);
     if (!happened.length) return null;
     return { showed: happened.filter(a => a.showed).length, total: happened.length };
   };
@@ -9414,6 +9415,8 @@ function parseApptSheet(rows) {
     }
 
     const showed    = showRaw === 'Y';
+    // Only count as outcome-recorded if K is explicitly Y or N — blank means not yet logged
+    const outcomeRecorded = showRaw === 'Y' || showRaw === 'N';
     const qualified = qualRaw === 'Y';
     // Closed = "Y - New Patient" or any value starting with Y (not N)
     const closed = closedRaw.toUpperCase().startsWith('Y');
@@ -9430,6 +9433,7 @@ function parseApptSheet(rows) {
       apptMonth:    apptDate ? apptDate.getMonth()    : null,
       apptYear:     apptDate ? apptDate.getFullYear() : null,
       showed,
+      outcomeRecorded,
       qualified,
       closed,
       mrr,
