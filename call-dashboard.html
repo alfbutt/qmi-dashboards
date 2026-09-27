@@ -7241,7 +7241,18 @@ function renderPMSetterPage() {
             <div style="flex:1;min-width:0">
               <div style="font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:.25rem">${v.title}</div>
               <div style="font-size:0.72rem;color:var(--muted);line-height:1.55">${v.description}</div>
-              ${v.url ? `
+              ${v.wistiaId ? `
+              <div style="margin-top:.75rem">
+                <div style="position:relative;padding-bottom:${(1/parseFloat(v.wistiaAspect||'1.7777')*100).toFixed(2)}%;height:0;overflow:hidden;border-radius:10px;background:#000;margin-bottom:.6rem">
+                  <iframe src="https://fast.wistia.net/embed/iframe/${v.wistiaId}?videoFoam=true"
+                    allowtransparency="true" frameborder="0" scrolling="no" allowfullscreen
+                    style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe>
+                </div>
+                <button onclick="_ccSopMarkWatched('${v.id}',${!isDone});_setterSwitchTab('sops')"
+                  style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:${isDone?'#22c55e':'var(--muted)'};font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">
+                  ${isDone ? '✓ Marked done' : 'Mark as done'}
+                </button>
+              </div>` : v.url ? `
               <div style="margin-top:.65rem;display:flex;gap:.5rem;flex-wrap:wrap">
                 <a href="${v.url}" target="_blank"
                   style="display:inline-flex;align-items:center;gap:.3rem;padding:4px 10px;background:rgba(181,135,13,0.1);color:var(--accent);border:1px solid rgba(181,135,13,.25);border-radius:6px;font-size:0.68rem;font-weight:700;text-decoration:none">
@@ -8736,7 +8747,7 @@ const CC_SOP_MODULES = [
     icon: '🎯',
     title: 'Setter Video Modules',
     videos: [
-      { id: 'set-1', title: 'Introduction to Quality Jobs', url: '', description: 'Your first watch. Learn what Quality Jobs is, what we do, who we work with, and where you fit as a setter inside the business.', docs: [] },
+      { id: 'set-1', title: 'Introduction to Quality Jobs', url: '', wistiaId: 'klfms5yrx6', wistiaAspect: '1.7777777777777777', description: 'Your first watch. Learn what Quality Jobs is, what we do, who we work with, and where you fit as a setter inside the business.', docs: [] },
       { id: 'set-2', title: 'The Offer', url: '', description: 'A full walkthrough of exactly what our offer is for bathroom renovation companies — what we deliver, what makes it different, and why it works.', docs: [] },
       { id: 'set-3', title: 'Industry Knowledge', url: '', description: 'Everything you need to know about the building industry before you pick up the phone. Who builders are, what they do, how they operate, and the terminology you\'ll hear on every call.', docs: [] },
       { id: 'set-4', title: 'The Script', url: '', description: 'A complete walkthrough of the setter script — how to hold yourself on the call, the exact information to collect, and the ammunition you need to set the closer up for a successful sales call.', docs: [] },
