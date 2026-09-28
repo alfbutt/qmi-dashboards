@@ -1988,7 +1988,14 @@ function getTodayStr() {
 function getAgent(name) {
   const n = (name||'').trim().toLowerCase();
   if (!n) return null;
-  // Exact match
+  // Check local localStorage overrides first (keyed by calls-sheet name)
+  const _localOv = _getLocalAgentOverrides();
+  const localKey = Object.keys(_localOv).find(k => k.toLowerCase() === n);
+  if (localKey) return _localOv[localKey];
+  // Check hardcoded AGENT_OVERRIDES (keyed by calls-sheet name, handles name mismatches)
+  const overrideKey = Object.keys(AGENT_OVERRIDES).find(k => k.toLowerCase() === n);
+  if (overrideKey) return AGENT_OVERRIDES[overrideKey];
+  // Exact match against loaded accounts
   if (JULES_ACCOUNTS.some(a=>a.toLowerCase()===n))  return 'Jules';
   if (AYESSA_ACCOUNTS.some(a=>a.toLowerCase()===n)) return 'Ayessa';
   // Normalise & ↔ and, then retry (handles GHL name variants)
