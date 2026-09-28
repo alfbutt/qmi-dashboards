@@ -10264,7 +10264,9 @@ const CEO_CLIENT_PACKAGES = {
   'dws building co':                 { type: 'monthly',   mrr: 2000 },
   'citiwide group':                  { type: 'monthly',   mrr: 1800 },
   'mk1 renovations':                 { type: 'monthly',   mrr: 2000 },
-  'kbg renovations':                 { type: 'programme', total: 7500, months: 3, start: '2026-06-29', end: '2026-09-29' },
+  'kbg renovations':                 { type: 'monthly',   mrr: 2420 },
+  'auspro windows':                  { type: 'programme', total: 5500, months: 3, start: '2026-09-28', end: '2026-12-28' },
+  'ospre windows':                   { type: 'programme', total: 5500, months: 3, start: '2026-09-28', end: '2026-12-28' },
   'favourite home':                  { type: 'weekly',    weeklyRate: 330 },
   'moonlight doors & windows':       { type: 'monthly',   mrr: 2000 },
   'moonlight doors and windows':     { type: 'monthly',   mrr: 2000 },
@@ -10301,6 +10303,8 @@ const BILLING_DAYS = {
   'rapid bathroom specialists':      18,
   'barco build':                     10,
   'streamline building projects':     6,
+  'auspro windows':                  28,
+  'ospre windows':                   28,
 };
 
 // ── Correct campaign live date per client (overrides sheet liveDate) ────────
@@ -10308,6 +10312,8 @@ const CLIENT_LIVE_DATES = {
   'apex woodworks':        '2026-08-29',
   'canterbury steelworks': '2026-08-29',
   'canterbury steel works':'2026-08-29',
+  'auspro windows':        '2026-09-28',
+  'ospre windows':         '2026-09-28',
 };
 
 // Apex Woodworks + Canterbury Steelworks → shown as one combined card
@@ -10710,6 +10716,7 @@ async function renderCEOOverview() {
         ${c.liveDate ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px">🚀 Live ${fmtDate(c.liveDate)}</span>` : ''}
         ${packageChip(c)}
       </div>
+      ${CLIENT_NOTES[c.name] ? `<div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);padding:4px 2px 0;opacity:0.85;line-height:1.4">${CLIENT_NOTES[c.name]}</div>` : ''}
     </div>`;
 
   const julesCC    = visibleClients.filter(c => (c.agent||'').toLowerCase()==='jules' && !isNonCC(c.name));
@@ -11671,6 +11678,10 @@ window._syncToAJ = _syncToAJ;
     upsert({ name: 'Woodstock Building Services (VIC)',date: new Date('2026-06-20').toISOString(), mrr: 2400, contracted: 7300,  cash: 2420 });
     upsert({ name: 'Cassars On The Move | Renovations',date: new Date('2026-06-22').toISOString(), mrr: 2400, contracted: 7300,  cash: 2200 });
     upsert({ name: 'Bisdaq Build',                     date: new Date('2026-06-24').toISOString(), mrr: 2500, contracted: 5000,  cash: 2500 });
+    upsert({ name: 'Ospre Windows',                    date: new Date('2026-09-28').toISOString(), mrr: 1833, contracted: 5500,  cash: 5500 });
+    // Remove KPG Innovations — was added in error (correct client is KBG Renovations)
+    const kpgIdx = signups.findIndex(s => s.name && s.name.toLowerCase() === 'kpg innovations');
+    if (kpgIdx >= 0) signups.splice(kpgIdx, 1);
     localStorage.setItem('qj_signup_events', JSON.stringify(signups));
   } catch(_) {}
   try {
