@@ -4744,7 +4744,7 @@ async function loadAll(silent=false) {
   // blocking everything if the proxy cold-started)
   const [, callsData, apptsData, configData, adsData, waData, kbData] = await Promise.all([
     withTimeout(fetchClientsData()).catch(() => null),
-    withTimeout(fetchCallsData()).catch(() => null),
+    withTimeout(fetchCallsData(), 30000).catch(() => null),
     withTimeout(fetchApptsData()).catch(() => null),
     withTimeout(fetchClientConfig()).catch(() => null),
     withTimeout(fetchAdsData()).catch(() => null),
@@ -4768,7 +4768,11 @@ async function loadAll(silent=false) {
     window._waByClient[msg.client].push(msg);
   }
 
-  if(window._callsData) renderCalls(window._callsData);
+  if(window._callsData) {
+    renderCalls(window._callsData);
+  } else {
+    document.getElementById('app-calls').innerHTML = '<div class="loading" style="color:#e55;gap:.5rem">Failed to load calls data — <a href="#" onclick="loadAll();return false;" style="color:inherit;text-decoration:underline">retry</a></div>';
+  }
   if(window._apptsData) renderAppts(window._apptsData);
   renderOverview(window._callsData, window._apptsData);
   renderWaFeed(window._waData);
