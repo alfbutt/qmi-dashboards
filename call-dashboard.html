@@ -1780,6 +1780,13 @@ const AGENT_OVERRIDES = {
   "UrbanRise Property":  "Ayessa"
 };
 
+// Maps clients-sheet names → actual calls-sheet company names (for per-client call count lookups)
+const CALLS_SHEET_NAME = {
+  "Betterbuilding and Construction": "Better Building",
+  "The CK Team":                     "CK | Home Renovations",
+  "CitiWide Group":                  "Citiwide Group Aust",
+};
+
 // Shared localStorage overrides (managed from QJ Command Centre → Our Clients)
 function _getLocalAgentOverrides() {
   try { return JSON.parse(localStorage.getItem('qj_agent_overrides') || '{}'); } catch(_) { return {}; }
@@ -2129,8 +2136,8 @@ async function fetchCallsData() {
     const sortedMonths=["March","April","May","June","July","August","September","October","November","December"];
 
     const julesClients={}, ayessaClients={};
-    for(const acc of JULES_ACCOUNTS)  if(subMonth[acc]) julesClients[acc]  = subMonth[acc];
-    for(const acc of AYESSA_ACCOUNTS) if(subMonth[acc]) ayessaClients[acc] = subMonth[acc];
+    for(const acc of JULES_ACCOUNTS)  { const k=CALLS_SHEET_NAME[acc]||acc; if(subMonth[k]) julesClients[acc]  = subMonth[k]; }
+    for(const acc of AYESSA_ACCOUNTS) { const k=CALLS_SHEET_NAME[acc]||acc; if(subMonth[k]) ayessaClients[acc] = subMonth[k]; }
 
     return {
       today:{jules:todayJules,ayessa:todayAyessa},
@@ -2654,10 +2661,11 @@ function renderOverview(callsData, apptsData) {
 
   function clientCallsInPeriod(name, days) {
     const subDay = callsData.subDay || {};
+    const callsKey = CALLS_SHEET_NAME[name] || name;
     const today = new Date(); today.setHours(0,0,0,0);
     const cutoff = new Date(today.getTime() - days * 24*60*60*1000);
     let total = 0;
-    for(const [dateStr, count] of Object.entries(subDay[name] || {})) {
+    for(const [dateStr, count] of Object.entries(subDay[callsKey] || {})) {
       if(new Date(dateStr) >= cutoff) total += count;
     }
     return total;
@@ -4868,10 +4876,11 @@ function renderSessions() {
 function clientCallsInPeriodGlobal(name, days) {
   if(!window._callsData) return 0;
   const subDay = window._callsData.subDay || {};
+  const callsKey = CALLS_SHEET_NAME[name] || name;
   const today = new Date(); today.setHours(0,0,0,0);
   const cutoff = new Date(today.getTime() - days*24*60*60*1000);
   let total = 0;
-  for(const [d,c] of Object.entries(subDay[name]||{})) {
+  for(const [d,c] of Object.entries(subDay[callsKey]||{})) {
     if(new Date(d) >= cutoff) total += c;
   }
   return total;
