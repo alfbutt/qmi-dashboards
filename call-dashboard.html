@@ -1780,6 +1780,11 @@ const AGENT_OVERRIDES = {
   "UrbanRise Property":  "Ayessa"
 };
 
+// Per-client notes shown on the CEO dashboard card, below the Overview section
+const CLIENT_NOTES = {
+  "KBG Renovations": "3-month programme ($7,500) ended. Now on month-by-month rolling plan at $2,420/month from September 2026.",
+};
+
 // Maps clients-sheet names → actual calls-sheet company names (for per-client call count lookups)
 const CALLS_SHEET_NAME = {
   "Betterbuilding and Construction": "Better Building",
@@ -3455,6 +3460,12 @@ function _renderClientsGrid(rows, filter='') {
             <div class="client-section-lbl">About</div>
             <div class="client-fields">
               ${fldProse('', c.overview)}
+            </div>` : ''}
+
+            ${CLIENT_NOTES[c.name] ? `
+            <div class="client-section-lbl">Payment Plan</div>
+            <div class="client-fields">
+              ${fldProse('', CLIENT_NOTES[c.name])}
             </div>` : ''}
 
             ${(c.businessName||c.email||c.phone||c.businessAddress||c.timeZone) ? `
@@ -11656,11 +11667,10 @@ window._syncToAJ = _syncToAJ;
     };
     upsert({ name: 'Rapid Bathroom Specialist',        date: new Date('2026-06-01').toISOString(), mrr: 2420, contracted: 7260,  cash: 2420 });
     upsert({ name: 'The CK Team',                      date: new Date('2026-09-17').toISOString(), mrr: 1800, contracted: 3400,  cash: 1650 });
-    upsert({ name: 'KBG Renovations',                  date: new Date('2026-06-20').toISOString(), mrr: 2500, contracted: 7500,  cash: 7500 });
+    upsert({ name: 'KBG Renovations',                  date: new Date('2026-06-20').toISOString(), mrr: 2420, contracted: 2420,  cash: 7500 });
     upsert({ name: 'Woodstock Building Services (VIC)',date: new Date('2026-06-20').toISOString(), mrr: 2400, contracted: 7300,  cash: 2420 });
     upsert({ name: 'Cassars On The Move | Renovations',date: new Date('2026-06-22').toISOString(), mrr: 2400, contracted: 7300,  cash: 2200 });
     upsert({ name: 'Bisdaq Build',                     date: new Date('2026-06-24').toISOString(), mrr: 2500, contracted: 5000,  cash: 2500 });
-    upsert({ name: 'KPG Innovations',                  date: new Date('2026-09-28').toISOString(), mrr: 2420, contracted: 2420,  cash: 2420 });
     localStorage.setItem('qj_signup_events', JSON.stringify(signups));
   } catch(_) {}
   try {
