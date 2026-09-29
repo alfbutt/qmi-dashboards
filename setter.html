@@ -700,7 +700,7 @@ function renderPerfPanel(panel, calls, appts) {
         </div>
         <div style="padding:.6rem 1rem;font-size:0.67rem;color:var(--muted);border-top:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
           <span>Col E = date booked · Col F = appt date · Col K = Y/N showed</span>
-          <a href="https://docs.google.com/spreadsheets/d/${GROWTH_APPT_SHEET}/edit" target="_blank" style="color:var(--accent);text-decoration:none">↗ Open Appointments Sheet</a>
+          <span style="color:var(--muted);opacity:0.4;cursor:not-allowed;user-select:none">🔒 Open Appointments Sheet</span>
           <button onclick="loadPerformance()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.67rem;padding:0">↺ Refresh</button>
         </div>
       </div>
