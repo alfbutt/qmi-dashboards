@@ -7071,6 +7071,7 @@ function renderPMSetterPage() {
     { id: 'followups',   label: '🔥 Hot List'       },
     { id: 'scripts',     label: '💬 Scripts'         },
     { id: 'sops',        label: '🎬 Video Modules'   },
+    { id: 'directory',   label: '📋 SETA Directory'  },
     { id: 'offer',       label: '🎯 Our Offer'       },
   ];
 
@@ -7331,12 +7332,98 @@ function renderPMSetterPage() {
       </div>`;
   };
 
+  // ── Tab: SETA Directory ──────────────────────────────────────────────────
+  const tabDirectory = () => {
+    const watched   = _ccSopWatched();
+    const setterMod = (typeof CC_SOP_MODULES !== 'undefined') ? CC_SOP_MODULES.find(m => m.id === 'setter') : null;
+    if (!setterMod) return `<p style="color:var(--muted);font-size:0.82rem">Module data not loaded.</p>`;
+    const total = setterMod.videos.length;
+    const done  = setterMod.videos.filter(v => watched[v.id]).length;
+    const pct   = total ? Math.round(done / total * 100) : 0;
+
+    return `
+      <div style="max-width:860px">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <div style="font-size:1.1rem;font-weight:800;letter-spacing:-0.01em">📋 SETA Directory</div>
+            <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:3px">Complete training module directory for the Quality Jobs Setter role</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:${pct===100?'#22c55e':'var(--muted)'}">
+              ${done}/${total} modules completed · ${pct}%
+            </div>
+            <div style="width:160px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:${pct===100?'#22c55e':'var(--accent)'};border-radius:3px;transition:width .4s"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Directory rows -->
+        ${setterMod.videos.map((v, i) => {
+          const isDone    = !!watched[v.id];
+          const hasVideo  = !!(v.wistiaId || v.url || v.tabs);
+          const isWarning = v.description && v.description.startsWith('⚠️');
+          return `
+          <div style="display:flex;gap:1rem;align-items:flex-start;padding:1rem 1.2rem;
+                      background:var(--surface);border:1px solid ${isDone?'rgba(34,197,94,.25)':'var(--border)'};
+                      border-radius:14px;margin-bottom:.6rem;transition:border-color .15s"
+               onmouseover="this.style.borderColor='${isDone?'rgba(34,197,94,.5)':'var(--accent)'}'"
+               onmouseout="this.style.borderColor='${isDone?'rgba(34,197,94,.25)':'var(--border)'}'">
+
+            <!-- Index / done badge -->
+            <div style="width:34px;height:34px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:800;font-family:'DM Mono',monospace;
+                        background:${isDone?'rgba(34,197,94,.15)':'rgba(181,135,13,.1)'};
+                        border:2px solid ${isDone?'#22c55e':'rgba(181,135,13,.35)'};
+                        color:${isDone?'#22c55e':'var(--accent)'}">
+              ${isDone ? '✓' : i + 1}
+            </div>
+
+            <!-- Content -->
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.3rem">
+                <span style="font-size:0.87rem;font-weight:700;color:var(--text)">${v.title}</span>
+                ${!hasVideo ? `<span style="font-size:0.62rem;font-family:'DM Mono',monospace;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:4px;padding:1px 6px">coming soon</span>` : ''}
+                ${isDone ? `<span style="font-size:0.62rem;font-family:'DM Mono',monospace;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.25);border-radius:4px;padding:1px 6px">✓ completed</span>` : ''}
+              </div>
+              <div style="font-size:0.72rem;color:var(--muted);line-height:1.6;${isWarning?'background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:.5rem .75rem;margin-top:.35rem':''}">${v.description}</div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end;flex-shrink:0">
+              ${hasVideo ? `
+              <button onclick="switchMain('sops');setTimeout(()=>{_ccSopOpenModules.add('setter');_ccSopSelectVideo('setter','${v.id}');},120)"
+                style="padding:5px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+                ▶ Watch
+              </button>` : ''}
+              <button onclick="_ccSopMarkWatched('${v.id}',${!isDone});_setterSwitchTab('directory')"
+                style="padding:4px 10px;border:1px solid ${isDone?'rgba(34,197,94,.4)':'var(--border)'};border-radius:7px;background:${isDone?'rgba(34,197,94,.08)':'var(--surface2)'};
+                       color:${isDone?'#22c55e':'var(--muted)'};font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+                ${isDone ? '✓ Done' : 'Mark done'}
+              </button>
+            </div>
+          </div>`;
+        }).join('')}
+
+        <!-- Footer link to full SOP library -->
+        <div style="margin-top:1rem;text-align:center">
+          <button onclick="switchMain('sops');setTimeout(()=>switchSub('sops-setter'),80)"
+            style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:10px;
+                   font-size:0.72rem;font-family:'DM Mono',monospace;font-weight:700;color:var(--muted);cursor:pointer">
+            ↗ Open in Full SOP Library
+          </button>
+        </div>
+      </div>`;
+  };
+
   const tabContent = activeTab === 'pipeline'    ? tabPipeline()
                    : activeTab === 'performance' ? tabPerformance()
                    : activeTab === 'new-leads'   ? tabNewLeads()
                    : activeTab === 'followups'   ? tabFollowUps()
                    : activeTab === 'scripts'     ? tabScripts()
                    : activeTab === 'sops'        ? tabSOPs()
+                   : activeTab === 'directory'   ? tabDirectory()
                    :                               tabOffer();
 
   el.innerHTML = `
