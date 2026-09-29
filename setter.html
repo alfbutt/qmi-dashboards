@@ -202,7 +202,7 @@ const CC_SOP_MODULES_SETTER = [
   { id: 'set-3',  title: 'Industry Knowledge',                    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Everything you need to know about the building industry before you pick up the phone. Who builders are, what they do, how they operate, and the terminology you\'ll hear on every call.' },
   { id: 'set-4',  title: 'The Script',                            wistiaId: 'prtozk09cy', wistiaAspect: '1.5434083601286173', description: 'A complete walkthrough of the setter script — how to hold yourself on the call, the exact information to collect, and the ammunition you need to set the closer up for a successful sales call.' },
   { id: 'set-5',  title: 'How to Make Calls Through GoHighLevel', wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Step-by-step: what to do when a lead comes through, how to book appointments inside GHL, and a full walkthrough of the CRM so you know exactly where everything lives.' },
-  { id: 'set-6',  title: 'Live Call Examples',                    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Real call recordings covering at least five different outcomes and prospect types — motivated, hesitant, burned before, not ready, and ready to book. Watch how appointments get set in each scenario.' },
+  { id: 'set-6',  title: 'Live Call Examples',                    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Real call recordings covering at least five different outcomes and prospect types — motivated, hesitant, burned before, not ready, and ready to book. Watch how appointments get set in each scenario.', tabs: [{ label: 'Example Call 1', wistiaId: 'gfjh9ycsj0', wistiaAspect: '0.5625' }] },
   { id: 'set-6b', title: 'Live Calling Session (1 Hour)',         wistiaId: 'yveuh8kpvu', wistiaAspect: '1.5434083601286173', description: '⚠️ This video is one hour long — you must watch the entire thing. Skipping through will not give you what you need. This is a full, unedited hour of real dialling so you can see exactly what a productive session looks, sounds, and feels like in practice — the pace, the mindset, how to handle dead air, quick-fire rejections, and the moments that lead to a booked appointment. There is no substitute for seeing a real hour of work.' },
   { id: 'set-7',  title: 'Objection Handling',                    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'A full deep-dive on handling objections. Learn why prospects push back, how to address the "been burned by a marketing agency" objection, and how to position Quality Jobs as completely different from anything they\'ve seen before.' },
   { id: 'set-8',  title: 'Following Up with the Hot List',        wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'How to use the hot list to make sure no lead gets left unturned. Covers follow-up cadence, how to build real relationships with builders over time, and how to keep warm leads moving even when they\'re not ready to book yet.' },
@@ -357,7 +357,29 @@ function tplSOPs() {
       <div style="flex:1;min-width:0">
         <div style="font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:.25rem">${v.title}</div>
         <div style="font-size:0.72rem;color:var(--muted);line-height:1.55">${v.description}</div>
-        ${v.wistiaId ? `
+        ${v.tabs ? (() => {
+          const activeIdx = (window._sopSubTab && window._sopSubTab[v.id]) || 0;
+          const tab = v.tabs[activeIdx] || v.tabs[0];
+          return `
+          <div style="margin-top:.75rem">
+            ${v.tabs.length > 1 ? `<div style="display:flex;gap:4px;margin-bottom:.65rem">
+              ${v.tabs.map((t,i) => `
+              <button onclick="window._sopSubTab=window._sopSubTab||{};window._sopSubTab['${v.id}']=${i};switchTab('sops')"
+                style="padding:4px 10px;border:1px solid ${i===activeIdx?'var(--accent)':'var(--border)'};border-radius:6px;background:${i===activeIdx?'rgba(181,135,13,0.12)':'var(--surface2)'};color:${i===activeIdx?'var(--accent)':'var(--muted)'};font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">
+                ${t.label}
+              </button>`).join('')}
+            </div>` : `<div style="font-size:0.7rem;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);margin-bottom:.6rem">${tab.label}</div>`}
+            <div style="position:relative;padding-bottom:${(1/parseFloat(tab.wistiaAspect||'1.7777')*100).toFixed(2)}%;height:0;overflow:hidden;border-radius:10px;background:#000;margin-bottom:.6rem">
+              <iframe src="https://fast.wistia.net/embed/iframe/${tab.wistiaId}?videoFoam=true"
+                allowtransparency="true" frameborder="0" scrolling="no" allowfullscreen
+                style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe>
+            </div>
+            <button onclick="sopMark('${v.id}',${!isDone});switchTab('sops')"
+              style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:${isDone?'#22c55e':'var(--muted)'};font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">
+              ${isDone ? '✓ Marked done' : 'Mark as done'}
+            </button>
+          </div>`;
+        })() : v.wistiaId ? `
         <div style="margin-top:.75rem">
           <div style="position:relative;padding-bottom:${(1/parseFloat(v.wistiaAspect||'1.7777')*100).toFixed(2)}%;height:0;overflow:hidden;border-radius:10px;background:#000;margin-bottom:.6rem">
             <iframe src="https://fast.wistia.net/embed/iframe/${v.wistiaId}?videoFoam=true"
