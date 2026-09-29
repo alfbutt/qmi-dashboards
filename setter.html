@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Setter Hub — Quality Jobs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:       #f7f7f5;
+    --surface:  #ffffff;
+    --surface2: #f0f0ed;
+    --border:   #e4e4e0;
+    --border2:  #d0d0ca;
+    --text:     #111110;
+    --muted:    #6b6b65;
+    --accent:   #b5870d;
+    --green:    #16a34a;
+    --red:      #dc2626;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:       #111110;
+      --surface:  #1c1c1a;
+      --surface2: #252523;
+      --border:   #2e2e2b;
+      --border2:  #3a3a36;
+      --text:     #f0efe8;
+      --muted:    #8a8a82;
+      --accent:   #d4a31a;
+      --green:    #22c55e;
+      --red:      #f87171;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:       #111110;
+    --surface:  #1c1c1a;
+    --surface2: #252523;
+    --border:   #2e2e2b;
+    --border2:  #3a3a36;
+    --text:     #f0efe8;
+    --muted:    #8a8a82;
+    --accent:   #d4a31a;
+    --green:    #22c55e;
+    --red:      #f87171;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-inline: 16px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .page-wrap { max-width: 1040px; margin: 0 auto; padding-block: 1.5rem 4rem; }
+
+  /* Header */
+  .pm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:.5rem; }
+  .pm-role-title { font-size:1.1rem; font-weight:800; letter-spacing:-0.02em; }
+  .pm-role-sub { font-size:0.65rem; font-family:'DM Mono',monospace; color:var(--muted); margin-top:2px; }
+
+  /* Tab bar */
+  .tab-bar {
+    display:flex; gap:0.4rem; flex-wrap:wrap;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:5px; margin-bottom:1.5rem;
+  }
+  .tab-btn {
+    flex:1; min-width:110px; padding:7px 14px;
+    border:none; border-radius:8px;
+    font-size:0.72rem; font-family:'DM Mono',monospace; font-weight:600;
+    cursor:pointer; transition:all 0.15s;
+    background:transparent; color:var(--muted);
+  }
+  .tab-btn.active { background:var(--accent); color:#fff; }
+
+  /* Loading / spinner */
+  .loading { display:flex; align-items:center; gap:.6rem; color:var(--muted); font-size:0.82rem; padding:2rem 0; }
+  .spinner {
+    width:18px; height:18px; border:2px solid var(--border2);
+    border-top-color:var(--accent); border-radius:50%;
+    animation:spin .7s linear infinite; flex-shrink:0;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Tab panels */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* Sheets/Docs iframe panels */
+  .sheet-panel { display:flex; flex-direction:column; gap:.75rem; height:calc(100vh - 210px); }
+  .sheet-panel iframe { flex:1; border:1px solid var(--border); border-radius:14px; width:100%; background:var(--surface); }
+  .sheet-panel-head { display:flex; align-items:center; justify-content:space-between; flex-shrink:0; flex-wrap:wrap; gap:.5rem; }
+
+  /* Open-in-Sheets button */
+  .open-btn {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.4rem .85rem; background:var(--accent); color:#fff;
+    border-radius:8px; font-size:0.72rem; font-weight:700;
+    text-decoration:none; white-space:nowrap;
+  }
+
+  /* GHL big button */
+  .ghl-btn {
+    display:flex; align-items:center; justify-content:center; gap:.8rem;
+    width:100%; padding:1rem 1.5rem;
+    background:linear-gradient(135deg,#b5870d,#d4a017);
+    color:#fff; border-radius:14px;
+    font-size:0.95rem; font-weight:800; text-decoration:none;
+    letter-spacing:.01em; margin-bottom:1.25rem;
+    box-shadow:0 4px 20px rgba(181,135,13,0.3);
+    transition:opacity .15s;
+  }
+  .ghl-btn:hover { opacity:.88; }
+
+  /* Stat cards */
+  .stat-grid { display:flex; gap:.7rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:1.1rem 1.2rem; flex:1; min-width:130px;
+  }
+  .stat-label { font-size:0.63rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; margin-bottom:.3rem; }
+  .stat-value { font-size:1.6rem; font-weight:800; font-family:'DM Mono',monospace; color:var(--accent); line-height:1; }
+  .stat-value.big { font-size:2.2rem; }
+  .stat-sub { font-size:0.67rem; color:var(--muted); margin-top:.3rem; }
+
+  /* Tables */
+  .data-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+  .data-table th {
+    padding:.55rem .75rem; text-align:left;
+    font-size:0.63rem; color:var(--muted); letter-spacing:.06em;
+    text-transform:uppercase; font-weight:600; background:var(--surface2);
+  }
+  .data-table th.c { text-align:center; }
+  .data-table td { padding:.6rem .75rem; border-bottom:1px solid var(--border); }
+  .data-table td.c { text-align:center; font-family:'DM Mono',monospace; }
+  .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1.25rem; }
+  .table-head { padding:.75rem 1rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .table-title { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .table-sub { font-size:0.67rem; color:var(--muted); }
+  .table-scroll { overflow-x:auto; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="pm-header">
+    <div>
+      <div class="pm-role-title">🎯 Setter</div>
+      <div class="pm-role-sub">Lead outreach, qualification & appointment setting</div>
+    </div>
+  </div>
+
+  <!-- GHL button -->
+  <a class="ghl-btn" href="https://app.gohighlevel.com/v2/location/mMtrTqbMqNOoKetdQowt/opportunities" target="_blank">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    Click here to open GoHighLevel
+  </a>
+
+  <!-- Tab bar -->
+  <div class="tab-bar" id="tab-bar"></div>
+
+  <!-- Panels -->
+  <div id="panel-pipeline"    class="tab-panel"></div>
+  <div id="panel-performance" class="tab-panel"></div>
+  <div id="panel-new-leads"   class="tab-panel"></div>
+  <div id="panel-followups"   class="tab-panel"></div>
+  <div id="panel-scripts"     class="tab-panel"></div>
+  <div id="panel-sops"        class="tab-panel"></div>
+  <div id="panel-offer"       class="tab-panel"></div>
+
+</div>
+
+<script>
+// ── Constants ────────────────────────────────────────────────────────────────
+const PROXY_URL          = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const CALLS_SHEET_ID     = '1XaiWFoSDvlfAwMBZOUOV37xKks2I4ZdeFeh1CuuEFCo';
+const GROWTH_APPT_SHEET  = '1o2z0EEA6NtEsJjh3p5qCvo39IwfwI0KhDwrlnJ2Z1l8';
+const GROWTH_APPT_TAB    = 'AUTOMATED APPOINTMENT SHEET';
+
+// ── Module data ──────────────────────────────────────────────────────────────
+const CC_SOP_MODULES_SETTER = [
+  { id: 'set-1',  title: 'Introduction to Quality Jobs',          wistiaId: 'klfms5yrx6', wistiaAspect: '1.7777777777777777', description: 'Your first watch. Learn what Quality Jobs is, what we do, who we work with, and where you fit as a setter inside the business.' },
+  { id: 'set-2',  title: 'What Do We Actually Do?',               wistiaId: 'dqwecotcdz', wistiaAspect: '1.5434083601286173', description: 'A full walkthrough of exactly what our offer is for bathroom renovation companies — what we deliver, what makes it different, and why it works.' },
+  { id: 'set-2b', title: 'Our Offer and the Numbers',             wistiaId: 'hb4crefn9k', wistiaAspect: '1.5434083601286173', description: 'A simplified breakdown of the offer and the key numbers — the takeaways every setter needs to know cold before they get on the phone.' },
+  { id: 'set-3',  title: 'Industry Knowledge',                    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Everything you need to know about the building industry before you pick up the phone. Who builders are, what they do, how they operate, and the terminology you\'ll hear on every call.' },
+  { id: 'set-4',  title: 'The Script',                            wistiaId: 'prtozk09cy', wistiaAspect: '1.5434083601286173', description: 'A complete walkthrough of the setter script — how to hold yourself on the call, the exact information to collect, and the ammunition you need to set the closer up for a successful sales call.' },
+  { id: 'set-5',  title: 'How to Make Calls Through GoHighLevel', wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Step-by-step: what to do when a lead comes through, how to book appointments inside GHL, and a full walkthrough of the CRM so you know exactly where everything lives.' },
+  { id: 'set-6',  title: 'Live Call Examples',                    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Real call recordings covering at least five different outcomes and prospect types — motivated, hesitant, burned before, not ready, and ready to book. Watch how appointments get set in each scenario.' },
+  { id: 'set-6b', title: 'Live Calling Session (1 Hour)',         wistiaId: null,          wistiaAspect: '1.7777777777777777', description: '⚠️ This video is one hour long — you must watch the entire thing. Skipping through will not give you what you need. This is a full, unedited hour of real dialling so you can see exactly what a productive session looks, sounds, and feels like in practice — the pace, the mindset, how to handle dead air, quick-fire rejections, and the moments that lead to a booked appointment. There is no substitute for seeing a real hour of work.' },
+  { id: 'set-7',  title: 'Objection Handling',                    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'A full deep-dive on handling objections. Learn why prospects push back, how to address the "been burned by a marketing agency" objection, and how to position Quality Jobs as completely different from anything they\'ve seen before.' },
+  { id: 'set-8',  title: 'Following Up with the Hot List',        wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'How to use the hot list to make sure no lead gets left unturned. Covers follow-up cadence, how to build real relationships with builders over time, and how to keep warm leads moving even when they\'re not ready to book yet.' },
+  { id: 'set-9',  title: 'Re-engaging Previous Conversations',    wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'This is where the money is. Learn the exact language to use when picking up conversations that went cold — how to re-open, re-qualify, and convert leads you\'ve already spoken to into booked appointments.' },
+  { id: 'set-10', title: 'How You Get Paid',                      wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'Your complete guide to the payment structure — base rate, commission structure, and how to use the projection sheet to map out exactly how much you can earn.' },
+  { id: 'set-11', title: 'Tracking Your Numbers',                 wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'How to track and own your daily performance — calls made, appointments booked, show rate, and close rate. Learn which numbers matter, how to read them, and how to use your stats to identify where to improve and consistently hit your targets.' },
+  { id: 'set-12', title: 'Competitor Research',                   wistiaId: null,          wistiaAspect: '1.7777777777777777', description: 'A full breakdown of every major marketing agency competitor operating in Australia — their pricing points, what they offer, and exactly how Quality Jobs is different. Know this cold so you can confidently position us on any call.' },
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function parseDateStr(raw) {
+  if (!raw) return null;
+  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  const d = new Date(raw); return isNaN(d) ? null : d;
+}
+
+const STORE_KEY = 'qj_cc_sop_watched';
+function sopWatched() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e) { return {}; } }
+function sopMark(id, val) {
+  const w = sopWatched(); w[id] = val;
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(w)); } catch(e) {}
+}
+window._sopSubTab = window._sopSubTab || {};
+
+// ── Tab routing ──────────────────────────────────────────────────────────────
+const TABS = [
+  { id: 'pipeline',    label: '📊 Lead Pipeline'  },
+  { id: 'performance', label: '📈 Performance'    },
+  { id: 'new-leads',   label: '🔔 New Leads'      },
+  { id: 'followups',   label: '🔥 Hot List'       },
+  { id: 'scripts',     label: '💬 Scripts'         },
+  { id: 'sops',        label: '🎬 Video Modules'   },
+  { id: 'offer',       label: '🎯 Our Offer'       },
+];
+
+function activeTab() {
+  return localStorage.getItem('qj_setter_subtab_standalone') || 'sops';
+}
+function switchTab(id) {
+  localStorage.setItem('qj_setter_subtab_standalone', id);
+  renderTabBar();
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + id);
+  if (panel) { panel.classList.add('active'); renderPanel(id); }
+}
+window.switchTab = switchTab;
+
+function renderTabBar() {
+  const cur = activeTab();
+  document.getElementById('tab-bar').innerHTML = TABS.map(t =>
+    `<button class="tab-btn${cur===t.id?' active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`
+  ).join('');
+}
+
+// ── Panel renderers ───────────────────────────────────────────────────────────
+function renderPanel(id) {
+  const el = document.getElementById('panel-' + id);
+  if (!el) return;
+  if (id === 'pipeline')    el.innerHTML = tplPipeline();
+  if (id === 'new-leads')   el.innerHTML = tplNewLeads();
+  if (id === 'followups')   el.innerHTML = tplFollowUps();
+  if (id === 'scripts')     el.innerHTML = tplScripts();
+  if (id === 'sops')        el.innerHTML = tplSOPs();
+  if (id === 'offer')       el.innerHTML = tplOffer();
+  if (id === 'performance') loadPerformance();
+}
+
+// ── Pipeline ──────────────────────────────────────────────────────────────────
+function tplPipeline() {
+  return `
+    <div style="max-width:700px;padding-top:.5rem">
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:1rem;font-weight:800;margin-bottom:.3rem">📊 Lead Pipeline</div>
+        <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted)">Your live B2B pipeline lives inside GoHighLevel. Click below to open it directly.</div>
+      </div>
+      <a href="https://app.gohighlevel.com/v2/location/mMtrTqbMqNOoKetdQowt/opportunities" target="_blank"
+        style="display:flex;align-items:center;justify-content:center;gap:.75rem;width:100%;padding:1.4rem 2rem;background:var(--accent);color:#fff;border-radius:16px;font-size:1.05rem;font-weight:800;text-decoration:none;letter-spacing:.01em;margin-bottom:1.25rem;box-shadow:0 4px 18px rgba(181,135,13,0.25)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open GoHighLevel Pipeline
+      </a>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;font-size:0.72rem;color:var(--muted);line-height:1.7">
+        <strong style="color:var(--text)">Why can't we embed the pipeline here?</strong><br>
+        GoHighLevel blocks iframe embedding for security — this is standard across all CRM platforms. The button above takes you straight to your live opportunity pipeline in one click.
+      </div>
+    </div>`;
+}
+
+// ── New Leads ─────────────────────────────────────────────────────────────────
+function tplNewLeads() {
+  return `
+    <div class="sheet-panel">
+      <div class="sheet-panel-head">
+        <div>
+          <div style="font-size:1rem;font-weight:800">🔔 New Leads</div>
+          <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Live from Google Sheets — all inbound leads logged here</div>
+        </div>
+        <a class="open-btn" href="https://docs.google.com/spreadsheets/d/1-HjyKeAkd4QUZAK7yYFJOJ-quw_TimBU90XVNWP8GVQ/edit?usp=sharing" target="_blank">↗ Open in Sheets</a>
+      </div>
+      <iframe src="https://docs.google.com/spreadsheets/d/1-HjyKeAkd4QUZAK7yYFJOJ-quw_TimBU90XVNWP8GVQ/edit?usp=sharing&rm=minimal" frameborder="0" allowfullscreen title="New Leads Sheet"></iframe>
+    </div>`;
+}
+
+// ── Hot List ──────────────────────────────────────────────────────────────────
+function tplFollowUps() {
+  return `
+    <div class="sheet-panel">
+      <div class="sheet-panel-head">
+        <div>
+          <div style="font-size:1rem;font-weight:800">🔥 Hot List</div>
+          <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Warm leads that need follow-up — live from Google Sheets</div>
+        </div>
+        <a class="open-btn" href="https://docs.google.com/spreadsheets/d/1z2VT072KQtAaqfcIWCE1GkxUHatLqZ4g7rRqtlz-vtM/edit?gid=1428821885#gid=1428821885" target="_blank">↗ Open in Sheets</a>
+      </div>
+      <iframe src="https://docs.google.com/spreadsheets/d/1z2VT072KQtAaqfcIWCE1GkxUHatLqZ4g7rRqtlz-vtM/edit?gid=1428821885&usp=sharing&rm=minimal" frameborder="0" allowfullscreen title="Hot List Sheet"></iframe>
+    </div>`;
+}
+
+// ── Scripts ───────────────────────────────────────────────────────────────────
+function tplScripts() {
+  return `
+    <div class="sheet-panel">
+      <div class="sheet-panel-head">
+        <div>
+          <div style="font-size:1rem;font-weight:800">💬 Setter Scripts</div>
+          <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Intro call framework — use this on every first touch with a lead</div>
+        </div>
+        <a class="open-btn" href="https://docs.google.com/document/d/1xUrhLKVZmECabPnmY5-DSiYphi2dEk3vqoIj12asjb8/edit" target="_blank">↗ Open in Docs</a>
+      </div>
+      <iframe src="https://docs.google.com/document/d/1xUrhLKVZmECabPnmY5-DSiYphi2dEk3vqoIj12asjb8/preview" frameborder="0" allow="fullscreen" title="Setter Script"></iframe>
+    </div>`;
+}
+
+// ── Video Modules ─────────────────────────────────────────────────────────────
+function tplSOPs() {
+  const watched = sopWatched();
+  const total   = CC_SOP_MODULES_SETTER.length;
+  const done    = CC_SOP_MODULES_SETTER.filter(v => watched[v.id]).length;
+  const pct     = total ? Math.round(done / total * 100) : 0;
+
+  const rows = CC_SOP_MODULES_SETTER.map(v => {
+    const isDone = !!watched[v.id];
+    const num    = v.id.replace(/[^0-9b]/gi, '') || '?';
+    return `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:.75rem;display:flex;gap:1rem;align-items:flex-start;transition:border-color .15s"
+         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.9rem;
+                  background:${isDone?'rgba(34,197,94,.15)':'var(--surface2)'};
+                  border:2px solid ${isDone?'#22c55e':'var(--border2)'}">
+        ${isDone ? '✓' : num}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:.25rem">${v.title}</div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.55">${v.description}</div>
+        ${v.wistiaId ? `
+        <div style="margin-top:.75rem">
+          <div style="position:relative;padding-bottom:${(1/parseFloat(v.wistiaAspect||'1.7777')*100).toFixed(2)}%;height:0;overflow:hidden;border-radius:10px;background:#000;margin-bottom:.6rem">
+            <iframe src="https://fast.wistia.net/embed/iframe/${v.wistiaId}?videoFoam=true"
+              allowtransparency="true" frameborder="0" scrolling="no" allowfullscreen
+              style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe>
+          </div>
+          <button onclick="sopMark('${v.id}',${!isDone});switchTab('sops')"
+            style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:${isDone?'#22c55e':'var(--muted)'};font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">
+            ${isDone ? '✓ Marked done' : 'Mark as done'}
+          </button>
+        </div>` : `
+        <div style="margin-top:.65rem">
+          <span style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);font-style:italic">Video coming soon</span>
+        </div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="max-width:820px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+        <div>
+          <div style="font-size:1rem;font-weight:800">🎬 Setter Video Modules</div>
+          <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Training video library for the Quality Jobs B2B Setter role</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted)">${done}/${total} completed</div>
+          <div style="width:100px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;transition:width .4s"></div>
+          </div>
+        </div>
+      </div>
+      ${rows}
+    </div>`;
+}
+
+// ── Performance ───────────────────────────────────────────────────────────────
+function loadPerformance() {
+  const panel = document.getElementById('panel-performance');
+  if (!panel) return;
+  panel.innerHTML = '<div class="loading"><div class="spinner"></div>Loading performance data…</div>';
+
+  Promise.all([
+    fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`).then(r => r.json()),
+    fetch(`${PROXY_URL}?id=${GROWTH_APPT_SHEET}&sheet=${encodeURIComponent(GROWTH_APPT_TAB)}`).then(r => r.json())
+  ]).then(([callsRows, apptRows]) => {
+    // ── Parse QJ calls (col 5 = "Quality Jobs") ──
+    const qjCalls = [];
+    if (Array.isArray(callsRows)) {
+      for (let i = 1; i < callsRows.length; i++) {
+        const row = callsRows[i];
+        const client = String(row[5]||'').trim().toLowerCase();
+        if (client !== 'quality jobs') continue;
+        const d = parseDateStr(String(row[1]||''));
+        if (d) qjCalls.push(d);
+      }
+    }
+
+    // ── Parse appointments ──
+    const appts = [];
+    if (Array.isArray(apptRows)) {
+      let dataStart = 1;
+      for (let i = 0; i < Math.min(apptRows.length, 8); i++) {
+        const r = apptRows[i]||[];
+        if (String(r[6]||'').toLowerCase().includes('business') ||
+            String(r[10]||'').toLowerCase().includes('show')) { dataStart = i + 1; break; }
+      }
+      for (let i = dataStart; i < apptRows.length; i++) {
+        const r = apptRows[i];
+        if (!r || !String(r[6]||'').trim()) continue;
+        const rawBooked = r[4], rawAppt = r[5];
+        const showRaw = String(r[10]||'').trim().toUpperCase();
+        let bookedDate = null, apptDate = null;
+        if (rawBooked) { const d = new Date(rawBooked); if (!isNaN(d)) bookedDate = d; }
+        if (rawAppt)   { const d = new Date(rawAppt);   if (!isNaN(d)) apptDate   = d; }
+        if (!bookedDate) continue;
+        appts.push({ bookedDate, apptDate, showed: showRaw === 'Y', outcomeRecorded: showRaw === 'Y' || showRaw === 'N' });
+      }
+    }
+    renderPerfPanel(panel, qjCalls, appts);
+  }).catch(e => {
+    panel.innerHTML = `<div style="color:var(--red);font-size:0.82rem">Failed to load: ${e.message} — <a href="#" onclick="loadPerformance();return false" style="color:var(--accent)">retry</a></div>`;
+  });
+}
+window.loadPerformance = loadPerformance;
+
+function renderPerfPanel(panel, calls, appts) {
+  const now      = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const dayMs    = 86400000;
+  const eod      = new Date(now); eod.setHours(23,59,59,999);
+
+  const daysAgo   = n => new Date(+eod - n * dayMs);
+  const toDateStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  const callsByDate = {};
+  calls.forEach(d => { const k = toDateStr(d); callsByDate[k] = (callsByDate[k]||0)+1; });
+
+  const callsIn  = n => calls.filter(d => d >= daysAgo(n) && d <= eod).length;
+  const apptsIn  = n => appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= eod).length;
+  const showRate = n => {
+    const cohort   = appts.filter(a => a.bookedDate >= daysAgo(n) && a.bookedDate <= eod);
+    const happened = cohort.filter(a => a.apptDate && a.apptDate <= eod && a.outcomeRecorded);
+    if (!happened.length) return null;
+    return { showed: happened.filter(a => a.showed).length, total: happened.length };
+  };
+  const fmtRatio = (b,c) => c===0 ? '—' : `${Math.round(b/c*100)}%`;
+
+  const todayCalls = callsByDate[todayStr]||0;
+  const c7=callsIn(7), c14=callsIn(14), c21=callsIn(21), c30=callsIn(30);
+  const b7=apptsIn(7), b14=apptsIn(14), b21=apptsIn(21), b30=apptsIn(30);
+  const sr7=showRate(7), sr14=showRate(14), sr21=showRate(21), sr30=showRate(30), sr60=showRate(60), sr90=showRate(90);
+  const totalCalls = calls.length, totalAppts = appts.length;
+  const sr30v = sr30 ? Math.round(sr30.showed/sr30.total*100) : null;
+
+  // Weekly grid
+  const getMondayOf = d => { const dt=new Date(d); dt.setHours(0,0,0,0); const day=dt.getDay(); dt.setDate(dt.getDate()-(day===0?6:day-1)); return dt; };
+  const currentMonday = getMondayOf(now);
+  const weeks = [];
+  for (let w = 0; w < 6; w++) {
+    const mon  = new Date(+currentMonday - w * 7 * dayMs);
+    const days = [];
+    for (let d = 0; d < 5; d++) {
+      const dt = new Date(+mon + d * dayMs);
+      const ds = toDateStr(dt);
+      days.push({ dt, ds, count: callsByDate[ds]||0, isFuture: dt>now, isToday: ds===todayStr });
+    }
+    weeks.push({ days, weekLabel: `${days[0].dt.getDate()}/${days[0].dt.getMonth()+1}`, weekTotal: days.reduce((s,d)=>s+d.count,0) });
+  }
+  weeks.reverse();
+
+  const cellStyle = d => {
+    if (d.isFuture) return 'color:var(--muted);opacity:0.3';
+    if (d.isToday)  return 'background:var(--accent);color:#fff;border-radius:8px;font-weight:700';
+    if (d.count===0) return 'color:var(--muted)';
+    return `color:${d.count>=50?'var(--green)':d.count>=30?'#f59e0b':'var(--text)'}`;
+  };
+
+  const weekRows = weeks.map(w => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.55rem .75rem;font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap">${w.weekLabel}</td>
+      ${w.days.map(d=>`<td style="padding:.55rem .65rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.85rem;${cellStyle(d)}">${d.isFuture?'':d.isToday?`${d.count} <span style="font-size:0.55rem;vertical-align:middle;opacity:0.85">●</span>`:(d.count||'—')}</td>`).join('')}
+      <td style="padding:.55rem .75rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.82rem;font-weight:700;color:${w.weekTotal>=200?'var(--green)':w.weekTotal>=100?'#f59e0b':'var(--text)'}">
+        ${w.weekTotal||'—'}
+      </td>
+    </tr>`).join('');
+
+  const sc = (label, value, sub='', color='var(--accent)', big=false) => `
+    <div class="stat-card">
+      <div class="stat-label">${label}</div>
+      <div class="stat-value${big?' big':''}" style="color:${color}">${value}</div>
+      ${sub?`<div class="stat-sub">${sub}</div>`:''}
+    </div>`;
+
+  panel.innerHTML = `
+    <div style="max-width:980px">
+      <div class="stat-grid">
+        ${sc('Calls Today', todayCalls, now.toLocaleDateString('en-AU',{weekday:'long'}), todayCalls>=50?'var(--green)':todayCalls>=20?'#f59e0b':'var(--accent)', true)}
+        ${sc('Total Calls (All Time)', totalCalls, 'QJ B2B calls logged')}
+        ${sc('Booked (Last 30d)', b30, fmtRatio(b30,c30)+' call → booking')}
+        ${sc('Show Rate (30d)', sr30v!==null?sr30v+'%':'—', sr30?`${sr30.showed}/${sr30.total} showed`:'No data yet', sr30v>=60?'var(--green)':sr30v>=40?'#f59e0b':'var(--red)')}
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">Daily Call Volume — Mon to Fri</span>
+          <span class="table-sub">Last 6 weeks · Today highlighted</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr>
+              <th>Week of</th>
+              ${['Mon','Tue','Wed','Thu','Fri'].map(d=>`<th class="c">${d}</th>`).join('')}
+              <th class="c">Total</th>
+            </tr></thead>
+            <tbody>${weekRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head"><span class="table-title">Performance by Window</span></div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Metric</th><th class="c">Last 7d</th><th class="c">Last 14d</th><th class="c">Last 21d</th><th class="c">Last 30d</th></tr></thead>
+            <tbody style="border-top:1px solid var(--border)">
+              <tr><td style="font-weight:600">📞 Calls Made</td>${[c7,c14,c21,c30].map(v=>`<td class="c">${v}</td>`).join('')}</tr>
+              <tr><td style="font-weight:600">📅 Appts Booked</td>${[b7,b14,b21,b30].map(v=>`<td class="c">${v}</td>`).join('')}</tr>
+              <tr><td style="font-weight:600">🎯 Call → Booking</td>${[[b7,c7],[b14,c14],[b21,c21],[b30,c30]].map(([b,c])=>`<td class="c">${fmtRatio(b,c)}</td>`).join('')}</tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head"><span class="table-title">Show Rate by Booking Window</span></div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Window</th><th class="c">Booked</th><th class="c">Showed</th><th class="c">No-Show</th><th class="c">Show Rate</th></tr></thead>
+            <tbody style="border-top:1px solid var(--border)">
+              ${[['Last 7 days',7,sr7],['Last 14 days',14,sr14],['Last 21 days',21,sr21],['Last 30 days',30,sr30],['Last 60 days',60,sr60],['Last 90 days',90,sr90]].map(([lbl,n,sr]) => {
+                const booked = apptsIn(n), happened = sr?sr.total:0, showed = sr?sr.showed:0, noshow = happened-showed;
+                const pct = sr ? Math.round(sr.showed/sr.total*100) : null;
+                const pc  = pct===null?'var(--muted)':pct>=60?'var(--green)':pct>=40?'#f59e0b':'var(--red)';
+                return `<tr style="border-bottom:1px solid var(--border)">
+                  <td style="font-weight:600">${lbl}</td>
+                  <td class="c">${booked}</td>
+                  <td class="c" style="color:var(--green)">${happened?showed:'—'}</td>
+                  <td class="c" style="color:var(--red)">${happened?noshow:'—'}</td>
+                  <td class="c" style="font-weight:700;color:${pc}">${pct!==null?pct+'%':'—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:.6rem 1rem;font-size:0.67rem;color:var(--muted);border-top:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <span>Col E = date booked · Col F = appt date · Col K = Y/N showed</span>
+          <a href="https://docs.google.com/spreadsheets/d/${GROWTH_APPT_SHEET}/edit" target="_blank" style="color:var(--accent);text-decoration:none">↗ Open Appointments Sheet</a>
+          <button onclick="loadPerformance()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.67rem;padding:0">↺ Refresh</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Our Offer ─────────────────────────────────────────────────────────────────
+function tplOffer() {
+  return `
+    <div style="max-width:820px">
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:1.05rem;font-weight:800;margin-bottom:0.25rem">🎯 What We Do at Quality Jobs</div>
+        <div style="font-size:0.75rem;font-family:'DM Mono',monospace;color:var(--muted)">Use this to confidently explain our offer to any lead. Know this inside out.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--accent);margin-bottom:0.75rem">🏆 The Core Offer</div>
+        <div style="font-size:0.88rem;font-weight:800;color:var(--text);margin-bottom:0.5rem">We get Australian renovation companies qualified appointments — guaranteed.</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.7">
+          Quality Jobs is a lead generation and appointment setting agency built exclusively for renovation companies — builders, kitchen & bathroom renovators, custom home builders, landscapers and concreters across Australia.<br><br>
+          We combine <strong style="color:var(--text)">Facebook & Instagram paid advertising</strong> with a <strong style="color:var(--text)">live call centre</strong> that qualifies every lead before it ever lands in the client's calendar. The result: clients speak only to homeowners who are ready, willing and able to move forward.
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--accent);margin-bottom:0.75rem">📦 What's Included</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.6rem">
+          ${[
+            ['🎨', 'Meta Ad Campaigns',       'We write, design and manage full Facebook & Instagram ad campaigns tailored to the client\'s trade and location.'],
+            ['📞', 'Live Call Centre',         'Our setters call every inbound lead within minutes — qualifying them on budget, timeline, project type and seriousness.'],
+            ['📅', 'Qualified Appointments',   'Only pre-qualified leads land in the client\'s diary. No tyre-kickers, no time-wasters.'],
+            ['🔧', 'GHL CRM Setup',            'We build and manage the client\'s Go High Level sub-account — pipeline, automations, follow-up sequences, everything.'],
+            ['📊', 'Reporting & Transparency', 'Clients get live access to their stats sheet — ad spend, cost per lead, appointments booked, show rate and revenue.'],
+            ['🤖', 'AI Receptionist (add-on)', 'An AI receptionist handles after-hours enquiries, re-engages cold leads and books appointments automatically.'],
+          ].map(([icon, title, desc]) => `
+            <div style="padding:0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+              <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem">${icon} ${title}</div>
+              <div style="font-size:0.68rem;color:var(--muted);line-height:1.5">${desc}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--accent);margin-bottom:0.6rem">✅ Ideal Client Profile</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem">
+          ${['General builders','Kitchen & bathroom renovators','Custom home builders','Landscapers','Concreters','Rendering companies','Deck & patio builders','Pool builders'].map(t =>
+            `<span style="font-size:0.72rem;padding:4px 10px;background:rgba(181,135,13,0.1);color:var(--accent);border:1px solid rgba(181,135,13,0.2);border-radius:6px;font-weight:600">${t}</span>`
+          ).join('')}
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.7rem;line-height:1.6">Targeting businesses doing <strong style="color:var(--text)">$30k–$200k/month</strong> in revenue that want consistent, predictable lead flow without relying on referrals or word of mouth.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--accent);margin-bottom:0.75rem">📎 Nurture Material</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.85rem">Send these to leads to build trust and handle objections before the close call.</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">
+          ${[
+            ['🌟','Client Testimonials Pack','Video + written testimonials from active clients'],
+            ['📈','Case Study — Streamline Building Projects','From $40k to $120k/month in 90 days'],
+            ['📊','Sample Stats Sheet','Example of the live reporting dashboard we provide'],
+            ['🎥','What Our Clients Say (Video)','Compilation reel — share on WhatsApp or email'],
+          ].map(([icon,title,desc]) => `
+            <div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.85rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+              <span style="font-size:1.1rem">${icon}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text)">${title}</div>
+                <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted)">${desc}</div>
+              </div>
+              <span style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);font-style:italic">Coming soon</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderTabBar();
+switchTab(activeTab());
+</script>
+</body>
+</html>
