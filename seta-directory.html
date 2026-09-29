@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SETA Training Hub — Quality Jobs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:       #f7f7f5;
+    --surface:  #ffffff;
+    --surface2: #f0f0ed;
+    --border:   #e4e4e0;
+    --border2:  #d0d0ca;
+    --text:     #111110;
+    --muted:    #6b6b65;
+    --accent:   #b5870d;
+    --accent-bg:#fdf6e3;
+    --green:    #16a34a;
+    --green-bg: rgba(22,163,74,.08);
+    --green-bd: rgba(22,163,74,.22);
+    --amber:    #d97706;
+    --amber-bg: rgba(217,119,6,.07);
+    --amber-bd: rgba(217,119,6,.22);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:       #111110;
+      --surface:  #1c1c1a;
+      --surface2: #252523;
+      --border:   #2e2e2b;
+      --border2:  #3a3a36;
+      --text:     #f0efe8;
+      --muted:    #8a8a82;
+      --accent:   #d4a31a;
+      --accent-bg:rgba(212,163,26,.08);
+      --green:    #22c55e;
+      --green-bg: rgba(34,197,94,.08);
+      --green-bd: rgba(34,197,94,.22);
+      --amber:    #f59e0b;
+      --amber-bg: rgba(245,158,11,.07);
+      --amber-bd: rgba(245,158,11,.2);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:       #111110;
+    --surface:  #1c1c1a;
+    --surface2: #252523;
+    --border:   #2e2e2b;
+    --border2:  #3a3a36;
+    --text:     #f0efe8;
+    --muted:    #8a8a82;
+    --accent:   #d4a31a;
+    --accent-bg:rgba(212,163,26,.08);
+    --green:    #22c55e;
+    --green-bg: rgba(34,197,94,.08);
+    --green-bd: rgba(34,197,94,.22);
+    --amber:    #f59e0b;
+    --amber-bg: rgba(245,158,11,.07);
+    --amber-bd: rgba(245,158,11,.2);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-inline: 16px;
+    padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+  }
+
+  /* ── Layout ── */
+  .page-wrap { max-width: 820px; margin: 0 auto; padding-block: 2rem 4rem; }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+  }
+  .header-logo {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+  .header-text h1 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .header-text p {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .progress-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+  }
+  .progress-label {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
+  .progress-label.complete { color: var(--green); }
+  .progress-bar-outer {
+    width: 160px; height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width .4s ease;
+  }
+  .progress-bar-fill.complete { background: var(--green); }
+
+  /* ── Module rows ── */
+  .module-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1rem 1.2rem;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: .55rem;
+    transition: border-color .15s, box-shadow .15s;
+    cursor: default;
+  }
+  .module-row:hover {
+    border-color: var(--border2);
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  }
+  .module-row.done {
+    border-color: var(--green-bd);
+    background: var(--surface);
+  }
+  .module-row.done:hover { border-color: rgba(22,163,74,.45); }
+
+  .mod-index {
+    width: 36px; height: 36px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    border: 2px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all .15s;
+  }
+  .module-row.done .mod-index {
+    background: var(--green-bg);
+    border-color: var(--green-bd);
+    color: var(--green);
+  }
+
+  .mod-body { flex: 1; min-width: 0; }
+  .mod-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45rem;
+    margin-bottom: .3rem;
+  }
+  .mod-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.6rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+    border: 1px solid;
+  }
+  .badge-done   { background: var(--green-bg); color: var(--green); border-color: var(--green-bd); }
+  .badge-soon   { background: var(--surface2); color: var(--muted); border-color: var(--border2); }
+  .badge-watch  { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-bd); }
+
+  .mod-desc {
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .mod-desc.warning {
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-bd);
+    border-radius: 8px;
+    padding: .5rem .75rem;
+    margin-top: .35rem;
+    color: var(--text);
+  }
+
+  .mod-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .4rem;
+    flex-shrink: 0;
+  }
+
+  .btn-watch {
+    padding: 6px 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: opacity .1s;
+  }
+  .btn-watch:hover { opacity: .88; }
+
+  .btn-mark {
+    padding: 5px 11px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: all .1s;
+  }
+  .btn-mark:hover { border-color: var(--green-bd); color: var(--green); }
+  .btn-mark.is-done {
+    background: var(--green-bg);
+    border-color: var(--green-bd);
+    color: var(--green);
+  }
+
+  /* ── Video modal ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.72);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-box {
+    background: var(--surface);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 780px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .9rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+  }
+  .modal-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .modal-close {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background .1s;
+  }
+  .modal-close:hover { background: var(--border); }
+  .modal-video-wrap {
+    width: 100%;
+    background: #000;
+  }
+  .modal-video-wrap iframe {
+    width: 100%;
+    display: block;
+    border: none;
+  }
+  .modal-footer {
+    padding: .75rem 1.1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    flex-wrap: wrap;
+  }
+  .modal-desc {
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.6;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Divider ── */
+  .section-label {
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin: 1.75rem 0 .65rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  @media (max-width: 520px) {
+    .progress-bar-outer { width: 120px; }
+    .mod-actions { flex-direction: row; align-items: center; }
+    .modal-footer { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap" id="root"></div>
+
+<script>
+const MODULES = [
+  { id: 'set-1',  title: 'Introduction to Quality Jobs',          wistiaId: 'klfms5yrx6', aspect: 1.7778, desc: 'Your first watch. Learn what Quality Jobs is, what we do, who we work with, and where you fit as a setter inside the business.' },
+  { id: 'set-2',  title: 'What Do We Actually Do?',               wistiaId: 'dqwecotcdz', aspect: 1.5434, desc: 'A full walkthrough of exactly what our offer is for bathroom renovation companies — what we deliver, what makes it different, and why it works.' },
+  { id: 'set-2b', title: 'Our Offer and the Numbers',             wistiaId: 'hb4crefn9k', aspect: 1.5434, desc: 'A simplified breakdown of the offer and the key numbers — the takeaways every setter needs to know cold before they get on the phone.' },
+  { id: 'set-3',  title: 'Industry Knowledge',                    wistiaId: null,          aspect: 1.7778, desc: 'Everything you need to know about the building industry before you pick up the phone. Who builders are, what they do, how they operate, and the terminology you\'ll hear on every call.' },
+  { id: 'set-4',  title: 'The Script',                            wistiaId: 'prtozk09cy', aspect: 1.5434, desc: 'A complete walkthrough of the setter script — how to hold yourself on the call, the exact information to collect, and the ammunition you need to set the closer up for a successful sales call.' },
+  { id: 'set-5',  title: 'How to Make Calls Through GoHighLevel', wistiaId: null,          aspect: 1.7778, desc: 'Step-by-step: what to do when a lead comes through, how to book appointments inside GHL, and a full walkthrough of the CRM so you know exactly where everything lives.' },
+  { id: 'set-6',  title: 'Live Call Examples',                    wistiaId: null,          aspect: 1.7778, desc: 'Real call recordings covering at least five different outcomes and prospect types — motivated, hesitant, burned before, not ready, and ready to book. Watch how appointments get set in each scenario.' },
+  { id: 'set-6b', title: 'Live Calling Session (1 Hour)',         wistiaId: null,          aspect: 1.7778, desc: '⚠️ This video is one hour long — you must watch the entire thing. Skipping through will not give you what you need. This is a full, unedited hour of real dialling so you can see exactly what a productive session looks, sounds, and feels like in practice — the pace, the mindset, how to handle dead air, quick-fire rejections, and the moments that lead to a booked appointment. There is no substitute for seeing a real hour of work.' },
+  { id: 'set-7',  title: 'Objection Handling',                    wistiaId: null,          aspect: 1.7778, desc: 'A full deep-dive on handling objections. Learn why prospects push back, how to address the "been burned by a marketing agency" objection, and how to position Quality Jobs as completely different from anything they\'ve seen before.' },
+  { id: 'set-8',  title: 'Following Up with the Hot List',        wistiaId: null,          aspect: 1.7778, desc: 'How to use the hot list to make sure no lead gets left unturned. Covers follow-up cadence, how to build real relationships with builders over time, and how to keep warm leads moving even when they\'re not ready to book yet.' },
+  { id: 'set-9',  title: 'Re-engaging Previous Conversations',    wistiaId: null,          aspect: 1.7778, desc: 'This is where the money is. Learn the exact language to use when picking up conversations that went cold — how to re-open, re-qualify, and convert leads you\'ve already spoken to into booked appointments.' },
+  { id: 'set-10', title: 'How You Get Paid',                      wistiaId: null,          aspect: 1.7778, desc: 'Your complete guide to the payment structure — base rate, commission structure, and how to use the projection sheet to map out exactly how much you can earn.' },
+  { id: 'set-11', title: 'Tracking Your Numbers',                 wistiaId: null,          aspect: 1.7778, desc: 'How to track and own your daily performance — calls made, appointments booked, show rate, and close rate. Learn which numbers matter, how to read them, and how to use your stats to identify where to improve and consistently hit your targets.' },
+  { id: 'set-12', title: 'Competitor Research',                   wistiaId: null,          aspect: 1.7778, desc: 'A full breakdown of every major marketing agency competitor operating in Australia — their pricing points, what they offer, and exactly how Quality Jobs is different. Know this cold so you can confidently position us on any call.' },
+];
+
+// ── Persistence ──────────────────────────────────────────────────────────
+const STORE_KEY = 'qj_seta_watched_v1';
+function getWatched() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e) { return {}; }
+}
+function setWatched(id, val) {
+  const w = getWatched(); w[id] = val;
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(w)); } catch(e) {}
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render() {
+  const watched = getWatched();
+  const total = MODULES.length;
+  const done  = MODULES.filter(m => watched[m.id]).length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+  const allDone = done === total;
+
+  const rows = MODULES.map((m, i) => {
+    const isDone    = !!watched[m.id];
+    const hasVideo  = !!m.wistiaId;
+    const isWarning = m.desc.startsWith('⚠️');
+
+    return `
+    <div class="module-row ${isDone ? 'done' : ''}" id="row-${m.id}">
+      <div class="mod-index">${isDone ? '✓' : i + 1}</div>
+      <div class="mod-body">
+        <div class="mod-title-row">
+          <span class="mod-title">${m.title}</span>
+          ${isDone   ? '<span class="badge badge-done">✓ completed</span>' : ''}
+          ${!hasVideo && !isDone ? '<span class="badge badge-soon">coming soon</span>' : ''}
+          ${isWarning && !isDone ? '<span class="badge badge-watch">⚠️ full watch required</span>' : ''}
+        </div>
+        <div class="mod-desc ${isWarning ? 'warning' : ''}">${m.desc}</div>
+      </div>
+      <div class="mod-actions">
+        ${hasVideo ? `<button class="btn-watch" onclick="openVideo('${m.id}')">▶ Watch</button>` : ''}
+        <button class="btn-mark ${isDone ? 'is-done' : ''}" onclick="toggleDone('${m.id}')">${isDone ? '✓ Done' : 'Mark done'}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('root').innerHTML = `
+    <div class="header">
+      <div class="header-brand">
+        <div class="header-logo">🎯</div>
+        <div class="header-text">
+          <h1>SETA Training Hub</h1>
+          <p>Quality Jobs · Setter Academy</p>
+        </div>
+      </div>
+      <div class="progress-block">
+        <div class="progress-label ${allDone ? 'complete' : ''}">${done} / ${total} modules completed · ${pct}%</div>
+        <div class="progress-bar-outer">
+          <div class="progress-bar-fill ${allDone ? 'complete' : ''}" style="width:${pct}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Training Modules</div>
+    ${rows}
+  `;
+}
+
+// ── Mark done / undo ──────────────────────────────────────────────────────
+function toggleDone(id) {
+  const w = getWatched();
+  setWatched(id, !w[id]);
+  render();
+}
+
+// ── Video modal ───────────────────────────────────────────────────────────
+function openVideo(id) {
+  const m = MODULES.find(x => x.id === id);
+  if (!m || !m.wistiaId) return;
+  const h = Math.round((window.innerWidth * 0.9 - 32) / m.aspect);
+  const capped = Math.min(h, 460);
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.onclick = e => { if (e.target === backdrop) closeModal(backdrop); };
+
+  backdrop.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">${m.title}</div>
+        <button class="modal-close" onclick="closeModal(document.querySelector('.modal-backdrop'))">✕</button>
+      </div>
+      <div class="modal-video-wrap">
+        <iframe src="https://fast.wistia.net/embed/iframe/${m.wistiaId}?videoFoam=true&autoPlay=true"
+                allow="autoplay; fullscreen"
+                allowfullscreen
+                style="height:${capped}px"></iframe>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-desc">${m.desc}</div>
+        <button class="btn-mark" id="modal-mark-btn" onclick="toggleDoneModal('${m.id}')">
+          ${getWatched()[m.id] ? '✓ Marked Done' : 'Mark as Done'}
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(backdrop);
+  document.addEventListener('keydown', escHandler);
+}
+
+function toggleDoneModal(id) {
+  const w = getWatched();
+  setWatched(id, !w[id]);
+  const btn = document.getElementById('modal-mark-btn');
+  if (btn) {
+    btn.textContent = getWatched()[id] ? '✓ Marked Done' : 'Mark as Done';
+    btn.className = 'btn-mark' + (getWatched()[id] ? ' is-done' : '');
+  }
+  render();
+}
+
+function closeModal(el) {
+  if (el) { el.remove(); render(); }
+  document.removeEventListener('keydown', escHandler);
+}
+
+function escHandler(e) {
+  if (e.key === 'Escape') {
+    const b = document.querySelector('.modal-backdrop');
+    closeModal(b);
+  }
+}
+
+render();
+</script>
+</body>
+</html>
