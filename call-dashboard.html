@@ -2452,7 +2452,15 @@ function renderCalls(data) {
         </div>
       </div>
     </div>
-    ${todayLeader?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:2rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Jules'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>`:''}
+    ${todayLeader?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Jules'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>`:''}
+
+    <div style="text-align:center;margin-bottom:1.75rem">
+      <a href="https://docs.google.com/spreadsheets/d/${CALLS_SHEET_ID}/edit" target="_blank"
+        style="display:inline-flex;align-items:center;gap:.4rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:7px;padding:4px 12px;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        ↗ Open Call Data Sheet
+      </a>
+    </div>
 
     <div class="metrics-strip">
       <div class="metric"><div class="metric-label">Total Calls (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across both agents</div></div>
