@@ -2090,7 +2090,9 @@ async function fetchCallsData() {
 
     const today = getTodayStr();
     const agentDay={}, agentWeek={}, agentMonth={}, subMonth={}, subDay={};
+    const agentDayIn={}, agentWeekIn={}, agentMonthIn={};
     const todayJules={total:0,clients:[]}, todayAyessa={total:0,clients:[]};
+    const todayJulesIn={total:0}, todayAyessaIn={total:0};
     const allDates=new Set(), allWeeks=new Set();
 
     for(let i=4;i<rows.length;i++) {
@@ -2098,6 +2100,8 @@ async function fetchCallsData() {
       const monthName = String(row[0]||'').trim();
       const subRaw    = String(row[5]||'').trim();
       const dateRaw   = String(row[1]||'').trim();
+      const dir       = String(row[6]||'').trim();
+      const isInbound = dir === 'Inbound';
 
       if(!monthName||!subRaw) continue;
       if(!TARGET_MONTHS.has(monthName)) continue;
@@ -2112,12 +2116,21 @@ async function fetchCallsData() {
       const wKey=getWeekKey(dateObj);
       allDates.add(dStr); allWeeks.add(wKey);
 
-      if(!agentDay[agent])   agentDay[agent]={};
-      if(!agentWeek[agent])  agentWeek[agent]={};
-      if(!agentMonth[agent]) agentMonth[agent]={};
-      agentDay[agent][dStr]        = (agentDay[agent][dStr]       ||0)+1;
-      agentWeek[agent][wKey]       = (agentWeek[agent][wKey]      ||0)+1;
-      agentMonth[agent][monthName] = (agentMonth[agent][monthName]||0)+1;
+      if(!isInbound) {
+        if(!agentDay[agent])   agentDay[agent]={};
+        if(!agentWeek[agent])  agentWeek[agent]={};
+        if(!agentMonth[agent]) agentMonth[agent]={};
+        agentDay[agent][dStr]        = (agentDay[agent][dStr]       ||0)+1;
+        agentWeek[agent][wKey]       = (agentWeek[agent][wKey]      ||0)+1;
+        agentMonth[agent][monthName] = (agentMonth[agent][monthName]||0)+1;
+      } else {
+        if(!agentDayIn[agent])   agentDayIn[agent]={};
+        if(!agentWeekIn[agent])  agentWeekIn[agent]={};
+        if(!agentMonthIn[agent]) agentMonthIn[agent]={};
+        agentDayIn[agent][dStr]        = (agentDayIn[agent][dStr]       ||0)+1;
+        agentWeekIn[agent][wKey]       = (agentWeekIn[agent][wKey]      ||0)+1;
+        agentMonthIn[agent][monthName] = (agentMonthIn[agent][monthName]||0)+1;
+      }
 
       if(!subMonth[subRaw]) subMonth[subRaw]={};
       subMonth[subRaw][monthName] = (subMonth[subRaw][monthName]||0)+1;
@@ -2125,11 +2138,16 @@ async function fetchCallsData() {
       subDay[subRaw][dStr] = (subDay[subRaw][dStr]||0)+1;
 
       if(dStr===today) {
-        const bucket = agent==='Jules'?todayJules:todayAyessa;
-        bucket.total++;
-        const ex=bucket.clients.findIndex(c=>c.startsWith(subRaw+':'));
-        if(ex>=0){const n=parseInt(bucket.clients[ex].split(': ')[1])+1;bucket.clients[ex]=`${subRaw}: ${n}`;}
-        else bucket.clients.push(`${subRaw}: 1`);
+        if(!isInbound) {
+          const bucket = agent==='Jules'?todayJules:todayAyessa;
+          bucket.total++;
+          const ex=bucket.clients.findIndex(c=>c.startsWith(subRaw+':'));
+          if(ex>=0){const n=parseInt(bucket.clients[ex].split(': ')[1])+1;bucket.clients[ex]=`${subRaw}: ${n}`;}
+          else bucket.clients.push(`${subRaw}: 1`);
+        } else {
+          const b = agent==='Jules'?todayJulesIn:todayAyessaIn;
+          b.total++;
+        }
       }
     }
 
@@ -2146,9 +2164,13 @@ async function fetchCallsData() {
 
     return {
       today:{jules:todayJules,ayessa:todayAyessa},
+      todayIn:{jules:todayJulesIn,ayessa:todayAyessaIn},
       daily:{dates:sortedDates, jules:sortedDates.map(d=>(agentDay['Jules']||{})[d]||0), ayessa:sortedDates.map(d=>(agentDay['Ayessa']||{})[d]||0)},
       weekly:{weeks:sortedWeeks, jules:sortedWeeks.map(w=>(agentWeek['Jules']||{})[w]||0), ayessa:sortedWeeks.map(w=>(agentWeek['Ayessa']||{})[w]||0)},
       monthly:{months:sortedMonths, jules:sortedMonths.map(m=>(agentMonth['Jules']||{})[m]||0), ayessa:sortedMonths.map(m=>(agentMonth['Ayessa']||{})[m]||0)},
+      dailyIn:{dates:sortedDates, jules:sortedDates.map(d=>(agentDayIn['Jules']||{})[d]||0), ayessa:sortedDates.map(d=>(agentDayIn['Ayessa']||{})[d]||0)},
+      weeklyIn:{weeks:sortedWeeks, jules:sortedWeeks.map(w=>(agentWeekIn['Jules']||{})[w]||0), ayessa:sortedWeeks.map(w=>(agentWeekIn['Ayessa']||{})[w]||0)},
+      monthlyIn:{months:sortedMonths, jules:sortedMonths.map(m=>(agentMonthIn['Jules']||{})[m]||0), ayessa:sortedMonths.map(m=>(agentMonthIn['Ayessa']||{})[m]||0)},
       julesClients, ayessaClients, subMonth, subDay,
     };
   } catch(e){ console.warn('Calls fetch failed:',e); return null; }
@@ -2419,10 +2441,15 @@ function renderCalls(data) {
   const totalJules   = data.monthly.jules.reduce((a,b)=>a+b,0);
   const totalAyessa  = data.monthly.ayessa.reduce((a,b)=>a+b,0);
   const grandTotal   = totalJules + totalAyessa;
+  const inTotalJules  = (data.monthlyIn||{jules:[]}).jules.reduce((a,b)=>a+b,0);
+  const inTotalAyessa = (data.monthlyIn||{ayessa:[]}).ayessa.reduce((a,b)=>a+b,0);
+  const inGrandTotal  = inTotalJules + inTotalAyessa;
   const todayLeader  = data.today.ayessa.total > data.today.jules.total ? 'ayessa' : data.today.jules.total > data.today.ayessa.total ? 'jules' : null;
   const leadDiff     = Math.abs(data.today.ayessa.total - data.today.jules.total);
   const lastWeekJ    = data.weekly.jules[data.weekly.jules.length-1];
   const lastWeekA    = data.weekly.ayessa[data.weekly.ayessa.length-1];
+  const inLastWeekJ  = (data.weeklyIn||{jules:[]}).jules.slice(-1)[0]||0;
+  const inLastWeekA  = (data.weeklyIn||{ayessa:[]}).ayessa.slice(-1)[0]||0;
 
   document.getElementById('app-calls').innerHTML = `
     <div class="last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
@@ -2431,7 +2458,7 @@ function renderCalls(data) {
       <div class="agent-card jules">
         <div class="agent-name">Jules ${todayLeader==='jules'?'<span class="leader-tag jules">leading</span>':''}</div>
         <div class="agent-count">${fmt(data.today.jules.total)}</div>
-        <div class="agent-sub">calls today</div>
+        <div class="agent-sub">outbound today${data.todayIn&&data.todayIn.jules.total?` · <span style="opacity:.6">${fmt(data.todayIn.jules.total)} inbound</span>`:''}</div>
         ${data.today.jules.clients.length?`<div class="agent-clients">${data.today.jules.clients.join('<br>')}</div>`:'<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
         <div class="agent-appt-stat">
           <div style="display:flex;align-items:baseline;gap:10px;">
@@ -2444,7 +2471,7 @@ function renderCalls(data) {
       <div class="agent-card ayessa">
         <div class="agent-name">Ayessa ${todayLeader==='ayessa'?'<span class="leader-tag ayessa">leading</span>':''}</div>
         <div class="agent-count">${fmt(data.today.ayessa.total)}</div>
-        <div class="agent-sub">calls today</div>
+        <div class="agent-sub">outbound today${data.todayIn&&data.todayIn.ayessa.total?` · <span style="opacity:.6">${fmt(data.todayIn.ayessa.total)} inbound</span>`:''}</div>
         ${data.today.ayessa.clients.length?`<div class="agent-clients">${data.today.ayessa.clients.join('<br>')}</div>`:'<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
         <div class="agent-appt-stat">
           <div class="agent-appt-count">${(window._todayApptsData||{ayessa:0}).ayessa}</div>
@@ -2462,11 +2489,20 @@ function renderCalls(data) {
       </a>
     </div>
 
+    <div style="font-size:0.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;padding-left:2px;">📞 Outbound Calls</div>
     <div class="metrics-strip">
-      <div class="metric"><div class="metric-label">Total Calls (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across both agents</div></div>
-      <div class="metric"><div class="metric-label">Calls This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Jules ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
-      <div class="metric"><div class="metric-label">Jules Total</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${Math.round(totalJules/grandTotal*100)}% of all calls</div></div>
-      <div class="metric"><div class="metric-label">Ayessa Total</div><div class="metric-value" style="color:var(--ayessa)">${fmt(totalAyessa)}</div><div class="metric-sub">${Math.round(totalAyessa/grandTotal*100)}% of all calls</div></div>
+      <div class="metric"><div class="metric-label">Total Outbound (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across both agents</div></div>
+      <div class="metric"><div class="metric-label">Outbound This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Jules ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Jules Outbound</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${grandTotal?Math.round(totalJules/grandTotal*100):0}% of outbound</div></div>
+      <div class="metric"><div class="metric-label">Ayessa Outbound</div><div class="metric-value" style="color:var(--ayessa)">${fmt(totalAyessa)}</div><div class="metric-sub">${grandTotal?Math.round(totalAyessa/grandTotal*100):0}% of outbound</div></div>
+    </div>
+
+    <div style="font-size:0.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;margin-top:1.5rem;padding-left:2px;">📥 Inbound Calls</div>
+    <div class="metrics-strip">
+      <div class="metric"><div class="metric-label">Total Inbound (All Time)</div><div class="metric-value">${fmt(inGrandTotal)}</div><div class="metric-sub">across both agents</div></div>
+      <div class="metric"><div class="metric-label">Inbound This Week</div><div class="metric-value">${fmt(inLastWeekJ+inLastWeekA)}</div><div class="metric-sub"><span>Jules ${fmt(inLastWeekJ)}</span> · Ayessa ${fmt(inLastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Jules Inbound</div><div class="metric-value" style="color:var(--jules)">${fmt(inTotalJules)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalJules/inGrandTotal*100):0}% of inbound</div></div>
+      <div class="metric"><div class="metric-label">Ayessa Inbound</div><div class="metric-value" style="color:var(--ayessa)">${fmt(inTotalAyessa)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalAyessa/inGrandTotal*100):0}% of inbound</div></div>
     </div>
 
     <div class="chart-section">
