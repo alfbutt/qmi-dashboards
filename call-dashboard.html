@@ -2083,10 +2083,10 @@ function syncBadge() {
 // ════════════════════════════════════════════════
 async function fetchCallsData() {
   try {
-    const res = await fetchWT(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=Call%20Data`);
+    const res = await fetchWT(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`, {}, 60000);
     if(!res.ok) return null;
     const rows = await res.json();
-    if(!Array.isArray(rows) || rows.length < 5) return null;
+    if(!Array.isArray(rows) || rows.length < 2) return null;
 
     const today = getTodayStr();
     const agentDay={}, agentWeek={}, agentMonth={}, subMonth={}, subDay={};
@@ -2095,12 +2095,12 @@ async function fetchCallsData() {
     const todayJulesIn={total:0}, todayAyessaIn={total:0};
     const allDates=new Set(), allWeeks=new Set();
 
-    for(let i=4;i<rows.length;i++) {
+    for(let i=1;i<rows.length;i++) {
       const row = rows[i];
       const monthName = String(row[0]||'').trim();
-      const subRaw    = String(row[5]||'').trim();
+      const subRaw    = String(row[2]||'').trim();
       const dateRaw   = String(row[1]||'').trim();
-      const dir       = String(row[6]||'').trim();
+      const dir       = String(row[3]||'').trim();
       const isInbound = dir === 'Inbound';
 
       if(!monthName||!subRaw) continue;
@@ -7498,7 +7498,7 @@ async function _setterLoadPerformance() {
   if (!panel) return;
   try {
     const [callsRes, apptRes] = await Promise.all([
-      fetch(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=Call%20Data`),
+      fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`),
       fetch(`${PROXY_URL}?id=${GROWTH_APPT_SHEET}&sheet=${encodeURIComponent(GROWTH_APPT_TAB)}`)
     ]);
     const callsRows = await callsRes.json();
@@ -7507,9 +7507,9 @@ async function _setterLoadPerformance() {
     // ── Parse QJ calls (col 5 = "Quality Jobs") ──
     const qjCalls = [];
     if (Array.isArray(callsRows)) {
-      for (let i = 4; i < callsRows.length; i++) {
+      for (let i = 1; i < callsRows.length; i++) {
         const row = callsRows[i];
-        const client = String(row[5]||'').trim().toLowerCase();
+        const client = String(row[2]||'').trim().toLowerCase();
         if (client !== 'quality jobs') continue;
         const d = parseDateStr(String(row[1]||''));
         if (d) qjCalls.push(d);
