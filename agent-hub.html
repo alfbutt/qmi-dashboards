@@ -1299,27 +1299,32 @@ async function _fetchClientsList() {
 // ════════════════════════════════════════════════
 // FETCH — CALLS
 // ════════════════════════════════════════════════
+function fetchWT(url, opts, ms = 12000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(id));
+}
+
 async function fetchCallsData() {
   try {
     // Try compact Raw Data tab first; fall back to source sheet if broken
     let rows = null;
     try {
-      const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 15000);
-      const r1 = await fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`, { signal: ctrl.signal });
+      const r1 = await fetchWT(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`, {}, 20000);
       if (r1.ok) {
         const d1 = await r1.json();
         if (Array.isArray(d1) && d1.length >= 2 && String(d1[0][0]).indexOf('ERROR') === -1) rows = d1;
       }
     } catch(e) { /* fall through */ }
     if (!rows) {
-      const r2 = await fetch(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=Call%20Data`);
-      if (!r2.ok) return null;
-      const d2 = await r2.json();
-      if (!Array.isArray(d2) || d2.length < 5) return null;
-      // Source sheet has 3-row banner + 1 header row; data starts at index 4
-      // Keep original column layout (row[5]=company) by prepending a fake header
-      rows = [['Month','Date','C','D','E','Company','Direction']].concat(d2.slice(4));
+      try {
+        const r2 = await fetchWT(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=Call%20Data`, {}, 180000);
+        if (!r2.ok) return null;
+        const d2 = await r2.json();
+        if (!Array.isArray(d2) || d2.length < 5) return null;
+        // Source sheet: 3-row banner + 1 header; data at index 4; keep col layout (row[5]=company)
+        rows = [['Month','Date','C','D','E','Company','Direction']].concat(d2.slice(4));
+      } catch(e) { return null; }
     }
     if (!Array.isArray(rows) || rows.length < 2) return null;
 
