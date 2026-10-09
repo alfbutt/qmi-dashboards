@@ -1301,9 +1301,26 @@ async function _fetchClientsList() {
 // ════════════════════════════════════════════════
 async function fetchCallsData() {
   try {
-    const res = await fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`);
-    if (!res.ok) return null;
-    const rows = await res.json();
+    // Try compact Raw Data tab first; fall back to source sheet if broken
+    let rows = null;
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r1 = await fetch(`${PROXY_URL}?id=${CALLS_SHEET_ID}&sheet=Raw%20Data`, { signal: ctrl.signal });
+      if (r1.ok) {
+        const d1 = await r1.json();
+        if (Array.isArray(d1) && d1.length >= 2 && String(d1[0][0]).indexOf('ERROR') === -1) rows = d1;
+      }
+    } catch(e) { /* fall through */ }
+    if (!rows) {
+      const r2 = await fetch(`${PROXY_URL}?id=${ADS_SHEET_ID}&sheet=Call%20Data`);
+      if (!r2.ok) return null;
+      const d2 = await r2.json();
+      if (!Array.isArray(d2) || d2.length < 5) return null;
+      // Source sheet has 3-row banner + 1 header row; data starts at index 4
+      // Keep original column layout (row[5]=company) by prepending a fake header
+      rows = [['Month','Date','C','D','E','Company','Direction']].concat(d2.slice(4));
+    }
     if (!Array.isArray(rows) || rows.length < 2) return null;
 
     const today = getTodayStr();
