@@ -4835,7 +4835,7 @@ async function loadAll(silent=false) {
   // blocking everything if the proxy cold-started)
   const [, callsData, apptsData, configData, adsData, waData, kbData] = await Promise.all([
     withTimeout(fetchClientsData()).catch(() => null),
-    withTimeout(fetchCallsData(), 30000).catch(() => null),
+    withTimeout(fetchCallsData(), 200000).catch(() => null),
     withTimeout(fetchApptsData()).catch(() => null),
     withTimeout(fetchClientConfig()).catch(() => null),
     withTimeout(fetchAdsData()).catch(() => null),
