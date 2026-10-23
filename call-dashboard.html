@@ -2526,8 +2526,8 @@ function renderCalls(data) {
   const inGrandTotal  = inTotalJules + inTotalAyessa;
   const todayLeader  = data.today.ayessa.total > data.today.jules.total ? 'ayessa' : data.today.jules.total > data.today.ayessa.total ? 'jules' : null;
   const leadDiff     = Math.abs(data.today.ayessa.total - data.today.jules.total);
-  const lastWeekJ    = data.weekly.jules[data.weekly.jules.length-1];
-  const lastWeekA    = data.weekly.ayessa[data.weekly.ayessa.length-1];
+  const lastWeekJ    = data.weekly.jules[data.weekly.jules.length-1] || 0;
+  const lastWeekA    = data.weekly.ayessa[data.weekly.ayessa.length-1] || 0;
   const inLastWeekJ  = (data.weeklyIn||{jules:[]}).jules.slice(-1)[0]||0;
   const inLastWeekA  = (data.weeklyIn||{ayessa:[]}).ayessa.slice(-1)[0]||0;
 
@@ -4902,7 +4902,12 @@ async function loadAll(silent=false) {
     withTimeout(fetchClientKB()).catch(() => null),
   ]);
 
-  if(callsData)  window._callsData = callsData;
+  // Only update cached data if the new fetch has actual rows (prevents a failed
+  // or empty refresh from wiping out a previously-good result with all zeros)
+  if(callsData && (callsData.weekly?.jules?.length > 0 || callsData.monthly?.jules?.some(v=>v>0)))
+    window._callsData = callsData;
+  else if(callsData && !window._callsData)
+    window._callsData = callsData;  // first load — take whatever we have
   if(apptsData)  window._apptsData = apptsData;
   if(configData && Object.keys(configData).length > 0) window._configData = configData;
   if(adsData && Object.keys(adsData).length > 0) window._adsData = adsData;
