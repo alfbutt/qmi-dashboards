@@ -12152,7 +12152,9 @@ async function _invGenerate() {
     var amountEl = document.getElementById('inv-amount');
     var amount   = amountEl ? parseFloat(amountEl.value) : 0;
     if (!amount || amount <= 0) { alert('Please enter a valid invoice amount.'); return; }
-    payments = [{ amount: amount, service: defService, date: '' }];
+    var paymentDateEl = document.getElementById('inv-payment-date');
+    var paymentDate   = paymentDateEl ? paymentDateEl.value : '';
+    payments = [{ amount: amount, service: defService, date: paymentDate }];
   } else {
     if (!_invExtracted.length) { alert('No payments found. Upload a screenshot first.'); return; }
     payments = _invExtracted
@@ -12491,6 +12493,10 @@ function renderInvoicePage() {
             '<option value="paid">Paid</option>' +
             '<option value="due">Amount Due</option>' +
           '</select>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:0.68rem;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.35rem">PAYMENT DATE</label>' +
+          '<input id="inv-payment-date" type="date" style="width:100%;padding:0.55rem 0.75rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:0.8rem;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border2)\'">' +
         '</div>' +
       '</div>' +
     '</div>' +
