@@ -1,0 +1,25 @@
+{
+  "name": "QJ Command Centre",
+  "short_name": "Command Centre",
+  "description": "Quality Jobs live dashboard — calls, CEO, agent hub",
+  "start_url": "/qmi-dashboards/call-dashboard.html",
+  "scope": "/qmi-dashboards/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#141414",
+  "theme_color": "#141414",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

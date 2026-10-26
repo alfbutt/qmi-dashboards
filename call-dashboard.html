@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Quality Jobs · Command Centre</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#141414">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Command Centre">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://fast.wistia.com/player.js" async></script>
 <style>wistia-player:not(:defined){background:center/contain no-repeat url('https://fast.wistia.com/embed/medias/bjtkw786ub/swatch');display:block;filter:blur(5px);padding-top:64.79%}</style>
@@ -1291,9 +1298,10 @@
   .mob-overlay.active { display:block; }
 
   @media (max-width: 768px) {
+    body { padding-bottom: env(safe-area-inset-bottom, 0px); }
     .mob-ham {
       display:flex; align-items:center; justify-content:center;
-      position:fixed; top:0.6rem; left:0.6rem; z-index:300;
+      position:fixed; top:calc(0.6rem + env(safe-area-inset-top, 0px)); left:0.6rem; z-index:300;
       width:40px; height:40px; border-radius:10px;
       background:var(--nav-bg); border:1px solid rgba(255,255,255,0.12);
       color:var(--nav-text); font-size:1.2rem; cursor:pointer;
@@ -13811,6 +13819,15 @@ window._bankRenderCatTab     = _bankRenderCatTab;
 window._bankSetCatAndRefresh = _bankSetCatAndRefresh;
 window._bankDelAndRefresh    = _bankDelAndRefresh;
 window.renderFinanceBankPage = renderFinanceBankPage;
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/qmi-dashboards/sw.js')
+      .catch(() => {});
+  });
+}
 </script>
 
 </body>
