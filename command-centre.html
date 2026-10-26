@@ -2199,6 +2199,16 @@ async function fetchCallsData() {
     }
     if(!Array.isArray(rows) || rows.length < 2) return null;
 
+    // Detect actual company and direction column indices from the header row
+    // (the sheet may have extra Campaign/Ad ID cols between Date and Company)
+    let companyCol = 2, dirCol = 3, dataStart = 1;
+    for (let h = 0; h < Math.min(rows.length, 6); h++) {
+      const hr = rows[h];
+      const ci = hr.findIndex(c => /company/i.test(String(c)));
+      const di = hr.findIndex(c => /^direction$/i.test(String(c)));
+      if (ci >= 0 && di >= 0) { companyCol = ci; dirCol = di; dataStart = h + 1; break; }
+    }
+
     const today = getTodayStr();
     const agentDay={}, agentWeek={}, agentMonth={}, subMonth={}, subDay={};
     const agentDayIn={}, agentWeekIn={}, agentMonthIn={};
@@ -2206,12 +2216,12 @@ async function fetchCallsData() {
     const todayJulesIn={total:0}, todayAyessaIn={total:0};
     const allDates=new Set(), allWeeks=new Set();
 
-    for(let i=1;i<rows.length;i++) {
+    for(let i=dataStart;i<rows.length;i++) {
       const row = rows[i];
       const monthName = String(row[0]||'').trim();
-      const subRaw    = String(row[2]||'').trim();
+      const subRaw    = String(row[companyCol]||'').trim();
       const dateRaw   = String(row[1]||'').trim();
-      const dir       = String(row[3]||'').trim();
+      const dir       = String(row[dirCol]||'').trim();
       const isInbound = dir === 'Inbound';
 
       if(!monthName||!subRaw) continue;
