@@ -13,66 +13,57 @@
   .sub { font-size: 0.75rem; color: #666; margin-bottom: 2rem; }
   h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
   p { font-size: 0.82rem; color: #999; line-height: 1.6; margin-bottom: 1.5rem; }
-  .count { font-size: 2rem; font-weight: 800; color: #C9A84C; margin: 1rem 0; }
+  .count { font-size: 2.5rem; font-weight: 800; color: #C9A84C; margin: 1rem 0 0.25rem; }
   .count-label { font-size: 0.72rem; color: #666; margin-bottom: 1.5rem; }
-  button { background: #C9A84C; color: #000; border: none; padding: 0.9rem 2rem; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: opacity 0.15s; }
-  button:hover { opacity: 0.85; }
+  button { background: #C9A84C; color: #000; border: none; padding: 0.9rem 2rem; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; }
   button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .status { margin-top: 1rem; font-size: 0.78rem; color: #C9A84C; min-height: 1.2em; }
-  .done { color: #34d399; font-weight: 600; }
+  .status { margin-top: 1rem; font-size: 0.8rem; color: #999; min-height: 1.2em; }
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo">Quality<span>Jobs</span></div>
-  <div class="sub">Data Migration Tool</div>
-  <h2>Move your data to the new URL</h2>
-  <p>This will copy all your client data, churned/paused history, invoices, tasks, and settings from this origin to <strong>dashboard.qualityjobs.com.au</strong>.</p>
+  <div class="sub">qualityjobs.com.au · Data Migration</div>
+  <h2>Move all your data to the new domain</h2>
+  <p>Copies every client, churned/paused status, invoice history, tasks and settings to <strong>dashboard.qualityjobs.com.au</strong>.</p>
   <div class="count" id="count">—</div>
-  <div class="count-label">data keys found</div>
-  <button id="btn" onclick="migrate()">Migrate Now →</button>
+  <div class="count-label" id="count-label">scanning…</div>
+  <button id="btn" onclick="go()" disabled>Migrate Now →</button>
   <div class="status" id="status"></div>
 </div>
-
 <script>
-const TARGET = 'https://dashboard.qualityjobs.com.au';
 const keys = Object.keys(localStorage).filter(k => k.startsWith('qj_'));
-document.getElementById('count').textContent = keys.length;
+const countEl = document.getElementById('count');
+const labelEl = document.getElementById('count-label');
+const btn     = document.getElementById('btn');
+const status  = document.getElementById('status');
 
+countEl.textContent = keys.length;
 if (keys.length === 0) {
-  document.getElementById('btn').disabled = true;
-  document.getElementById('status').textContent = 'No QJ data found on this origin.';
+  labelEl.textContent = 'No QJ data found here.';
+  status.textContent = 'Make sure you\'re running this on the github.io URL where your data lives.';
+} else {
+  labelEl.textContent = `data key${keys.length !== 1 ? 's' : ''} ready to migrate`;
+  btn.disabled = false;
 }
 
-function migrate() {
-  const btn = document.getElementById('btn');
-  const status = document.getElementById('status');
+function go() {
   btn.disabled = true;
   btn.textContent = 'Migrating…';
-  status.textContent = 'Opening import page…';
+  status.textContent = 'Packaging your data…';
 
-  const data = {};
-  keys.forEach(k => { data[k] = localStorage.getItem(k); });
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-
-  // Open import page on the target origin with data in the hash
-  const importUrl = `${TARGET}/import.html#${encoded}`;
-  const popup = window.open(importUrl, 'qj_migrate', 'width=500,height=400');
-
-  // Listen for success message from import page
-  window.addEventListener('message', function handler(e) {
-    if (e.origin !== TARGET) return;
-    if (e.data === 'qj_import_done') {
-      window.removeEventListener('message', handler);
-      status.innerHTML = '<span class="done">✓ Migration complete! Redirecting you now…</span>';
-      setTimeout(() => {
-        if (popup && !popup.closed) popup.close();
-        window.location.href = `${TARGET}/command-centre.html`;
-      }, 1500);
-    }
-  });
-
-  status.textContent = 'Waiting for import to complete…';
+  try {
+    const data = {};
+    keys.forEach(k => { try { data[k] = localStorage.getItem(k); } catch(e){} });
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    status.textContent = 'Redirecting to new domain…';
+    // Pass data directly in the URL hash — no popup needed
+    window.location.href = 'https://dashboard.qualityjobs.com.au/command-centre.html#qj_import=' + encoded;
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = 'Try Again';
+  }
 }
 </script>
 </body>

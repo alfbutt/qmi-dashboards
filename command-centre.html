@@ -13822,6 +13822,27 @@ window.renderFinanceBankPage = renderFinanceBankPage;
 </script>
 
 <script>
+// Auto-import localStorage data when arriving from migrate.html
+(function(){
+  try {
+    const hash = location.hash || '';
+    const match = hash.match(/[#&]qj_import=([^&]*)/);
+    if (match) {
+      const data = JSON.parse(decodeURIComponent(escape(atob(match[1]))));
+      let n = 0;
+      Object.entries(data).forEach(([k,v]) => { if(v !== null){ localStorage.setItem(k, v); n++; } });
+      history.replaceState(null, '', location.pathname + location.search);
+      if (n > 0) {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;background:#34d399;color:#000;font-weight:700;padding:0.7rem 1.5rem;border-radius:10px;font-size:0.85rem;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+        banner.textContent = '✓ ' + n + ' data keys imported — your data is restored!';
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 5000);
+      }
+    }
+  } catch(e) {}
+})();
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
