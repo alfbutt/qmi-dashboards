@@ -1,4 +1,4 @@
-const CACHE = 'qj-cmd-v3';
+const CACHE = 'qj-cmd-v4';
 const CORE = [
   '/command-centre.html',
   '/manifest.json',
