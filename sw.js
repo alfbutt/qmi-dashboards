@@ -1,6 +1,6 @@
-const CACHE = 'qj-cmd-v2';
+const CACHE = 'qj-cmd-v3';
 const CORE = [
-  '/call-dashboard.html',
+  '/command-centre.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
