@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QJ Import</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #141414; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .card { background: #1e1e1e; border: 1px solid #333; border-radius: 16px; padding: 2rem; max-width: 400px; width: 100%; text-align: center; }
+  .logo { font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; }
+  .logo span { color: #C9A84C; }
+  p { font-size: 0.82rem; color: #999; line-height: 1.6; }
+  .done { color: #34d399; font-size: 1rem; font-weight: 600; margin-top: 1rem; }
+  .err { color: #f87171; font-size: 0.82rem; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Quality<span>Jobs</span></div>
+  <p id="msg">Importing your data…</p>
+  <div id="result"></div>
+</div>
+<script>
+(function() {
+  try {
+    const hash = location.hash.slice(1);
+    if (!hash) throw new Error('No data in URL');
+    const data = JSON.parse(decodeURIComponent(escape(atob(hash))));
+    const keys = Object.keys(data);
+    keys.forEach(k => localStorage.setItem(k, data[k]));
+    document.getElementById('msg').textContent = 'Done!';
+    document.getElementById('result').innerHTML = `<div class="done">✓ ${keys.length} keys imported successfully.</div>`;
+    // Notify the opener (migrate.html on github.io)
+    if (window.opener) {
+      window.opener.postMessage('qj_import_done', 'https://alfbutt.github.io');
+    }
+    // Auto-redirect after short delay
+    setTimeout(() => { window.location.href = '/command-centre.html'; }, 1200);
+  } catch(e) {
+    document.getElementById('msg').textContent = 'Something went wrong.';
+    document.getElementById('result').innerHTML = `<div class="err">${e.message}</div>`;
+  }
+})();
+</script>
+</body>
+</html>

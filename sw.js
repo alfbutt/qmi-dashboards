@@ -1,9 +1,9 @@
-const CACHE = 'qj-cmd-v5';
+const CACHE = 'qj-cmd-v6';
 const CORE = [
-  '/qmi-dashboards/command-centre.html',
-  '/qmi-dashboards/manifest.json',
-  '/qmi-dashboards/icon-192.png',
-  '/qmi-dashboards/icon-512.png'
+  '/command-centre.html',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
