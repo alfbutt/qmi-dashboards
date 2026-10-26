@@ -1,4 +1,4 @@
-const CACHE = 'qj-cmd-v7';
+const CACHE = 'qj-cmd-v8';
 const CORE = [
   '/qmi-dashboards/command-centre.html',
   '/qmi-dashboards/manifest.json',
