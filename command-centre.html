@@ -1379,6 +1379,11 @@
       ☁ Cloud Backup
     </button>
     <div id="backup-status" style="font-size:0.58rem;font-family:'DM Mono',monospace;color:var(--nav-muted);text-align:center;min-height:14px"></div>
+    <button onclick="_ghForceRestore()" title="Clear local data and re-pull everything from cloud backup"
+      style="width:100%;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:7px;padding:5px 8px;font-size:0.62rem;font-family:'DM Mono',monospace;cursor:pointer;transition:all 0.2s;text-align:center;margin-top:0.1rem"
+      onmouseover="this.style.background='rgba(239,68,68,0.16)'" onmouseout="this.style.background='rgba(239,68,68,0.08)'">
+      ↺ Force Restore
+    </button>
     <button onclick="_syncToAJ()" title="Push client data to AJ's dashboard via JSONBin"
       style="width:100%;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#60a5fa;border-radius:7px;padding:6px 8px;font-size:0.62rem;font-family:'DM Mono',monospace;cursor:pointer;transition:all 0.2s;text-align:center;margin-top:0.25rem"
       onmouseover="this.style.background='rgba(59,130,246,0.2)'" onmouseout="this.style.background='rgba(59,130,246,0.1)'">
@@ -11901,14 +11906,14 @@ async function ghLoad() {
     const res = await fetch(url, { headers: tok ? { Authorization: `token ${tok}` } : {} }).catch(() => null);
     if (!res?.ok) { _ghLoading = false; setTimeout(ghSave, 1500); return; }
     const backup = await res.json();
-    // Bypass the proxy so restoring keys never triggers ghScheduleSave
+    // Bypass the proxy so restoring keys never triggers ghScheduleSave.
+    // Always write backup values — backup is authoritative on load.
+    // This fixes stale/empty keys left by any earlier race-condition save.
     const _origSet = Storage.prototype.setItem.bind(localStorage);
     let restored = 0;
     for (const [k, v] of Object.entries(backup)) {
       if (!k.startsWith('qj_') || k === 'qj_gh_token' || v === null) continue;
-      if (localStorage.getItem(k) === null) {
-        try { _origSet(k, v); restored++; } catch(_) {}
-      }
+      try { _origSet(k, v); restored++; } catch(_) {}
     }
     if (restored > 0) _ghShowBanner(`☁ Restored ${restored} keys from cloud backup`);
   } catch(e) { /* silent */ }
@@ -11999,10 +12004,25 @@ function _ghSetupToken() {
   };
 })();
 
-window.ghSave         = ghSave;
-window.ghLoad         = ghLoad;
-window.ghScheduleSave = ghScheduleSave;
-window._ghSetupToken  = _ghSetupToken;
+async function _ghForceRestore() {
+  if (!confirm('Clear all local data and re-pull everything from the cloud backup?\n\nThis fixes wrong/stale data.')) return;
+  // Wipe all qj_* keys except the GitHub token
+  const tok = localStorage.getItem('qj_gh_token');
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k?.startsWith('qj_')) keys.push(k); }
+  keys.forEach(k => { if (k !== 'qj_gh_token') localStorage.removeItem(k); });
+  if (tok) localStorage.setItem('qj_gh_token', tok);
+  _ghSetStatus('☁ restoring…', '#C9A84C');
+  await ghLoad();
+  _ghSetStatus('☁ restored — reloading…', '#22c55e');
+  setTimeout(() => location.reload(), 800);
+}
+
+window.ghSave           = ghSave;
+window.ghLoad           = ghLoad;
+window.ghScheduleSave   = ghScheduleSave;
+window._ghSetupToken    = _ghSetupToken;
+window._ghForceRestore  = _ghForceRestore;
 
 async function _syncToAJ() {
   const statusEl = document.getElementById('aj-sync-status');
