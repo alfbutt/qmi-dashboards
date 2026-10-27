@@ -11837,6 +11837,7 @@ let _ghSha       = null;
 let _ghTimer     = null;
 let _ghLastSaved = 0;
 let _ghBusy      = false;
+let _ghLoading   = true; // true until ghLoad() finishes restoring — proxy skips saves during this window
 
 function _ghToken() {
   return localStorage.getItem('qj_gh_token') || _ghTkParts.join('');
@@ -11887,27 +11888,34 @@ async function ghSave() {
 }
 
 function ghScheduleSave() {
+  if (_ghLoading) return; // don't queue saves while restoring from cloud
   clearTimeout(_ghTimer);
   _ghTimer = setTimeout(ghSave, 5000);
 }
 
 async function ghLoad() {
+  _ghLoading = true;
   try {
     const tok = _ghToken();
     const url = `https://raw.githubusercontent.com/${GH_REPO}/main/${GH_BACKUP_PATH}?t=${Date.now()}`;
     const res = await fetch(url, { headers: tok ? { Authorization: `token ${tok}` } : {} }).catch(() => null);
-    if (!res?.ok) { setTimeout(ghSave, 1500); return; }
+    if (!res?.ok) { _ghLoading = false; setTimeout(ghSave, 1500); return; }
     const backup = await res.json();
+    // Bypass the proxy so restoring keys never triggers ghScheduleSave
+    const _origSet = Storage.prototype.setItem.bind(localStorage);
     let restored = 0;
     for (const [k, v] of Object.entries(backup)) {
       if (!k.startsWith('qj_') || k === 'qj_gh_token' || v === null) continue;
       if (localStorage.getItem(k) === null) {
-        try { localStorage.setItem(k, v); restored++; } catch(_) {}
+        try { _origSet(k, v); restored++; } catch(_) {}
       }
     }
     if (restored > 0) _ghShowBanner(`☁ Restored ${restored} keys from cloud backup`);
-    setTimeout(ghSave, 1000); // push current state to GitHub
-  } catch(e) { setTimeout(ghSave, 1500); }
+  } catch(e) { /* silent */ }
+  finally {
+    _ghLoading = false; // unblock proxy auto-saves
+    setTimeout(ghSave, 1000); // push merged state to GitHub once
+  }
 }
 
 function _ghSetStatus(msg, color) {

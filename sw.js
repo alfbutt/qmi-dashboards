@@ -1,4 +1,4 @@
-const CACHE = 'qj-cmd-v9';
+const CACHE = 'qj-cmd-v10';
 // Auto-detect base path — '' on a custom domain root, '/qmi-dashboards' on github.io
 const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
 const CORE = [
