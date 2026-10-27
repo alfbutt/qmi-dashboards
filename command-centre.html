@@ -11902,13 +11902,17 @@ async function ghLoad() {
   _ghLoading = true;
   try {
     const tok = _ghToken();
-    const url = `https://raw.githubusercontent.com/${GH_REPO}/main/${GH_BACKUP_PATH}?t=${Date.now()}`;
-    const res = await fetch(url, { headers: tok ? { Authorization: `token ${tok}` } : {} }).catch(() => null);
+    // Use the Contents API (not raw CDN) so we always get the latest committed version.
+    const apiUrl = `https://api.github.com/repos/${GH_REPO}/contents/${GH_BACKUP_PATH}`;
+    const res = await fetch(apiUrl, {
+      headers: { Authorization: `token ${tok}`, 'Cache-Control': 'no-cache' }
+    }).catch(() => null);
     if (!res?.ok) { _ghLoading = false; setTimeout(ghSave, 1500); return; }
-    const backup = await res.json();
+    const meta = await res.json();
+    _ghSha = meta.sha || null; // keep SHA current so next ghSave doesn't 409
+    const backup = JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\s/g,'')))));
     // Bypass the proxy so restoring keys never triggers ghScheduleSave.
     // Always write backup values — backup is authoritative on load.
-    // This fixes stale/empty keys left by any earlier race-condition save.
     const _origSet = Storage.prototype.setItem.bind(localStorage);
     let restored = 0;
     for (const [k, v] of Object.entries(backup)) {
@@ -11919,7 +11923,7 @@ async function ghLoad() {
   } catch(e) { /* silent */ }
   finally {
     _ghLoading = false; // unblock proxy auto-saves
-    setTimeout(ghSave, 1000); // push merged state to GitHub once
+    setTimeout(ghSave, 3000); // push merged state to GitHub once (delayed to let page settle)
   }
 }
 
@@ -12006,16 +12010,15 @@ function _ghSetupToken() {
 
 async function _ghForceRestore() {
   if (!confirm('Clear all local data and re-pull everything from the cloud backup?\n\nThis fixes wrong/stale data.')) return;
-  // Wipe all qj_* keys except the GitHub token
+  // Wipe ALL qj_* keys (except token) then reload — ghLoad() on the fresh page will restore
   const tok = localStorage.getItem('qj_gh_token');
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k?.startsWith('qj_')) keys.push(k); }
   keys.forEach(k => { if (k !== 'qj_gh_token') localStorage.removeItem(k); });
   if (tok) localStorage.setItem('qj_gh_token', tok);
-  _ghSetStatus('☁ restoring…', '#C9A84C');
-  await ghLoad();
-  _ghSetStatus('☁ restored — reloading…', '#22c55e');
-  setTimeout(() => location.reload(), 800);
+  _ghSetStatus('☁ wiped — reloading from cloud…', '#C9A84C');
+  // Reload immediately — on page load ghLoad() fetches the backup via Contents API and restores it
+  setTimeout(() => location.reload(), 400);
 }
 
 window.ghSave           = ghSave;
