@@ -1,9 +1,11 @@
-const CACHE = 'qj-cmd-v8';
+const CACHE = 'qj-cmd-v9';
+// Auto-detect base path — '' on a custom domain root, '/qmi-dashboards' on github.io
+const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
 const CORE = [
-  '/qmi-dashboards/command-centre.html',
-  '/qmi-dashboards/manifest.json',
-  '/qmi-dashboards/icon-192.png',
-  '/qmi-dashboards/icon-512.png'
+  `${BASE}/command-centre.html`,
+  `${BASE}/manifest.json`,
+  `${BASE}/icon-192.png`,
+  `${BASE}/icon-512.png`
 ];
 
 self.addEventListener('install', e => {
