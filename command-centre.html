@@ -3,29 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<script>
-// If Chrome cached a redirect and landed us on the wrong origin, fix it immediately
-(function(){
-  var correctOrigin = 'alfbutt.github.io';
-  var correctPath   = '/qmi-dashboards/command-centre.html';
-  if (location.hostname !== correctOrigin && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    // Carry localStorage data across if we're on the wrong origin
-    try {
-      var keys = Object.keys(localStorage).filter(function(k){ return k.startsWith('qj_'); });
-      if (keys.length > 0) {
-        var d = {};
-        keys.forEach(function(k){ d[k] = localStorage.getItem(k); });
-        var enc = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
-        location.replace('https://' + correctOrigin + correctPath + '#qj_import=' + enc);
-      } else {
-        location.replace('https://' + correctOrigin + correctPath);
-      }
-    } catch(e) {
-      location.replace('https://' + correctOrigin + correctPath);
-    }
-  }
-})();
-</script>
 <title>Quality Jobs · Command Centre</title>
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
