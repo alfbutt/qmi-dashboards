@@ -3105,7 +3105,8 @@ const AJ_CLIENTS_SHEET_ID = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
 const AJ_STORAGE_API_KEY  = 'aj_anthropic_key';
 
 const AJ_JULES_FALLBACK  = ["PrimeBuild Solutions","Quality Custom Homes","Quality Custom Homes PTY LTD","Spa Space","Streamline Building Projects","Imperial Renovations","Imperial Bathrooms","Favourite Home","Kogalo Renovations"];
-const AJ_AYESSA_FALLBACK = ["Buildavate","Allspec Homes","Silk Touch Joinery","Barco Build","Renovate Right Homes","Rapid Bathroom Specialist"];
+const AJ_AYESSA_FALLBACK = ["Buildavate","Allspec Homes","Silk Touch Joinery","Barco Build","Renovate Right Homes","Rapid Bathroom Specialist","Auspro Windows"];
+const AJ_AGENT_OVERRIDES = { "Auspro Windows": "Ayessa" };
 
 let ajSyncedData = null;
 let _ajMonthOffset = 0;
@@ -3114,13 +3115,14 @@ async function ajPullSync() {
   try {
     const res  = await fetch(`${PROXY_URL}?id=${AJ_CLIENTS_SHEET_ID}&sheet=Clients`);
     const rows = await res.json();
-    const jules = [], ayessa = [];
+    const jules = [], ayessa = [], rachel = [];
     const allClients = [];
-    const NON_CC = ['urbanriseproperty', 'l2homes', 'generationalbathrooms'];
+    const NON_CC = ['urbanriseproperty', 'l2homes', 'generationalbathrooms', 'moonlightdoorsandwindows', 'moonlightdoors&windows'];
     if (Array.isArray(rows) && rows.length > 1) {
       for (let i = 1; i < rows.length; i++) {
         const name         = String(rows[i][0]  || '').trim();
-        const agent        = String(rows[i][1]  || '').trim();
+        const rawAgent     = String(rows[i][1]  || '').trim();
+        const agent        = AJ_AGENT_OVERRIDES[name] || rawAgent;
         const statsUrl     = String(rows[i][3]  || '').trim();
         const liveDate     = String(rows[i][4]  || '').trim();
         const ovField      = String(rows[i][7]  || '').trim();
@@ -3136,15 +3138,17 @@ async function ajPullSync() {
         if (status === 'Churned') continue;
         if (agent === 'Jules')  jules.push(name);
         if (agent === 'Ayessa') ayessa.push(name);
+        if (agent === 'Rachel') rachel.push(name);
       }
     }
     ajSyncedData = {
       jules_accounts:  jules.length  ? jules  : AJ_JULES_FALLBACK,
       ayessa_accounts: ayessa.length ? ayessa : AJ_AYESSA_FALLBACK,
+      rachel_accounts: rachel,
       all_clients:     allClients,
     };
   } catch(e) {
-    ajSyncedData = { jules_accounts: AJ_JULES_FALLBACK, ayessa_accounts: AJ_AYESSA_FALLBACK, all_clients: [] };
+    ajSyncedData = { jules_accounts: AJ_JULES_FALLBACK, ayessa_accounts: AJ_AYESSA_FALLBACK, rachel_accounts: [], all_clients: [] };
   }
 }
 
