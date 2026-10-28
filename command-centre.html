@@ -4426,6 +4426,7 @@ window._doReassign = function(clientName, agent) {
   if (agent === 'Ayessa')  AYESSA_ACCOUNTS.push(clientName);
   if (agent === 'Rachel')  RACHEL_ACCOUNTS.push(clientName);
   if (window._clientsPageData) _renderClientsGrid(window._clientsPageData, document.getElementById('clients-search-input')?.value || '');
+  if (document.getElementById('page-ceo-overview')?.style.display !== 'none') renderCEOOverview();
   document.querySelectorAll('.agent-reassign-menu').forEach(m => m.remove());
 };
 
@@ -10723,6 +10724,13 @@ async function renderCEOOverview() {
       <!-- badges + action buttons row -->
       <div style="display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center">
         ${valueBadge(c)}
+        ${(() => {
+          const _ov = _getLocalAgentOverrides()[c.name];
+          const _ag = _ov || c.agent || 'Jules';
+          const _lbl = _ag === 'Jules' ? 'Rose' : _ag;
+          const _cls = _ag === 'Jules' ? 'jules' : _ag === 'Rachel' ? 'rachel' : 'ayessa';
+          return `<span class="client-badge ${_cls}" onclick="event.stopPropagation();window._showAgentMenu(event,'${c.name.replace(/'/g,"\\'")}','${_ag}')" title="Click to reassign agent" style="cursor:pointer;font-size:0.6rem">${_lbl} ▾</span>`;
+        })()}
         ${c.hasCC && !isNonCC(c.name)
           ? `<span class="ceo-badge cc">CC</span><button onclick="moveToAds('${c.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:1px solid rgba(251,146,60,0.4);color:#f97316;cursor:pointer;font-size:0.58rem;padding:1px 6px;border-radius:5px;line-height:1.5;font-family:'DM Mono',monospace;white-space:nowrap" title="Move to Ads Only">→ Ads</button>`
           : `<span class="ceo-badge no-cc">Ads</span><button onclick="removeFromAds('${c.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:1px solid rgba(99,102,241,0.4);color:#6366f1;cursor:pointer;font-size:0.58rem;padding:1px 6px;border-radius:5px;line-height:1.5;font-family:'DM Mono',monospace;white-space:nowrap" title="Move back to CC">↩ CC</button>`}
