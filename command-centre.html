@@ -10867,10 +10867,10 @@ async function renderCEOOverview() {
           <div>
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid var(--muted)">
               <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Ads Only</span>
-              <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">${julesAds.length + ayessaAds.length + rachelAds.length} clients</span>
+              <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">${nonCCClients2.length} clients</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:0.5rem">
-              ${[...julesAds, ...ayessaAds, ...rachelAds].map(makeCard).join('') || '<div style="color:var(--muted);font-size:0.75rem;font-family:\'DM Mono\',monospace;padding:0.5rem 0">None</div>'}
+              ${nonCCClients2.map(makeCard).join('') || '<div style="color:var(--muted);font-size:0.75rem;font-family:\'DM Mono\',monospace;padding:0.5rem 0">None</div>'}
             </div>
           </div>
 
