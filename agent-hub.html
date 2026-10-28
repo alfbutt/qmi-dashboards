@@ -2546,13 +2546,15 @@ function _buildGrid(el, clients, filter='') {
         <button class="clients-filter active-filter" onclick="_renderClientsGrid(window._clientsData,'')">All</button>
         <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Jules')">Rose</button>
         <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Ayessa')">Ayessa</button>
+        <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Rachel')">Rachel</button>
         <button class="clients-filter" onclick="window._clientsData=null;renderClientsPage()">↺</button>
       </div>
     </div>
     ${(()=>{
-      const roseC  = filtered.filter(c=>(c.agent||'').toLowerCase()==='jules');
-      const ayessC = filtered.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
-      const adsC   = filtered.filter(c=>{const ag=(c.agent||'').toLowerCase();return ag!=='jules'&&ag!=='ayessa';});
+      const roseC   = filtered.filter(c=>(c.agent||'').toLowerCase()==='jules');
+      const ayessC  = filtered.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
+      const rachelC = filtered.filter(c=>(c.agent||'').toLowerCase()==='rachel');
+      const adsC    = filtered.filter(c=>{const ag=(c.agent||'').toLowerCase();return ag!=='jules'&&ag!=='ayessa'&&ag!=='rachel';});
       function makeCard(c) {
         const i = filtered.indexOf(c);
         const ag  = (c.agent||'').toLowerCase();
@@ -2680,9 +2682,10 @@ function _buildGrid(el, clients, filter='') {
           </div>
         </div>`;
       }
-      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;align-items:start">
+      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1.25rem;align-items:start">
         ${makeCol('Rose','var(--jules)',roseC)}
         ${makeCol('Ayessa','var(--ayessa)',ayessC)}
+        ${makeCol('Rachel','var(--rachel)',rachelC)}
         ${makeCol('Ads Only','var(--muted)',adsC)}
       </div>`;
     })()}`;
