@@ -1251,7 +1251,7 @@ function renderOverview() {
       <div style="text-align:center;color:var(--green)">Cost/Booking</div>
       <div style="text-align:center">KPI</div>
     </div>
-    <div class="section-divider"><span style="color:var(--jules)">● Jules</span></div>
+    <div class="section-divider"><span style="color:var(--jules)">● Rose</span></div>
     <div class="overview-grid">${buildRows(JULES_ACCOUNTS, 'Jules')}</div>
     <div class="section-divider"><span style="color:var(--ayessa)">● Ayessa</span></div>
     <div class="overview-grid">${buildRows(AYESSA_ACCOUNTS, 'Ayessa')}</div>
@@ -1567,7 +1567,7 @@ function renderCalls(data) {
 
 function _renderClientCallBars(agent, clients) {
   const color = agent === 'jules' ? 'var(--jules)' : 'var(--ayessa)';
-  const label = agent === 'jules' ? 'Jules · call volume by client' : 'Ayessa · call volume by client';
+  const label = agent === 'jules' ? 'Rose · call volume by client' : 'Ayessa · call volume by client';
   const rows  = Object.entries(clients)
     .map(([name, vals]) => ({ name, total: Object.values(vals).reduce((a,b)=>a+b,0) }))
     .sort((a,b) => b.total - a.total);
@@ -1594,7 +1594,7 @@ function _drawChart(data) {
   charts.main = new Chart(ctx, {
     type: currentView === 'monthly' ? 'bar' : 'line',
     data: { labels, datasets: [
-      { label:'Jules',  data:julesData,  borderColor:'#c9960c', backgroundColor:'rgba(181,135,13,0.12)', borderWidth:2, pointRadius:currentView==='daily'?0:4, pointHoverRadius:6, fill:true, tension:0.4 },
+      { label:'Rose',   data:julesData,  borderColor:'#c9960c', backgroundColor:'rgba(181,135,13,0.12)', borderWidth:2, pointRadius:currentView==='daily'?0:4, pointHoverRadius:6, fill:true, tension:0.4 },
       { label:'Ayessa', data:ayessaData, borderColor:'#e6b84a', backgroundColor:'rgba(181,135,13,0.12)', borderWidth:2, pointRadius:currentView==='daily'?0:4, pointHoverRadius:6, fill:true, tension:0.4 },
     ]},
     options: {
@@ -2526,13 +2526,17 @@ function _buildGrid(el, clients, filter='') {
         <input type="text" placeholder="Search by name, agent, city…"
           oninput="_renderClientsGrid(window._clientsData, this.value)" value="${filter}" />
         <button class="clients-filter active-filter" onclick="_renderClientsGrid(window._clientsData,'')">All</button>
-        <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Jules')">Jules</button>
+        <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Jules')">Rose</button>
         <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Ayessa')">Ayessa</button>
         <button class="clients-filter" onclick="window._clientsData=null;renderClientsPage()">↺</button>
       </div>
     </div>
-    <div class="clients-grid">
-      ${filtered.map((c,i) => {
+    ${(()=>{
+      const roseC  = filtered.filter(c=>(c.agent||'').toLowerCase()==='jules');
+      const ayessC = filtered.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
+      const adsC   = filtered.filter(c=>{const ag=(c.agent||'').toLowerCase();return ag!=='jules'&&ag!=='ayessa';});
+      function makeCard(c) {
+        const i = filtered.indexOf(c);
         const ag  = (c.agent||'').toLowerCase();
         const agCls = ag==='jules'?'jules':ag==='ayessa'?'ayessa':'';
         const cardId = `cc-${i}`;
@@ -2549,7 +2553,7 @@ function _buildGrid(el, clients, filter='') {
               <div class="client-card-business">${bizName}</div>
               ${owner ? `<div class="client-card-contact">Owner: ${owner}</div>` : ''}
               <div class="client-card-meta">
-                ${c.agent ? `<span class="client-badge ${agCls}">${c.agent}</span>` : ''}
+                ${c.agent ? `<span class="client-badge ${agCls}">${(c.agent.toLowerCase()==='jules'?'Rose':c.agent)}</span>` : ''}
                 <span class="client-badge active-badge">Active</span>
                 ${c.liveDate ? `<span class="client-badge" style="background:rgba(0,0,0,0.04);color:var(--muted);border:1px solid var(--border)">Live ${c.liveDate}</span>` : ''}
                 ${c.paymentType ? `<span class="client-badge" style="background:rgba(0,0,0,0.03);color:var(--muted);border:1px solid var(--border)">${c.paymentType}</span>` : ''}
@@ -2646,8 +2650,24 @@ function _buildGrid(el, clients, filter='') {
           </div>
 
         </div>`;
-      }).join('')}
-    </div>`;
+      }
+      function makeCol(title, colorVar, cards) {
+        return `<div>
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid ${colorVar}">
+            <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${colorVar}">${title}</span>
+            <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">${cards.length} client${cards.length!==1?'s':''}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.75rem">
+            ${cards.length ? cards.map(makeCard).join('') : '<div style="color:var(--muted);font-size:0.75rem;font-family:\'DM Mono\',monospace;padding:0.5rem 0">None</div>'}
+          </div>
+        </div>`;
+      }
+      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;align-items:start">
+        ${makeCol('Rose','var(--jules)',roseC)}
+        ${makeCol('Ayessa','var(--ayessa)',ayessC)}
+        ${makeCol('Ads Only','var(--muted)',adsC)}
+      </div>`;
+    })()}`;
 }
 
 function _toggleClientCard(id) {
