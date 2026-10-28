@@ -1598,7 +1598,7 @@
             <div class="suggest-chip" onclick="useChip(this)">Which client has the worst cost per booking?</div>
             <div class="suggest-chip" onclick="useChip(this)">Who's at risk of churning?</div>
             <div class="suggest-chip" onclick="useChip(this)">Which clients are below KPI right now?</div>
-            <div class="suggest-chip" onclick="useChip(this)">Who is Jules performing best for?</div>
+            <div class="suggest-chip" onclick="useChip(this)">Who is Rose performing best for?</div>
             <div class="suggest-chip" onclick="useChip(this)">Draft a performance update for all clients</div>
           </div>
         </div>
@@ -2564,7 +2564,7 @@ function renderCalls(data) {
 
     <div class="today-banner">
       <div class="agent-card jules">
-        <div class="agent-name">Jules ${todayLeader==='jules'?'<span class="leader-tag jules">leading</span>':''}</div>
+        <div class="agent-name">Rose ${todayLeader==='jules'?'<span class="leader-tag jules">leading</span>':''}</div>
         <div class="agent-count">${fmt(data.today.jules.total)}</div>
         <div class="agent-sub">outbound today${data.todayIn&&data.todayIn.jules.total?` · <span style="opacity:.6">${fmt(data.todayIn.jules.total)} inbound</span>`:''}</div>
         ${data.today.jules.clients.length?`<div class="agent-clients">${data.today.jules.clients.join('<br>')}</div>`:'<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
@@ -2587,7 +2587,7 @@ function renderCalls(data) {
         </div>
       </div>
     </div>
-    ${todayLeader?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Jules'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>`:''}
+    ${todayLeader?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Rose'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>`:''}
 
     <div style="text-align:center;margin-bottom:1.75rem">
       <a href="https://docs.google.com/spreadsheets/d/${CALLS_SHEET_ID}/edit" target="_blank"
@@ -2600,16 +2600,16 @@ function renderCalls(data) {
     <div style="font-size:0.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;padding-left:2px;">📞 Outbound Calls</div>
     <div class="metrics-strip">
       <div class="metric"><div class="metric-label">Total Outbound (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across both agents</div></div>
-      <div class="metric"><div class="metric-label">Outbound This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Jules ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
-      <div class="metric"><div class="metric-label">Jules Outbound</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${grandTotal?Math.round(totalJules/grandTotal*100):0}% of outbound</div></div>
+      <div class="metric"><div class="metric-label">Outbound This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Rose ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Rose Outbound</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${grandTotal?Math.round(totalJules/grandTotal*100):0}% of outbound</div></div>
       <div class="metric"><div class="metric-label">Ayessa Outbound</div><div class="metric-value" style="color:var(--ayessa)">${fmt(totalAyessa)}</div><div class="metric-sub">${grandTotal?Math.round(totalAyessa/grandTotal*100):0}% of outbound</div></div>
     </div>
 
     <div style="font-size:0.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;margin-top:1.5rem;padding-left:2px;">📥 Inbound Calls</div>
     <div class="metrics-strip">
       <div class="metric"><div class="metric-label">Total Inbound (All Time)</div><div class="metric-value">${fmt(inGrandTotal)}</div><div class="metric-sub">across both agents</div></div>
-      <div class="metric"><div class="metric-label">Inbound This Week</div><div class="metric-value">${fmt(inLastWeekJ+inLastWeekA)}</div><div class="metric-sub"><span>Jules ${fmt(inLastWeekJ)}</span> · Ayessa ${fmt(inLastWeekA)}</div></div>
-      <div class="metric"><div class="metric-label">Jules Inbound</div><div class="metric-value" style="color:var(--jules)">${fmt(inTotalJules)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalJules/inGrandTotal*100):0}% of inbound</div></div>
+      <div class="metric"><div class="metric-label">Inbound This Week</div><div class="metric-value">${fmt(inLastWeekJ+inLastWeekA)}</div><div class="metric-sub"><span>Rose ${fmt(inLastWeekJ)}</span> · Ayessa ${fmt(inLastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Rose Inbound</div><div class="metric-value" style="color:var(--jules)">${fmt(inTotalJules)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalJules/inGrandTotal*100):0}% of inbound</div></div>
       <div class="metric"><div class="metric-label">Ayessa Inbound</div><div class="metric-value" style="color:var(--ayessa)">${fmt(inTotalAyessa)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalAyessa/inGrandTotal*100):0}% of inbound</div></div>
     </div>
 
@@ -2623,7 +2623,7 @@ function renderCalls(data) {
         </div>
       </div>
       <div class="chart-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--jules)"></div>Jules</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--jules)"></div>Rose</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--ayessa)"></div>Ayessa</div>
       </div>
       <div style="position:relative;width:100%;height:280px;">
@@ -2636,7 +2636,7 @@ function renderCalls(data) {
       <div style="overflow-x:auto;">
         <table><thead><tr><th>week starting</th>${data.weekly.weeks.map(w=>`<th>${w.slice(0,5)}</th>`).join('')}</tr></thead>
         <tbody>
-          <tr><td style="color:var(--jules)">Jules</td>${data.weekly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
+          <tr><td style="color:var(--jules)">Rose</td>${data.weekly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
           <tr><td style="color:var(--ayessa)">Ayessa</td>${data.weekly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
           <tr class="row-total"><td>Total</td>${data.weekly.jules.map((j,i)=>`<td class="val-total">${fmt(j+data.weekly.ayessa[i])}</td>`).join('')}</tr>
         </tbody></table>
@@ -2647,7 +2647,7 @@ function renderCalls(data) {
       <div class="table-header"><div class="section-title">monthly summary</div></div>
       <table><thead><tr><th>month</th>${data.monthly.months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
       <tbody>
-        <tr><td style="color:var(--jules)">Jules</td>${data.monthly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
+        <tr><td style="color:var(--jules)">Rose</td>${data.monthly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
         <tr><td style="color:var(--ayessa)">Ayessa</td>${data.monthly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
         <tr class="row-total"><td>Total</td>${data.monthly.months.map((_,i)=>`<td class="val-total">${fmt(data.monthly.jules[i]+data.monthly.ayessa[i])}</td>`).join('')}</tr>
       </tbody></table>
@@ -2664,7 +2664,7 @@ function renderCalls(data) {
 
 function renderClientCalls(agent, clients) {
   const color = agent==='jules'?'var(--jules)':'var(--ayessa)';
-  const label = agent==='jules'?'Jules · call volume by client':'Ayessa · call volume by client';
+  const label = agent==='jules'?'Rose · call volume by client':'Ayessa · call volume by client';
   const rows = Object.entries(clients).map(([name,vals])=>{
     const total = Object.values(vals).reduce((a,b)=>a+b,0);
     return {name,total};
@@ -2693,7 +2693,7 @@ function drawChart(data) {
   charts.main=new Chart(ctx,{
     type:currentView==='monthly'?'bar':'line',
     data:{labels,datasets:[
-      {label:'Jules',data:julesData,borderColor:'#b5870d',backgroundColor:'rgba(181,135,13,0.12)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4},
+      {label:'Rose',data:julesData,borderColor:'#b5870d',backgroundColor:'rgba(181,135,13,0.12)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4},
       {label:'Ayessa',data:ayessaData,borderColor:'#9a7014',backgroundColor:'rgba(154,112,20,0.12)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4}
     ]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
@@ -2740,28 +2740,28 @@ function renderAppts(data) {
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">Last 7 Days · Total</div>
         <div class="appt-hero-value">${fmt(grandLast7)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last7)} · Ayessa ${fmt(data.aTotals.last7)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last7)} · Ayessa ${fmt(data.aTotals.last7)}</div>
       </div>
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">Last 14 Days · Total</div>
         <div class="appt-hero-value">${fmt(grandLast14)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last14)} · Ayessa ${fmt(data.aTotals.last14)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last14)} · Ayessa ${fmt(data.aTotals.last14)}</div>
       </div>
       <div class="appt-hero-card ${kpiClass(grandLast30, 150)}">
         <div class="appt-hero-label">Last 30 Days · Total</div>
         <div class="appt-hero-value" style="color:var(--${kpiClass(grandLast30,150)==='green'?'green':kpiClass(grandLast30,150)==='amber'?'amber':'red'})">${fmt(grandLast30)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last30)} · Ayessa ${fmt(data.aTotals.last30)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last30)} · Ayessa ${fmt(data.aTotals.last30)}</div>
       </div>
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">All Time · Total</div>
         <div class="appt-hero-value">${fmt(grandAll)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.allTime)} · Ayessa ${fmt(data.aTotals.allTime)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.allTime)} · Ayessa ${fmt(data.aTotals.allTime)}</div>
       </div>
     </div>
 
     <div class="kpi-section">
       <div class="kpi-section-header">
-        <div class="section-title">Jules · Client KPI Dashboard</div>
+        <div class="section-title">Rose · Client KPI Dashboard</div>
         <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted)">30-day KPI window</div>
       </div>
       <table class="kpi-table">
@@ -2769,7 +2769,7 @@ function renderAppts(data) {
         <tbody>
           ${clientRows(data.julesClients)}
           <tr class="total-row">
-            <td>Jules Total</td>
+            <td>Rose Total</td>
             <td>${fmt(data.jTotals.last7)}</td>
             <td>${fmt(data.jTotals.last14)}</td>
             <td>${fmt(data.jTotals.last30)}</td>
@@ -2930,7 +2930,7 @@ function renderOverview(callsData, apptsData) {
     </div>
 
     <div class="section-divider" style="padding:0.5rem 0;margin:0.75rem 0;border-bottom:1px solid var(--border);">
-      <span style="color:var(--jules)">● Jules</span>
+      <span style="color:var(--jules)">● Rose</span>
     </div>
     <div class="overview-grid">${buildRows(JULES_ACCOUNTS, 'Jules')}</div>
 
@@ -3558,7 +3558,7 @@ function _renderClientsGrid(rows, filter='') {
       <div class="clients-search">
         <input type="text" id="clients-search-input" placeholder="Search clients..." oninput="_renderClientsGrid(window._clientsPageData, this.value)" value="${filter}" />
         <button class="clients-filter active-filter" onclick="window._clientsPageData&&_renderClientsGrid(window._clientsPageData,'')">All</button>
-        <button class="clients-filter" onclick="window._clientsPageData&&_renderClientsGrid(window._clientsPageData,'Jules')" style="${filter==='Jules'?'color:var(--jules);border-color:var(--jules)':''}">Jules</button>
+        <button class="clients-filter" onclick="window._clientsPageData&&_renderClientsGrid(window._clientsPageData,'Jules')" style="${filter==='Jules'?'color:var(--jules);border-color:var(--jules)':''}">Rose</button>
         <button class="clients-filter" onclick="window._clientsPageData&&_renderClientsGrid(window._clientsPageData,'Ayessa')" style="${filter==='Ayessa'?'color:var(--ayessa);border-color:var(--ayessa)':''}">Ayessa</button>
         <button class="clients-filter" style="color:var(--muted)" onclick="window._clientsPageData=null;renderClientsPage()">↺ Refresh</button>
       </div>
@@ -3567,6 +3567,7 @@ function _renderClientsGrid(rows, filter='') {
       ${filtered.map((c,idx)=>{
         const _localOvAgent = _getLocalAgentOverrides()[c.name];
         const _displayAgent = _localOvAgent || c.agent || 'Jules';
+        const _displayAgentLabel = _displayAgent === 'Jules' ? 'Rose' : _displayAgent;
         const agentClass = _displayAgent.toLowerCase()==='jules'?'jules':'ayessa';
         const driveLink = c.website ? `<span class="client-badge" onclick="event.stopPropagation();window.open('${c.website.startsWith('http')?c.website:'https://'+c.website}','_blank')" style="background:rgba(52,211,153,0.08);color:var(--green);border:1px solid rgba(52,211,153,0.2);cursor:pointer">📁 Drive</span>` : '';
         const statsLink = `<span class="client-badge" onclick="event.stopPropagation();window.open('https://drive.google.com/drive/folders/1hKiXSFlLhYcS2p5OPjSsVq-55y-fPs_q?usp=drive_link','_blank')" style="background:rgba(96,165,250,0.08);color:var(--blue);border:1px solid rgba(96,165,250,0.2);cursor:pointer">📊 Stats</span>`;
@@ -3593,7 +3594,7 @@ function _renderClientsGrid(rows, filter='') {
               <div class="client-card-name">${c.name}</div>
               ${c.businessName && c.businessName !== c.name ? `<div style="font-size:0.72rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">${c.businessName}</div>` : ''}
               <div class="client-card-meta">
-                <span class="client-badge ${agentClass}" onclick="event.stopPropagation();window._showAgentMenu(event,'${c.name.replace(/'/g,"\\'")}','${_displayAgent}')" title="Click to reassign" style="cursor:pointer">${_displayAgent} ▾</span>
+                <span class="client-badge ${agentClass}" onclick="event.stopPropagation();window._showAgentMenu(event,'${c.name.replace(/'/g,"\\'")}','${_displayAgent}')" title="Click to reassign" style="cursor:pointer">${_displayAgentLabel} ▾</span>
                 ${statusBadge}
                 ${freeBadge}
                 ${owedBadge}
@@ -4408,9 +4409,9 @@ window._showAgentMenu = function(evt, clientName, currentAgent) {
   const menu = document.createElement('div');
   menu.className = 'agent-reassign-menu';
   menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:6px;min-width:140px';
-  menu.innerHTML = ['Jools','Ayessa'].map(a => {
-    const stored = a === 'Jools' ? 'Jules' : a;
-    const active = currentAgent === stored || (currentAgent === 'Jules' && a === 'Jools');
+  menu.innerHTML = ['Rose','Ayessa'].map(a => {
+    const stored = a === 'Rose' ? 'Jules' : a;
+    const active = currentAgent === stored || (currentAgent === 'Jules' && a === 'Rose');
     return `<button onclick="window._doReassign('${clientName.replace(/'/g,"\\'")}','${stored}')" style="display:block;width:100%;text-align:left;padding:7px 12px;border:none;border-radius:7px;background:${active?'var(--accent)':'transparent'};color:${active?'#fff':'var(--text)'};font-size:0.82rem;font-weight:${active?'700':'400'};cursor:pointer;font-family:inherit">${a}${active?' ✓':''}</button>`;
   }).join('');
   document.body.appendChild(menu);
@@ -4442,9 +4443,10 @@ function openClientModal(client) {
 
   document.getElementById('modalClientName').textContent = client.name;
   const agentClass = (client.agent||'').toLowerCase()==='jules' ? 'jules' : 'ayessa';
+  const agentDisplayLabel = (client.agent||'') === 'Jules' ? 'Rose' : (client.agent||'—');
   document.getElementById('modalClientMeta').innerHTML = `
     <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:5px;">
-      <span class="client-badge ${agentClass}">${client.agent||'—'}</span>
+      <span class="client-badge ${agentClass}">${agentDisplayLabel}</span>
       ${client.serviceArea ? `<span class="client-badge" style="background:rgba(0,0,0,0.04);color:var(--muted);border:1px solid var(--border)">${client.serviceArea}</span>` : ''}
       ${client.constructionCategory ? `<span class="client-badge" style="background:rgba(0,0,0,0.04);color:var(--muted);border:1px solid var(--border)">${client.constructionCategory}</span>` : ''}
     </div>`;
@@ -5056,7 +5058,7 @@ function clientCallsInPeriodGlobal(name, days) {
 
 function buildContext() {
   const today = new Date().toLocaleDateString('en-AU',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  let ctx = `You are the Quality Jobs Client Intelligence AI. Today is ${today}. Quality Jobs is a lead generation and appointment booking agency with two calling agents: Jules and Ayessa. Help the business owner understand client performance, spot risks, and communicate effectively.\n\nBe direct, specific, and data-driven. Always reference actual numbers. When drafting messages, be professional but warm.\n\n=== LIVE CLIENT DATA ===\n`;
+  let ctx = `You are the Quality Jobs Client Intelligence AI. Today is ${today}. Quality Jobs is a lead generation and appointment booking agency with two calling agents: Rose and Ayessa. Help the business owner understand client performance, spot risks, and communicate effectively.\n\nBe direct, specific, and data-driven. Always reference actual numbers. When drafting messages, be professional but warm.\n\n=== LIVE CLIENT DATA ===\n`;
 
   const all = [...JULES_ACCOUNTS.map(n=>({name:n,agent:'Jules'})), ...AYESSA_ACCOUNTS.map(n=>({name:n,agent:'Ayessa'}))];
 
@@ -5475,7 +5477,7 @@ async function generateTasks() {
     : 'No AJ messages yet.';
 
   const systemPrompt = `You are the Quality Jobs task generation AI. Quality Jobs is a lead generation agency run by its owner, who works with:
-- Two calling agents: Jules and Ayessa
+- Two calling agents: Rose and Ayessa
 - A media buyer called AJ who manages ad spend and leads
 
 Analyze the messages and performance data below. Return ONLY a valid JSON array of task objects. No explanation, no markdown, just the raw JSON array.
@@ -5788,7 +5790,7 @@ COMMUNICATION PRINCIPLES:
 - At least 1 WhatsApp message per week (quick update or small win)
 
 TYPES OF COMMUNICATION:
-1. Basic questions — respond directly or route to the right person (AJ for ads, Jules/Ayessa for bookings)
+1. Basic questions — respond directly or route to the right person (AJ for ads, Rose/Ayessa for bookings)
 2. Complex questions — send a Loom video walkthrough
 3. Concerns (no leads, want to cancel, want refund) — call immediately; if unreachable, send Loom asking for callback time
 
@@ -6086,7 +6088,7 @@ You have access to each client's full knowledge base: their sales call notes, sa
 
 Quality Jobs context:
 - Owner is Alfie, runs the agency
-- Two calling agents: Jules and Ayessa
+- Two calling agents: Rose and Ayessa
 - Media buyer: AJ (manages ads, budgets, leads)
 - Clients are builders, renovators, trade businesses paying for lead generation
 - Most client comms happen via WhatsApp${sopSection}
@@ -6098,7 +6100,7 @@ function _buildImageSystemPrompt() {
   const sop = QMI_COMMS_SOP;
   return `You are the QMI Client Communication Brain for Quality Jobs — a lead generation and appointment booking agency run by Alfie Butler.
 
-Quality Jobs books appointments for trade businesses (builders, renovators, landscapers) via paid ads and a call centre. Two calling agents: Jules and Ayessa. Media buyer: AJ.
+Quality Jobs books appointments for trade businesses (builders, renovators, landscapers) via paid ads and a call centre. Two calling agents: Rose and Ayessa. Media buyer: AJ.
 
 All client communication happens via WhatsApp. Your job is to read the screenshot of a client message and suggest 3 natural, ready-to-send WhatsApp replies that Alfie could use.${sop ? `\n\n=== COMMUNICATION SOP ===\n${sop}` : ''}`;
 }
@@ -9253,9 +9255,10 @@ function renderAgentColumn(agent, items) {
   const agentItems = items.filter(i => i.agent === agent);
   const pending    = agentItems.filter(i => !done.has(i.ts)).length;
   const color      = agent === 'Jules' ? 'var(--jules)' : 'var(--ayessa)';
+  const displayName = agent === 'Jules' ? 'Rose' : agent;
 
   const cards = agentItems.length === 0
-    ? `<div class="cb-empty">No callbacks assigned to ${agent}.</div>`
+    ? `<div class="cb-empty">No callbacks assigned to ${displayName}.</div>`
     : agentItems.map(item => {
         const isDone = done.has(item.ts);
         return `
@@ -9275,7 +9278,7 @@ function renderAgentColumn(agent, items) {
   return `
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border2);">
-        <div style="font-size:1rem;font-weight:800;color:${color};">${agent}</div>
+        <div style="font-size:1rem;font-weight:800;color:${color};">${displayName}</div>
         ${pending > 0 ? `<span class="cb-badge">${pending} pending</span>` : `<span style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--green);">✓ all done</span>`}
       </div>
       <div class="cb-list">${cards}</div>
@@ -11015,7 +11018,7 @@ async function renderCEOOverview() {
           <div class="ceo-stat-sub">${offCC > 0 ? 'no call centre' : 'none'}</div>
         </div>
         <div class="ceo-stat-card">
-          <div class="ceo-stat-label">Jules / Ayessa</div>
+          <div class="ceo-stat-label">Rose / Ayessa</div>
           <div class="ceo-stat-val" style="font-size:1.4rem">${julesCC.length} / ${ayessaCC.length}</div>
           <div class="ceo-stat-sub">client split</div>
         </div>
@@ -11032,10 +11035,10 @@ async function renderCEOOverview() {
         <div class="ceo-section-title">Active Clients</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;align-items:start">
 
-          <!-- Jules column -->
+          <!-- Rose column -->
           <div>
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid var(--jules)">
-              <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--jules)">Jules</span>
+              <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--jules)">Rose</span>
               <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">${julesCC.length} clients</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:0.5rem">
