@@ -776,7 +776,7 @@
   .last-updated { font-size: 0.65rem; font-family: 'DM Mono', monospace; color: var(--muted); text-align: right; margin-bottom: 1.5rem; opacity: 0.5; }
 
   /* ── TODAY BANNER ── */
-  .today-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+  .today-banner { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
   .agent-card { border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border2); position: relative; overflow: hidden; }
   .agent-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
   .agent-card.jules { background: linear-gradient(135deg, rgba(181,135,13,0.06), var(--surface)); }
@@ -1080,7 +1080,7 @@
 
   @media (max-width: 1000px) {
     .metrics-strip { grid-template-columns: repeat(2,1fr); }
-    .today-banner { grid-template-columns: 1fr; }
+    .today-banner { grid-template-columns: 1fr !important; }
     .client-grid { grid-template-columns: 1fr; }
     .appt-hero { grid-template-columns: repeat(2,1fr); }
     .overview-card { grid-template-columns: 1fr 1fr 1fr; }
@@ -2189,8 +2189,8 @@ async function fetchCallsData() {
     const today = getTodayStr();
     const agentDay={}, agentWeek={}, agentMonth={}, subMonth={}, subDay={};
     const agentDayIn={}, agentWeekIn={}, agentMonthIn={};
-    const todayJules={total:0,clients:[]}, todayAyessa={total:0,clients:[]};
-    const todayJulesIn={total:0}, todayAyessaIn={total:0};
+    const todayJules={total:0,clients:[]}, todayAyessa={total:0,clients:[]}, todayRachel={total:0,clients:[]};
+    const todayJulesIn={total:0}, todayAyessaIn={total:0}, todayRachelIn={total:0};
     const allDates=new Set(), allWeeks=new Set();
 
     for(let i=dataStart;i<rows.length;i++) {
@@ -2237,13 +2237,13 @@ async function fetchCallsData() {
 
       if(dStr===today) {
         if(!isInbound) {
-          const bucket = agent==='Jules'?todayJules:todayAyessa;
+          const bucket = agent==='Jules'?todayJules:agent==='Rachel'?todayRachel:todayAyessa;
           bucket.total++;
           const ex=bucket.clients.findIndex(c=>c.startsWith(subRaw+':'));
           if(ex>=0){const n=parseInt(bucket.clients[ex].split(': ')[1])+1;bucket.clients[ex]=`${subRaw}: ${n}`;}
           else bucket.clients.push(`${subRaw}: 1`);
         } else {
-          const b = agent==='Jules'?todayJulesIn:todayAyessaIn;
+          const b = agent==='Jules'?todayJulesIn:agent==='Rachel'?todayRachelIn:todayAyessaIn;
           b.total++;
         }
       }
@@ -2256,20 +2256,21 @@ async function fetchCallsData() {
     });
     const sortedMonths=["March","April","May","June","July","August","September","October","November","December"];
 
-    const julesClients={}, ayessaClients={};
-    for(const acc of JULES_ACCOUNTS)  { const k=CALLS_SHEET_NAME[acc]||acc; if(subMonth[k]) julesClients[acc]  = subMonth[k]; }
-    for(const acc of AYESSA_ACCOUNTS) { const k=CALLS_SHEET_NAME[acc]||acc; if(subMonth[k]) ayessaClients[acc] = subMonth[k]; }
+    const julesClients={}, ayessaClients={}, rachelClients={};
+    for(const acc of JULES_ACCOUNTS)   { const k=CALLS_SHEET_NAME[acc]||acc; if(subMonth[k]) julesClients[acc]   = subMonth[k]; }
+    for(const acc of AYESSA_ACCOUNTS)  { const k=CALLS_SHEET_NAME[acc]||acc; if(subMonth[k]) ayessaClients[acc]  = subMonth[k]; }
+    for(const acc of RACHEL_ACCOUNTS)  { const k=CALLS_SHEET_NAME[acc]||acc; if(subMonth[k]) rachelClients[acc]  = subMonth[k]; }
 
     return {
-      today:{jules:todayJules,ayessa:todayAyessa},
-      todayIn:{jules:todayJulesIn,ayessa:todayAyessaIn},
-      daily:{dates:sortedDates, jules:sortedDates.map(d=>(agentDay['Jules']||{})[d]||0), ayessa:sortedDates.map(d=>(agentDay['Ayessa']||{})[d]||0)},
-      weekly:{weeks:sortedWeeks, jules:sortedWeeks.map(w=>(agentWeek['Jules']||{})[w]||0), ayessa:sortedWeeks.map(w=>(agentWeek['Ayessa']||{})[w]||0)},
-      monthly:{months:sortedMonths, jules:sortedMonths.map(m=>(agentMonth['Jules']||{})[m]||0), ayessa:sortedMonths.map(m=>(agentMonth['Ayessa']||{})[m]||0)},
-      dailyIn:{dates:sortedDates, jules:sortedDates.map(d=>(agentDayIn['Jules']||{})[d]||0), ayessa:sortedDates.map(d=>(agentDayIn['Ayessa']||{})[d]||0)},
-      weeklyIn:{weeks:sortedWeeks, jules:sortedWeeks.map(w=>(agentWeekIn['Jules']||{})[w]||0), ayessa:sortedWeeks.map(w=>(agentWeekIn['Ayessa']||{})[w]||0)},
-      monthlyIn:{months:sortedMonths, jules:sortedMonths.map(m=>(agentMonthIn['Jules']||{})[m]||0), ayessa:sortedMonths.map(m=>(agentMonthIn['Ayessa']||{})[m]||0)},
-      julesClients, ayessaClients, subMonth, subDay,
+      today:{jules:todayJules,ayessa:todayAyessa,rachel:todayRachel},
+      todayIn:{jules:todayJulesIn,ayessa:todayAyessaIn,rachel:todayRachelIn},
+      daily:{dates:sortedDates, jules:sortedDates.map(d=>(agentDay['Jules']||{})[d]||0), ayessa:sortedDates.map(d=>(agentDay['Ayessa']||{})[d]||0), rachel:sortedDates.map(d=>(agentDay['Rachel']||{})[d]||0)},
+      weekly:{weeks:sortedWeeks, jules:sortedWeeks.map(w=>(agentWeek['Jules']||{})[w]||0), ayessa:sortedWeeks.map(w=>(agentWeek['Ayessa']||{})[w]||0), rachel:sortedWeeks.map(w=>(agentWeek['Rachel']||{})[w]||0)},
+      monthly:{months:sortedMonths, jules:sortedMonths.map(m=>(agentMonth['Jules']||{})[m]||0), ayessa:sortedMonths.map(m=>(agentMonth['Ayessa']||{})[m]||0), rachel:sortedMonths.map(m=>(agentMonth['Rachel']||{})[m]||0)},
+      dailyIn:{dates:sortedDates, jules:sortedDates.map(d=>(agentDayIn['Jules']||{})[d]||0), ayessa:sortedDates.map(d=>(agentDayIn['Ayessa']||{})[d]||0), rachel:sortedDates.map(d=>(agentDayIn['Rachel']||{})[d]||0)},
+      weeklyIn:{weeks:sortedWeeks, jules:sortedWeeks.map(w=>(agentWeekIn['Jules']||{})[w]||0), ayessa:sortedWeeks.map(w=>(agentWeekIn['Ayessa']||{})[w]||0), rachel:sortedWeeks.map(w=>(agentWeekIn['Rachel']||{})[w]||0)},
+      monthlyIn:{months:sortedMonths, jules:sortedMonths.map(m=>(agentMonthIn['Jules']||{})[m]||0), ayessa:sortedMonths.map(m=>(agentMonthIn['Ayessa']||{})[m]||0), rachel:sortedMonths.map(m=>(agentMonthIn['Rachel']||{})[m]||0)},
+      julesClients, ayessaClients, rachelClients, subMonth, subDay,
     };
   } catch(e){ console.warn('Calls fetch failed:',e); return null; }
 }
@@ -2308,7 +2309,7 @@ async function fetchTodayApptCounts() {
     if (dateCol   < 0) dateCol   = 1;
     if (clientCol < 0) clientCol = 5;
 
-    let jules = 0, ayessa = 0;
+    let jules = 0, ayessa = 0, rachel = 0;
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i];
       if (!r) continue;
@@ -2319,8 +2320,9 @@ async function fetchTodayApptCounts() {
       const agent = getAgent(String(r[clientCol] || '').trim());
       if (agent === 'Jules')  jules++;
       else if (agent === 'Ayessa') ayessa++;
+      else if (agent === 'Rachel') rachel++;
     }
-    return { jules, ayessa, source: 'raw' };
+    return { jules, ayessa, rachel, source: 'raw' };
 
   } catch(e) {
     // Raw tab unavailable — fall back to allTime delta against yesterday's close
@@ -2336,59 +2338,60 @@ function resetApptBaseline() {
 }
 
 function computeTodayApptDelta(apptsData) {
-  if (!apptsData) return { jules: 0, ayessa: 0, julesClients: [], ayessaClients: [] };
+  if (!apptsData) return { jules: 0, ayessa: 0, rachel: 0, julesClients: [], ayessaClients: [], rachelClients: [] };
   const today    = getTodayStr();
   const currentJ = apptsData.jTotals.allTime;
   const currentA = apptsData.aTotals.allTime;
+  const currentR = (apptsData.rTotals||{allTime:0}).allTime;
 
   // Build per-client current allTime snapshot
   const currentClients = {};
-  [...(apptsData.julesClients||[]), ...(apptsData.ayessaClients||[])].forEach(c => {
+  [...(apptsData.julesClients||[]), ...(apptsData.ayessaClients||[]), ...(apptsData.rachelClients||[])].forEach(c => {
     currentClients[c.name] = c.allTime;
   });
 
   let stored = null;
   try { stored = JSON.parse(localStorage.getItem('qj_appts_today_baseline') || 'null'); } catch(e) {}
 
-  // Detect stale baseline: same day but base_clients === last_clients means
-  // it was initialised with old code and has never tracked a real change.
-  // In that case treat it as a fresh start.
   const stale = stored && stored.date === today &&
     JSON.stringify(stored.base_clients) === JSON.stringify(stored.last_clients) &&
     (stored.last_jules !== stored.base_jules || stored.last_ayessa !== stored.base_ayessa);
 
-  let baseJ, baseA, baseClients;
+  let baseJ, baseA, baseR, baseClients;
   if (!stored || stored.date !== today || stale) {
-    // New day, first ever, or stale migration — anchor to right now
-    baseJ = currentJ; baseA = currentA; baseClients = {...currentClients};
+    baseJ = currentJ; baseA = currentA; baseR = currentR; baseClients = {...currentClients};
   } else {
-    // Same day, clean data — keep existing baseline
     baseJ       = stored.base_jules   ?? currentJ;
     baseA       = stored.base_ayessa  ?? currentA;
+    baseR       = stored.base_rachel  ?? currentR;
     baseClients = stored.base_clients ?? {...currentClients};
   }
 
   localStorage.setItem('qj_appts_today_baseline', JSON.stringify({
     date: today,
-    base_jules: baseJ,   base_ayessa: baseA,
-    last_jules: currentJ, last_ayessa: currentA,
+    base_jules: baseJ,    base_ayessa: baseA,    base_rachel: baseR,
+    last_jules: currentJ, last_ayessa: currentA, last_rachel: currentR,
     base_clients: baseClients,
     last_clients: currentClients,
   }));
 
-  // Per-client deltas — tells us exactly who the new bookings are for
   const julesClients  = (apptsData.julesClients||[])
     .map(c => ({ name: c.name, delta: c.allTime - (baseClients[c.name] ?? c.allTime) }))
     .filter(c => c.delta > 0);
   const ayessaClients = (apptsData.ayessaClients||[])
     .map(c => ({ name: c.name, delta: c.allTime - (baseClients[c.name] ?? c.allTime) }))
     .filter(c => c.delta > 0);
+  const rachelClients = (apptsData.rachelClients||[])
+    .map(c => ({ name: c.name, delta: c.allTime - (baseClients[c.name] ?? c.allTime) }))
+    .filter(c => c.delta > 0);
 
   return {
     jules:  Math.max(0, currentJ - baseJ),
     ayessa: Math.max(0, currentA - baseA),
+    rachel: Math.max(0, currentR - baseR),
     julesClients,
     ayessaClients,
+    rachelClients,
   };
 }
 
@@ -2398,10 +2401,11 @@ async function refreshTodayApptCounts() {
   window._todayApptsData = result;
   const julesEl  = document.querySelector('.agent-card.jules  .agent-appt-count');
   const ayessaEl = document.querySelector('.agent-card.ayessa .agent-appt-count');
-  if (julesEl)  julesEl.textContent = result.jules;
+  const rachelEl = document.querySelector('.agent-card.rachel .agent-appt-count');
+  if (julesEl)  julesEl.textContent  = result.jules;
   if (ayessaEl) ayessaEl.textContent = result.ayessa;
+  if (rachelEl) rachelEl.textContent = result.rachel || 0;
 
-  // Patch client name lists under each count
   function patchApptClients(cardSel, clients) {
     const stat = document.querySelector(`${cardSel} .agent-appt-stat`);
     if (!stat) return;
@@ -2412,6 +2416,7 @@ async function refreshTodayApptCounts() {
   }
   patchApptClients('.agent-card.jules',  result.julesClients  || []);
   patchApptClients('.agent-card.ayessa', result.ayessaClients || []);
+  patchApptClients('.agent-card.rachel', result.rachelClients || []);
   return result;
 }
 
@@ -2522,13 +2527,16 @@ async function fetchApptsData() {
 
     const julesClients  = clients.filter(c=>c.agent==='Jules');
     const ayessaClients = clients.filter(c=>c.agent==='Ayessa');
+    const rachelClients = clients.filter(c=>c.agent==='Rachel');
 
     const jTotals = { last7:0, last14:0, last30:0, allTime:0 };
     const aTotals = { last7:0, last14:0, last30:0, allTime:0 };
+    const rTotals = { last7:0, last14:0, last30:0, allTime:0 };
     julesClients.forEach(c=>{jTotals.last7+=c.last7;jTotals.last14+=c.last14;jTotals.last30+=c.last30;jTotals.allTime+=c.allTime;});
     ayessaClients.forEach(c=>{aTotals.last7+=c.last7;aTotals.last14+=c.last14;aTotals.last30+=c.last30;aTotals.allTime+=c.allTime;});
+    rachelClients.forEach(c=>{rTotals.last7+=c.last7;rTotals.last14+=c.last14;rTotals.last30+=c.last30;rTotals.allTime+=c.allTime;});
 
-    return { clients, julesClients, ayessaClients, jTotals, aTotals };
+    return { clients, julesClients, ayessaClients, rachelClients, jTotals, aTotals, rTotals };
   } catch(e){ console.warn('Appts fetch failed:',e); return null; }
 }
 
@@ -2538,16 +2546,23 @@ async function fetchApptsData() {
 function renderCalls(data) {
   const totalJules   = data.monthly.jules.reduce((a,b)=>a+b,0);
   const totalAyessa  = data.monthly.ayessa.reduce((a,b)=>a+b,0);
-  const grandTotal   = totalJules + totalAyessa;
+  const totalRachel  = (data.monthly.rachel||[]).reduce((a,b)=>a+b,0);
+  const grandTotal   = totalJules + totalAyessa + totalRachel;
   const inTotalJules  = (data.monthlyIn||{jules:[]}).jules.reduce((a,b)=>a+b,0);
   const inTotalAyessa = (data.monthlyIn||{ayessa:[]}).ayessa.reduce((a,b)=>a+b,0);
-  const inGrandTotal  = inTotalJules + inTotalAyessa;
-  const todayLeader  = data.today.ayessa.total > data.today.jules.total ? 'ayessa' : data.today.jules.total > data.today.ayessa.total ? 'jules' : null;
-  const leadDiff     = Math.abs(data.today.ayessa.total - data.today.jules.total);
+  const inTotalRachel = ((data.monthlyIn||{}).rachel||[]).reduce((a,b)=>a+b,0);
+  const inGrandTotal  = inTotalJules + inTotalAyessa + inTotalRachel;
+  const todayJ = data.today.jules.total, todayA = data.today.ayessa.total, todayR = (data.today.rachel||{total:0}).total;
+  const todayMax = Math.max(todayJ, todayA, todayR);
+  const todayLeader = todayMax === 0 ? null : todayJ === todayMax ? 'jules' : todayA === todayMax ? 'ayessa' : 'rachel';
+  const todaySecond = todayLeader === 'jules' ? Math.max(todayA,todayR) : todayLeader === 'ayessa' ? Math.max(todayJ,todayR) : Math.max(todayJ,todayA);
+  const leadDiff     = todayMax - todaySecond;
   const lastWeekJ    = data.weekly.jules[data.weekly.jules.length-1] || 0;
   const lastWeekA    = data.weekly.ayessa[data.weekly.ayessa.length-1] || 0;
+  const lastWeekR    = (data.weekly.rachel||[]).slice(-1)[0] || 0;
   const inLastWeekJ  = (data.weeklyIn||{jules:[]}).jules.slice(-1)[0]||0;
   const inLastWeekA  = (data.weeklyIn||{ayessa:[]}).ayessa.slice(-1)[0]||0;
+  const inLastWeekR  = ((data.weeklyIn||{}).rachel||[]).slice(-1)[0]||0;
 
   document.getElementById('app-calls').innerHTML = `
     <div class="last-updated">last synced · ${new Date().toLocaleString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</div>
@@ -2576,8 +2591,18 @@ function renderCalls(data) {
           <div class="agent-appt-label">appts booked today</div>
         </div>
       </div>
+      <div class="agent-card rachel">
+        <div class="agent-name">Rachel ${todayLeader==='rachel'?'<span class="leader-tag rachel">leading</span>':''}</div>
+        <div class="agent-count">${fmt((data.today.rachel||{total:0}).total)}</div>
+        <div class="agent-sub">outbound today${data.todayIn&&(data.todayIn.rachel||{total:0}).total?` · <span style="opacity:.6">${fmt(data.todayIn.rachel.total)} inbound</span>`:''}</div>
+        ${(data.today.rachel||{clients:[]}).clients.length?`<div class="agent-clients">${data.today.rachel.clients.join('<br>')}</div>`:'<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
+        <div class="agent-appt-stat">
+          <div class="agent-appt-count">${(window._todayApptsData||{rachel:0}).rachel||0}</div>
+          <div class="agent-appt-label">appts booked today</div>
+        </div>
+      </div>
     </div>
-    ${todayLeader?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Rose'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>`:''}
+    ${todayLeader?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':todayLeader==='rachel'?'Rachel':'Rose'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>`:''}
 
     <div style="text-align:center;margin-bottom:1.75rem">
       <a href="https://docs.google.com/spreadsheets/d/${CALLS_SHEET_ID}/edit" target="_blank"
@@ -2589,18 +2614,20 @@ function renderCalls(data) {
 
     <div style="font-size:0.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;padding-left:2px;">📞 Outbound Calls</div>
     <div class="metrics-strip">
-      <div class="metric"><div class="metric-label">Total Outbound (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across both agents</div></div>
-      <div class="metric"><div class="metric-label">Outbound This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Rose ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Total Outbound (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across all agents</div></div>
+      <div class="metric"><div class="metric-label">Outbound This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA+lastWeekR)}</div><div class="metric-sub">Rose ${fmt(lastWeekJ)} · Ayessa ${fmt(lastWeekA)}${lastWeekR?` · Rachel ${fmt(lastWeekR)}`:''}</div></div>
       <div class="metric"><div class="metric-label">Rose Outbound</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${grandTotal?Math.round(totalJules/grandTotal*100):0}% of outbound</div></div>
       <div class="metric"><div class="metric-label">Ayessa Outbound</div><div class="metric-value" style="color:var(--ayessa)">${fmt(totalAyessa)}</div><div class="metric-sub">${grandTotal?Math.round(totalAyessa/grandTotal*100):0}% of outbound</div></div>
+      ${totalRachel > 0 ? `<div class="metric"><div class="metric-label">Rachel Outbound</div><div class="metric-value" style="color:var(--rachel)">${fmt(totalRachel)}</div><div class="metric-sub">${grandTotal?Math.round(totalRachel/grandTotal*100):0}% of outbound</div></div>` : ''}
     </div>
 
     <div style="font-size:0.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;margin-top:1.5rem;padding-left:2px;">📥 Inbound Calls</div>
     <div class="metrics-strip">
-      <div class="metric"><div class="metric-label">Total Inbound (All Time)</div><div class="metric-value">${fmt(inGrandTotal)}</div><div class="metric-sub">across both agents</div></div>
-      <div class="metric"><div class="metric-label">Inbound This Week</div><div class="metric-value">${fmt(inLastWeekJ+inLastWeekA)}</div><div class="metric-sub"><span>Rose ${fmt(inLastWeekJ)}</span> · Ayessa ${fmt(inLastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Total Inbound (All Time)</div><div class="metric-value">${fmt(inGrandTotal)}</div><div class="metric-sub">across all agents</div></div>
+      <div class="metric"><div class="metric-label">Inbound This Week</div><div class="metric-value">${fmt(inLastWeekJ+inLastWeekA+inLastWeekR)}</div><div class="metric-sub">Rose ${fmt(inLastWeekJ)} · Ayessa ${fmt(inLastWeekA)}${inLastWeekR?` · Rachel ${fmt(inLastWeekR)}`:''}</div></div>
       <div class="metric"><div class="metric-label">Rose Inbound</div><div class="metric-value" style="color:var(--jules)">${fmt(inTotalJules)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalJules/inGrandTotal*100):0}% of inbound</div></div>
       <div class="metric"><div class="metric-label">Ayessa Inbound</div><div class="metric-value" style="color:var(--ayessa)">${fmt(inTotalAyessa)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalAyessa/inGrandTotal*100):0}% of inbound</div></div>
+      ${inTotalRachel > 0 ? `<div class="metric"><div class="metric-label">Rachel Inbound</div><div class="metric-value" style="color:var(--rachel)">${fmt(inTotalRachel)}</div><div class="metric-sub">${inGrandTotal?Math.round(inTotalRachel/inGrandTotal*100):0}% of inbound</div></div>` : ''}
     </div>
 
     <div class="chart-section">
@@ -2615,6 +2642,7 @@ function renderCalls(data) {
       <div class="chart-legend">
         <div class="legend-item"><div class="legend-dot" style="background:var(--jules)"></div>Rose</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--ayessa)"></div>Ayessa</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--rachel)"></div>Rachel</div>
       </div>
       <div style="position:relative;width:100%;height:280px;">
         <canvas id="mainChart"></canvas>
@@ -2628,7 +2656,8 @@ function renderCalls(data) {
         <tbody>
           <tr><td style="color:var(--jules)">Rose</td>${data.weekly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
           <tr><td style="color:var(--ayessa)">Ayessa</td>${data.weekly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
-          <tr class="row-total"><td>Total</td>${data.weekly.jules.map((j,i)=>`<td class="val-total">${fmt(j+data.weekly.ayessa[i])}</td>`).join('')}</tr>
+          ${(data.weekly.rachel||[]).some(v=>v>0)?`<tr><td style="color:var(--rachel)">Rachel</td>${(data.weekly.rachel||[]).map(v=>`<td style="color:var(--rachel)">${fmt(v)}</td>`).join('')}</tr>`:''}
+          <tr class="row-total"><td>Total</td>${data.weekly.jules.map((j,i)=>`<td class="val-total">${fmt(j+data.weekly.ayessa[i]+((data.weekly.rachel||[])[i]||0))}</td>`).join('')}</tr>
         </tbody></table>
       </div>
     </div>
@@ -2639,13 +2668,15 @@ function renderCalls(data) {
       <tbody>
         <tr><td style="color:var(--jules)">Rose</td>${data.monthly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
         <tr><td style="color:var(--ayessa)">Ayessa</td>${data.monthly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
-        <tr class="row-total"><td>Total</td>${data.monthly.months.map((_,i)=>`<td class="val-total">${fmt(data.monthly.jules[i]+data.monthly.ayessa[i])}</td>`).join('')}</tr>
+        ${(data.monthly.rachel||[]).some(v=>v>0)?`<tr><td style="color:var(--rachel)">Rachel</td>${(data.monthly.rachel||[]).map(v=>`<td style="color:var(--rachel)">${fmt(v)}</td>`).join('')}</tr>`:''}
+        <tr class="row-total"><td>Total</td>${data.monthly.months.map((_,i)=>`<td class="val-total">${fmt(data.monthly.jules[i]+data.monthly.ayessa[i]+((data.monthly.rachel||[])[i]||0))}</td>`).join('')}</tr>
       </tbody></table>
     </div>
 
     <div class="client-grid">
       ${renderClientCalls('jules', data.julesClients)}
       ${renderClientCalls('ayessa', data.ayessaClients)}
+      ${Object.keys(data.rachelClients||{}).length > 0 ? renderClientCalls('rachel', data.rachelClients) : ''}
     </div>
   `;
 
@@ -2653,8 +2684,8 @@ function renderCalls(data) {
 }
 
 function renderClientCalls(agent, clients) {
-  const color = agent==='jules'?'var(--jules)':'var(--ayessa)';
-  const label = agent==='jules'?'Rose · call volume by client':'Ayessa · call volume by client';
+  const color = agent==='jules'?'var(--jules)':agent==='rachel'?'var(--rachel)':'var(--ayessa)';
+  const label = agent==='jules'?'Rose · call volume by client':agent==='rachel'?'Rachel · call volume by client':'Ayessa · call volume by client';
   const rows = Object.entries(clients).map(([name,vals])=>{
     const total = Object.values(vals).reduce((a,b)=>a+b,0);
     return {name,total};
@@ -2676,16 +2707,18 @@ function drawChart(data) {
   if(charts.main){charts.main.destroy();}
   const ctx=document.getElementById('mainChart');
   if(!ctx) return;
-  let labels, julesData, ayessaData;
-  if(currentView==='daily'){labels=data.daily.dates.map(d=>d.slice(5));julesData=data.daily.jules;ayessaData=data.daily.ayessa;}
-  else if(currentView==='weekly'){labels=data.weekly.weeks.map(w=>w.slice(0,5));julesData=data.weekly.jules;ayessaData=data.weekly.ayessa;}
-  else{labels=data.monthly.months;julesData=data.monthly.jules;ayessaData=data.monthly.ayessa;}
+  let labels, julesData, ayessaData, rachelData;
+  if(currentView==='daily'){labels=data.daily.dates.map(d=>d.slice(5));julesData=data.daily.jules;ayessaData=data.daily.ayessa;rachelData=data.daily.rachel||[];}
+  else if(currentView==='weekly'){labels=data.weekly.weeks.map(w=>w.slice(0,5));julesData=data.weekly.jules;ayessaData=data.weekly.ayessa;rachelData=data.weekly.rachel||[];}
+  else{labels=data.monthly.months;julesData=data.monthly.jules;ayessaData=data.monthly.ayessa;rachelData=data.monthly.rachel||[];}
+  const datasets=[
+    {label:'Rose',data:julesData,borderColor:'#b5870d',backgroundColor:'rgba(181,135,13,0.12)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4},
+    {label:'Ayessa',data:ayessaData,borderColor:'#9a7014',backgroundColor:'rgba(154,112,20,0.12)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4}
+  ];
+  if(rachelData.some(v=>v>0)) datasets.push({label:'Rachel',data:rachelData,borderColor:'#1a9e82',backgroundColor:'rgba(26,158,130,0.10)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4});
   charts.main=new Chart(ctx,{
     type:currentView==='monthly'?'bar':'line',
-    data:{labels,datasets:[
-      {label:'Rose',data:julesData,borderColor:'#b5870d',backgroundColor:'rgba(181,135,13,0.12)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4},
-      {label:'Ayessa',data:ayessaData,borderColor:'#9a7014',backgroundColor:'rgba(154,112,20,0.12)',borderWidth:2,pointRadius:currentView==='daily'?0:4,pointHoverRadius:6,fill:true,tension:0.4}
-    ]},
+    data:{labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:{display:false},tooltip:{backgroundColor:'#ffffff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#78746a',bodyColor:'#1a1917',padding:12}},
       scales:{x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{color:'#78746a',font:{family:"'DM Mono',monospace",size:10},maxRotation:45,autoSkip:currentView==='daily'}},
