@@ -15,7 +15,7 @@
   --text: #1a1917; --muted: #78746a;
   --accent: #b5870d; --accent2: #9a7014; --accent-glow: rgba(181,135,13,0.2);
   --green: #16a34a; --amber: #d97706; --red: #dc2626;
-  --jules: #b5870d; --ayessa: #c9960c;
+  --jules: #b5870d; --ayessa: #c9960c; --rachel: #1a9e82;
 }
 body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -307,29 +307,35 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text
 /* ── CALLS PAGE ── */
 :root { --green-bg:rgba(22,163,74,0.1); --amber-bg:rgba(251,191,36,0.1); --red-bg:rgba(248,113,113,0.1); }
 .last-updated { font-size:0.65rem; font-family:'DM Mono',monospace; color:var(--muted); text-align:right; margin-bottom:1.5rem; opacity:0.5; }
-.today-banner { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem; }
+.today-banner { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:2rem; }
 .agent-card { border-radius:16px; padding:1.5rem; border:1px solid var(--border2); position:relative; overflow:hidden; }
 .agent-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
 .agent-card.jules { background:linear-gradient(135deg,rgba(181,135,13,0.06),var(--surface)); }
 .agent-card.jules::before { background:var(--jules); }
 .agent-card.ayessa { background:linear-gradient(135deg,rgba(230,184,74,0.06),var(--surface)); }
 .agent-card.ayessa::before { background:var(--ayessa); }
+.agent-card.rachel { background:linear-gradient(135deg,rgba(26,158,130,0.06),var(--surface)); }
+.agent-card.rachel::before { background:var(--rachel); }
 .agent-name { font-size:0.7rem; font-family:'DM Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:0.75rem; }
 .agent-card.jules .agent-name { color:var(--jules); }
 .agent-card.ayessa .agent-name { color:var(--ayessa); }
+.agent-card.rachel .agent-name { color:var(--rachel); }
 .agent-count { font-size:3.5rem; font-weight:800; letter-spacing:-0.04em; line-height:1; margin-bottom:0.25rem; }
 .agent-card.jules .agent-count { color:var(--jules); }
 .agent-card.ayessa .agent-count { color:var(--ayessa); }
+.agent-card.rachel .agent-count { color:var(--rachel); }
 .agent-sub { font-size:0.78rem; color:var(--muted); }
 .agent-clients { margin-top:1rem; font-size:0.75rem; color:var(--muted); font-family:'DM Mono',monospace; line-height:1.7; }
 .agent-appt-stat { margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border2); }
 .agent-appt-count { font-size:2.2rem; font-weight:800; letter-spacing:-0.04em; line-height:1; margin-bottom:0.2rem; }
 .agent-card.jules .agent-appt-count { color:var(--jules); opacity:0.8; }
 .agent-card.ayessa .agent-appt-count { color:var(--ayessa); opacity:0.8; }
+.agent-card.rachel .agent-appt-count { color:var(--rachel); opacity:0.8; }
 .agent-appt-label { font-size:0.72rem; color:var(--muted); }
 .leader-tag { display:inline-block; font-size:0.65rem; padding:2px 8px; border-radius:100px; font-family:'DM Mono',monospace; margin-left:8px; vertical-align:middle; }
 .leader-tag.jules { background:rgba(181,135,13,0.2); color:var(--jules); border:1px solid rgba(181,135,13,0.3); }
 .leader-tag.ayessa { background:rgba(230,184,74,0.2); color:var(--ayessa); border:1px solid rgba(230,184,74,0.3); }
+.leader-tag.rachel { background:rgba(26,158,130,0.2); color:var(--rachel); border:1px solid rgba(26,158,130,0.3); }
 .metrics-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
 .metric { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.5rem; }
 .metric-label { font-size:0.68rem; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.5rem; }
@@ -1509,6 +1515,16 @@ function renderCalls(data) {
           <div class="agent-appt-label">appts last 7 days</div>
         </div>
       </div>
+      <div class="agent-card rachel">
+        <div class="agent-name">Rachel</div>
+        <div class="agent-count">${fmt((data.today.rachel||{total:0}).total)}</div>
+        <div class="agent-sub">calls today</div>
+        ${(data.today.rachel||{clients:[]}).clients.length ? `<div class="agent-clients">${data.today.rachel.clients.join('<br>')}</div>` : '<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
+        <div class="agent-appt-stat">
+          <div class="agent-appt-count">${(window._todayApptsData||{rachel:0}).rachel||0}</div>
+          <div class="agent-appt-label">appts last 7 days</div>
+        </div>
+      </div>
     </div>
     ${todayLeader ? `<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:2rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Rose'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>` : ''}
 
@@ -2047,7 +2063,7 @@ function renderAgentColumn(agent, items) {
   const done       = cbDoneSet(agent);
   const agentItems = items.filter(i => i.agent === agent);
   const pending    = agentItems.filter(i => !done.has(i.ts)).length;
-  const color      = agent === 'Jules' ? 'var(--jules)' : 'var(--ayessa)';
+  const color      = agent === 'Jules' ? 'var(--jules)' : agent === 'Rachel' ? 'var(--rachel)' : 'var(--ayessa)';
 
   const cards = agentItems.length === 0
     ? `<div class="cb-empty">No callbacks assigned to ${agent}.</div>`
@@ -2086,6 +2102,8 @@ function renderCallbacksList(items) {
       ${renderAgentColumn('Jules', items)}
       <div style="width:1px;background:var(--border2);align-self:stretch;"></div>
       ${renderAgentColumn('Ayessa', items)}
+      <div style="width:1px;background:var(--border2);align-self:stretch;"></div>
+      ${renderAgentColumn('Rachel', items)}
     </div>
     ${items.filter(i => !i.agent).length > 0 ? `
     <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border2);">
@@ -2270,7 +2288,7 @@ function renderLeadAgentColumn(agent, items) {
   const done       = leadDoneSet(agent);
   const agentItems = items.filter(i => i.agent === agent);
   const pending    = agentItems.filter(i => !done.has(i.ts)).length;
-  const color      = agent === 'Jules' ? 'var(--jules)' : 'var(--ayessa)';
+  const color      = agent === 'Jules' ? 'var(--jules)' : agent === 'Rachel' ? 'var(--rachel)' : 'var(--ayessa)';
 
   const cards = agentItems.length === 0
     ? `<div class="cb-empty">No new leads for ${agent}.</div>`
