@@ -1775,7 +1775,8 @@ const AGENT_OVERRIDES = {
   "Better Building":     "Ayessa",
   "CK | Home Renovations": "Jules",
   "Elegance Tiles and Bath Warehouse (Full House Renovation)": "Jules",
-  "UrbanRise Property":  "Ayessa"
+  "UrbanRise Property":  "Ayessa",
+  "Auspro Windows":      "Ayessa"
 };
 
 // Per-client notes shown on the CEO dashboard card, below the Overview section
@@ -1855,9 +1856,14 @@ function _getLocalAgentOverrides() {
 }
 
 // Clients who are active but NOT on the call centre — shown in Ad Clients tab only
-const NON_CC_CLIENTS = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms", "Moonlight Doors and Windows", "Favourite Home", "Silk Touch Joinery"];
+const NON_CC_CLIENTS = ["UrbanRise Property Group", "L2 Homes", "Generational Bathrooms", "Favourite Home", "Silk Touch Joinery"];
 function isNonCC(name) {
   const n = (name||'').toLowerCase().replace(/\s+/g,'');
+  // CC overrides take priority — clients manually moved back to CC
+  try {
+    const ccOverride = JSON.parse(localStorage.getItem('qj_cc_override') || '[]');
+    if (ccOverride.some(x => x.toLowerCase().replace(/\s+/g,'') === n)) return false;
+  } catch(_) {}
   try {
     const local = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]');
     if (local.some(x => x.toLowerCase().replace(/\s+/g,'') === n)) return true;
@@ -5053,7 +5059,21 @@ function removeFromAds(name) {
   try { list = JSON.parse(localStorage.getItem('qj_ads_only_clients') || '[]'); } catch(_) {}
   list = list.filter(n => n !== name);
   localStorage.setItem('qj_ads_only_clients', JSON.stringify(list));
+  // Add to CC override so hardcoded NON_CC_CLIENTS entries are also overridden
+  try {
+    let ccOverride = JSON.parse(localStorage.getItem('qj_cc_override') || '[]');
+    if (!ccOverride.includes(name)) ccOverride.push(name);
+    localStorage.setItem('qj_cc_override', JSON.stringify(ccOverride));
+  } catch(_) {}
   switchPage('ceo');
+}
+
+function _clearCCOverride(name) {
+  try {
+    let ccOverride = JSON.parse(localStorage.getItem('qj_cc_override') || '[]');
+    ccOverride = ccOverride.filter(n => n !== name);
+    localStorage.setItem('qj_cc_override', JSON.stringify(ccOverride));
+  } catch(_) {}
 }
 
 // ── Onboarding Deck tab ──────────────────────────────────────────────────────
