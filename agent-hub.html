@@ -524,7 +524,7 @@ tr:hover td { background:var(--surface2); }
 .aj-stat-red   { color: var(--red); }
 .aj-stat-amber { color: var(--amber); }
 .aj-stat-blue  { color: var(--accent); }
-.aj-client-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 2rem; }
+.aj-client-grid { display: block; margin-bottom: 2rem; }
 .aj-client-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; transition: border-color 0.15s; }
 .aj-client-card:hover { border-color: var(--border2); }
 .aj-client-name { font-weight: 600; font-size: 0.82rem; margin-bottom: 0.4rem; }
@@ -2546,15 +2546,13 @@ function _buildGrid(el, clients, filter='') {
         <button class="clients-filter active-filter" onclick="_renderClientsGrid(window._clientsData,'')">All</button>
         <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Jules')">Rose</button>
         <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Ayessa')">Ayessa</button>
-        <button class="clients-filter" onclick="_renderClientsGrid(window._clientsData,'Rachel')">Rachel</button>
         <button class="clients-filter" onclick="window._clientsData=null;renderClientsPage()">↺</button>
       </div>
     </div>
     ${(()=>{
-      const roseC   = filtered.filter(c=>(c.agent||'').toLowerCase()==='jules');
-      const ayessC  = filtered.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
-      const rachelC = filtered.filter(c=>(c.agent||'').toLowerCase()==='rachel');
-      const adsC    = filtered.filter(c=>{const ag=(c.agent||'').toLowerCase();return ag!=='jules'&&ag!=='ayessa'&&ag!=='rachel';});
+      const roseC  = filtered.filter(c=>(c.agent||'').toLowerCase()==='jules');
+      const ayessC = filtered.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
+      const adsC   = filtered.filter(c=>{const ag=(c.agent||'').toLowerCase();return ag!=='jules'&&ag!=='ayessa';});
       function makeCard(c) {
         const i = filtered.indexOf(c);
         const ag  = (c.agent||'').toLowerCase();
@@ -2682,10 +2680,9 @@ function _buildGrid(el, clients, filter='') {
           </div>
         </div>`;
       }
-      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1.25rem;align-items:start">
+      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;align-items:start">
         ${makeCol('Rose','var(--jules)',roseC)}
         ${makeCol('Ayessa','var(--ayessa)',ayessC)}
-        ${makeCol('Rachel','var(--rachel)',rachelC)}
         ${makeCol('Ads Only','var(--muted)',adsC)}
       </div>`;
     })()}`;
@@ -3264,22 +3261,44 @@ async function renderAjDashboard() {
 
   renderAjMonthlyActivity(_ajMonthOffset);
 
-  document.getElementById('aj-clientGrid').innerHTML = clients.map(c => {
-    const p = ajIsPaused(c.name);
-    const links = [
-      `<a href="https://drive.google.com/drive/folders/1DebQdls9aJsCReV8yVgprJ16B5UBIx7O?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:#f97316;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📂 Ad Drive</a>`,
-      `<a href="https://drive.google.com/drive/folders/1hKiXSFlLhYcS2p5OPjSsVq-55y-fPs_q?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📊 Stats</a>`,
-      c.overviewUrl ? `<a href="${c.overviewUrl}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📄 Overview</a>` : '',
-    ].filter(Boolean).join('<span style="color:var(--border2);margin:0 4px">·</span>');
-    return `<div class="aj-client-card">
-      <div class="aj-client-name">${c.name}</div>
-      <div class="aj-client-meta">Agent: ${c.agent}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem">
-        <span class="aj-badge ${p ? 'aj-badge-paused' : 'aj-badge-active'}">${p ? '⏸ Paused' : '● Active'}</span>
-        ${links ? `<div style="display:flex;align-items:center;gap:2px">${links}</div>` : ''}
-      </div>
+  (()=>{
+    function makeAjCard(c) {
+      const p = ajIsPaused(c.name);
+      const links = [
+        `<a href="https://drive.google.com/drive/folders/1DebQdls9aJsCReV8yVgprJ16B5UBIx7O?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:#f97316;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📂 Ad Drive</a>`,
+        `<a href="https://drive.google.com/drive/folders/1hKiXSFlLhYcS2p5OPjSsVq-55y-fPs_q?usp=drive_link" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📊 Stats</a>`,
+        c.overviewUrl ? `<a href="${c.overviewUrl}" target="_blank" style="font-size:0.62rem;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">📄 Overview</a>` : '',
+      ].filter(Boolean).join('<span style="color:var(--border2);margin:0 4px">·</span>');
+      return `<div class="aj-client-card">
+        <div class="aj-client-name">${c.name}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem">
+          <span class="aj-badge ${p ? 'aj-badge-paused' : 'aj-badge-active'}">${p ? '⏸ Paused' : '● Active'}</span>
+          ${links ? `<div style="display:flex;align-items:center;gap:2px">${links}</div>` : ''}
+        </div>
+      </div>`;
+    }
+    function makeAjCol(title, colorVar, cards) {
+      return `<div>
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid ${colorVar}">
+          <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${colorVar}">${title}</span>
+          <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">${cards.length} client${cards.length!==1?'s':''}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem">
+          ${cards.length ? cards.map(makeAjCard).join('') : '<div style="color:var(--muted);font-size:0.75rem;font-family:\'DM Mono\',monospace;padding:0.4rem 0">None</div>'}
+        </div>
+      </div>`;
+    }
+    const roseC   = clients.filter(c=>(c.agent||'').toLowerCase()==='jules');
+    const ayessC  = clients.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
+    const rachelC = clients.filter(c=>(c.agent||'').toLowerCase()==='rachel');
+    const adsC    = clients.filter(c=>{const ag=(c.agent||'').toLowerCase();return ag!=='jules'&&ag!=='ayessa'&&ag!=='rachel';});
+    document.getElementById('aj-clientGrid').innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1.25rem;align-items:start">
+      ${makeAjCol('Rose','var(--jules)',roseC)}
+      ${makeAjCol('Ayessa','var(--ayessa)',ayessC)}
+      ${makeAjCol('Rachel','var(--rachel)',rachelC)}
+      ${makeAjCol('Ads Only','var(--muted)',adsC)}
     </div>`;
-  }).join('') || '<div style="color:var(--muted);font-size:0.8rem;padding:1rem 0">No active clients found.</div>';
+  })();
 }
 
 // ════════════════════════════════════════════════
