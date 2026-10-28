@@ -4248,6 +4248,10 @@ function renderFinanceView(payLog, clients) {
           <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:3px">${FINANCE_YEAR} · ${allClients.length} clients in payment log · status sourced directly from sheet</div>
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center">
+          <button class="finance-relock" onclick="openOnboardModal()"
+            style="background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.3);color:var(--green);font-weight:700">
+            ⊕ Onboard New Client
+          </button>
           <a href="https://docs.google.com/spreadsheets/d/${PAYMENT_LOG_ID}/edit" target="_blank"
             style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-size:0.68rem;font-family:'DM Mono',monospace;
                    color:var(--accent);background:rgba(181,135,13,0.08);border:1px solid rgba(181,135,13,0.25);
@@ -4408,6 +4412,147 @@ function renderFinanceView(payLog, clients) {
       </div>
 
     </div>`;
+}
+
+// ════════════════════════════════════════════════
+// ONBOARD NEW CLIENT → PAYMENT LOG
+// ════════════════════════════════════════════════
+function openOnboardModal() {
+  const m = document.getElementById('onboardModal');
+  if (!m) return;
+  // default date = today
+  document.getElementById('ob_date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ob_name').value = '';
+  document.getElementById('ob_upfront').value = '';
+  document.getElementById('ob_mrr').value = '';
+  document.getElementById('ob_contracted').value = '';
+  document.getElementById('ob_months').value = '';
+  document.getElementById('ob_paytype').value = 'Monthly';
+  document.getElementById('ob_source').value = '';
+  document.getElementById('ob_agent').value = '';
+  document.getElementById('ob_preview').innerHTML = '';
+  document.getElementById('ob_status').textContent = '';
+  m.style.display = 'flex';
+  setTimeout(() => m.querySelector('.ob-modal').style.transform = 'scale(1)', 10);
+}
+
+function closeOnboardModal() {
+  const m = document.getElementById('onboardModal');
+  if (m) m.style.display = 'none';
+}
+
+function obRecalc() {
+  const mrr        = parseFloat(document.getElementById('ob_mrr').value) || 0;
+  const contracted = parseFloat(document.getElementById('ob_contracted').value) || 0;
+  const mo         = parseInt(document.getElementById('ob_months').value) || 0;
+  // If MRR + contracted → auto-fill months
+  if (mrr > 0 && contracted > 0 && !mo) {
+    document.getElementById('ob_months').value = Math.round(contracted / mrr);
+  }
+  // If MRR + months → auto-fill contracted
+  if (mrr > 0 && mo > 0 && !contracted) {
+    document.getElementById('ob_contracted').value = mrr * mo;
+  }
+  obPreview();
+}
+
+function obRecalcMonths() {
+  const mrr        = parseFloat(document.getElementById('ob_mrr').value) || 0;
+  const mo         = parseInt(document.getElementById('ob_months').value) || 0;
+  if (mrr > 0 && mo > 0) {
+    document.getElementById('ob_contracted').value = mrr * mo;
+  }
+  obPreview();
+}
+
+function obPreview() {
+  const name       = document.getElementById('ob_name').value.trim();
+  const dateStr    = document.getElementById('ob_date').value;
+  const upfront    = parseFloat(document.getElementById('ob_upfront').value) || 0;
+  const mrr        = parseFloat(document.getElementById('ob_mrr').value) || 0;
+  const contractMo = parseInt(document.getElementById('ob_months').value) || 0;
+  if (!name || !dateStr || !mrr || !contractMo) {
+    document.getElementById('ob_preview').innerHTML = '<span style="color:var(--muted);font-size:0.75rem">Fill in all required fields to see preview</span>';
+    return;
+  }
+  const d = new Date(dateStr);
+  const billMonth = d.getMonth(); // 0=Jan
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let rows = '';
+  for (let m = 0; m < 12; m++) {
+    let newCash = 0, mrrAmt = 0, total = 0;
+    if (m === billMonth)                              { newCash = upfront; total = upfront; }
+    else if (m > billMonth && m < billMonth + contractMo) { mrrAmt  = mrr;     total = mrr;     }
+    if (total === 0) continue;
+    const col = m === billMonth ? 'var(--accent)' : 'var(--green)';
+    rows += `<div style="display:flex;gap:1rem;align-items:center;font-size:0.75rem;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="min-width:44px;font-family:'DM Mono',monospace;color:var(--muted)">${MONTHS[m]}</span>
+      ${newCash ? `<span style="color:var(--accent)">Upfront $${newCash.toLocaleString()}</span>` : ''}
+      ${mrrAmt  ? `<span style="color:var(--green)">MRR $${mrrAmt.toLocaleString()}</span>` : ''}
+      <span style="margin-left:auto;font-weight:700;color:${col}">$${total.toLocaleString()}</span>
+    </div>`;
+  }
+  const totalRev = upfront + mrr * (contractMo - (upfront > 0 ? 1 : 0));
+  document.getElementById('ob_preview').innerHTML = `
+    <div style="font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:6px;letter-spacing:0.05em">PAYMENT LOG PREVIEW</div>
+    ${rows}
+    <div style="display:flex;justify-content:space-between;padding-top:6px;font-size:0.78rem;font-weight:700;color:var(--text)">
+      <span>Total Contract Value</span><span>$${(upfront + mrr*(contractMo-1)).toLocaleString()}</span>
+    </div>`;
+}
+
+async function submitOnboardClient() {
+  const name       = document.getElementById('ob_name').value.trim();
+  const dateStr    = document.getElementById('ob_date').value;
+  const upfront    = parseFloat(document.getElementById('ob_upfront').value) || 0;
+  const mrr        = parseFloat(document.getElementById('ob_mrr').value) || 0;
+  const contractMo = parseInt(document.getElementById('ob_months').value) || 0;
+  const payType    = document.getElementById('ob_paytype').value;
+  const source     = document.getElementById('ob_source').value.trim();
+  const agent      = document.getElementById('ob_agent').value;
+  const statusEl   = document.getElementById('ob_status');
+
+  if (!name || !dateStr || !mrr || !contractMo) {
+    statusEl.textContent = '⚠ Please fill in: Client Name, Onboarding Date, Monthly Retainer, Contract Months';
+    statusEl.style.color = '#f87171';
+    return;
+  }
+
+  const d = new Date(dateStr);
+  const billMonth = d.getMonth();
+  const startDateFmt = d.toLocaleDateString('en-AU', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+  statusEl.textContent = 'Adding to Payment Log…';
+  statusEl.style.color = 'var(--muted)';
+
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:         'addToPaymentLog',
+        clientName:     name,
+        startDate:      startDateFmt,
+        billMonth:      billMonth,
+        upfront:        upfront,
+        mrr:            mrr,
+        contractMonths: contractMo,
+        payType:        payType,
+        source:         source,
+      })
+    });
+    const json = await res.json();
+    if (json.success) {
+      statusEl.textContent = '✓ Added to Payment Log successfully!';
+      statusEl.style.color = 'var(--green)';
+      setTimeout(() => { closeOnboardModal(); loadFinanceData(); }, 1500);
+    } else {
+      throw new Error(json.error || 'Unknown error');
+    }
+  } catch(e) {
+    statusEl.textContent = '✕ Error: ' + e.message;
+    statusEl.style.color = '#f87171';
+  }
 }
 
 // ════════════════════════════════════════════════
@@ -13880,6 +14025,107 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ══ ONBOARD NEW CLIENT MODAL ══════════════════════════════════════ -->
+<div id="onboardModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem">
+  <div class="ob-modal" style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:1.75rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;transform:scale(0.96);transition:transform 0.15s">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <div>
+        <div style="font-size:1.05rem;font-weight:800;letter-spacing:-0.02em">Onboard New Client</div>
+        <div style="font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">Adds a row to the Payment Log Google Sheet automatically</div>
+      </div>
+      <button onclick="closeOnboardModal()" style="background:none;border:1px solid var(--border2);border-radius:8px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:1rem">✕</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div style="grid-column:1/-1">
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Client Name *</label>
+        <input id="ob_name" type="text" placeholder="e.g. JDS Developments" oninput="obPreview()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box" />
+      </div>
+
+      <div>
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Onboarding Date *</label>
+        <input id="ob_date" type="date" onchange="obPreview()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box" />
+      </div>
+
+      <div>
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Upfront Cash Collected ($)</label>
+        <input id="ob_upfront" type="number" min="0" step="1" placeholder="e.g. 2200" oninput="obPreview()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box" />
+      </div>
+
+      <div>
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Monthly Retainer / MRR ($) *</label>
+        <input id="ob_mrr" type="number" min="0" step="1" placeholder="e.g. 2200" oninput="obRecalc()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box" />
+      </div>
+
+      <div>
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Contracted Value ($)</label>
+        <input id="ob_contracted" type="number" min="0" step="1" placeholder="e.g. 6600 → auto-fills months" oninput="obRecalc()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box" />
+      </div>
+
+      <div>
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Contract Length (months) *</label>
+        <input id="ob_months" type="number" min="1" step="1" placeholder="e.g. 3 → auto-fills from value" oninput="obRecalcMonths()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box" />
+      </div>
+
+      <div>
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Payment Type</label>
+        <select id="ob_paytype"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box">
+          <option>Monthly</option>
+          <option>3 Months</option>
+          <option>6 Months</option>
+          <option>12 Months</option>
+          <option>One-off</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Agent</label>
+        <select id="ob_agent"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box">
+          <option value="">—</option>
+          <option value="Rose">Rose</option>
+          <option value="Ayessa">Ayessa</option>
+          <option value="Rachel">Rachel</option>
+        </select>
+      </div>
+
+      <div style="grid-column:1/-1">
+        <label style="font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:4px">Source</label>
+        <input id="ob_source" type="text" placeholder="e.g. Facebook Ads, Referral, Cold outreach"
+          style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box" />
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div style="margin-top:1.25rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem">
+      <div id="ob_preview" style="font-family:'DM Mono',monospace">
+        <span style="color:var(--muted);font-size:0.75rem">Fill in required fields to see preview</span>
+      </div>
+    </div>
+
+    <div id="ob_status" style="font-size:0.75rem;font-family:'DM Mono',monospace;margin-top:0.75rem;min-height:1.2em"></div>
+
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1rem">
+      <button onclick="closeOnboardModal()"
+        style="background:none;border:1px solid var(--border2);border-radius:10px;color:var(--muted);padding:9px 20px;cursor:pointer;font-size:0.82rem;font-family:inherit">
+        Cancel
+      </button>
+      <button onclick="submitOnboardClient()"
+        style="background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);border-radius:10px;color:var(--green);padding:9px 22px;cursor:pointer;font-size:0.82rem;font-weight:700;font-family:inherit;transition:all 0.15s"
+        onmouseover="this.style.background='rgba(52,211,153,0.2)'" onmouseout="this.style.background='rgba(52,211,153,0.12)'">
+        ⊕ Add to Payment Log
+      </button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
