@@ -1412,26 +1412,6 @@
   </div>
 
   <!-- ══ PAGE: WHATSAPP ══ -->
-  <div id="page-whatsapp" class="page">
-    <div class="wa-tab-wrap">
-      <div class="wa-client-sidebar">
-        <div class="wa-sidebar-header">client chats</div>
-        <div style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);">
-          <button onclick="scrapeAllClientHistory()" id="wa-scrape-btn" style="width:100%;padding:0.5rem;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;color:#60a5fa;font-family:'DM Mono',monospace;font-size:0.65rem;cursor:pointer;">↻ Sync All Chat History</button>
-          <div id="wa-scrape-status" style="font-size:0.58rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:4px;min-height:1rem;text-align:center;"></div>
-        </div>
-        <div id="wa-client-list">
-          <div class="empty-state">No messages yet.<br>Connect WhatsApp via Green API to start.</div>
-        </div>
-      </div>
-      <div class="wa-chat-area">
-        <div class="wa-chat-header-bar" id="wa-chat-header">Select a client</div>
-        <div class="wa-messages-panel" id="wa-messages-panel">
-          <div class="empty-state" style="margin:auto;">Messages will appear here once a client is selected.</div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- ══ PAGE: FINANCE ══ -->
   <div id="page-growth" class="page">
@@ -1557,18 +1537,6 @@
         </div>
       </div>
 
-      <!-- WHATSAPP FEED -->
-      <div>
-        <div class="tasks-section">
-          <div class="tasks-section-header">
-            <div class="section-title" style="color:#25d366;">◉ whatsapp feed</div>
-            <div id="wa-status" style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);opacity:0.5;"></div>
-          </div>
-          <div id="wa-feed" class="wa-feed">
-            <div class="empty-state">No WhatsApp data yet.</div>
-          </div>
-        </div>
-      </div>
 
     </div>
   </div>
@@ -3030,7 +2998,6 @@ const NAV_STRUCTURE = {
       { id: 'overview',     label: 'Overview' },
       { id: 'ad-clients',   label: 'Ad Clients' },
       { id: 'clients',      label: 'Our Clients' },
-      { id: 'whatsapp',     label: 'WhatsApp' },
       { id: 'callbacks',    label: 'Callbacks' },
     ],
     default: 'calls'
@@ -3097,7 +3064,6 @@ function switchPage(page) {
   if (el) el.classList.add('active');
   if (page === 'assistant')     initAssistant();
   if (page === 'qmi-brain')    renderQMIBrainPage();
-  if (page === 'whatsapp')      renderWaTab();
   if (page === 'clients')       renderClientsPage();
   if (page === 'finance')       renderFinancePage();
   if (page === 'growth')        renderGrowthPage();
@@ -4922,13 +4888,12 @@ async function loadAll(silent=false) {
 
   // Run ALL fetches in parallel (fetchClientsData was previously awaited sequentially,
   // blocking everything if the proxy cold-started)
-  const [, callsData, apptsData, configData, adsData, waData, kbData] = await Promise.all([
+  const [, callsData, apptsData, configData, adsData, kbData] = await Promise.all([
     withTimeout(fetchClientsData()).catch(() => null),
     withTimeout(fetchCallsData(), 200000).catch(() => null),
     withTimeout(fetchApptsData()).catch(() => null),
     withTimeout(fetchClientConfig()).catch(() => null),
     withTimeout(fetchAdsData()).catch(() => null),
-    withTimeout(fetchWhatsAppData()).catch(() => null),
     withTimeout(fetchClientKB()).catch(() => null),
   ]);
 
@@ -4941,17 +4906,10 @@ async function loadAll(silent=false) {
   if(apptsData)  window._apptsData = apptsData;
   if(configData && Object.keys(configData).length > 0) window._configData = configData;
   if(adsData && Object.keys(adsData).length > 0) window._adsData = adsData;
-  window._waData    = waData  || [];
+  window._waData    = [];
+  window._waByClient = {};
   window._clientKB  = kbData  || {};
   window._todayApptsData = await withTimeout(refreshTodayApptCounts(), 10000).catch(() => computeTodayApptDelta(window._apptsData));
-
-  // Build per-client knowledge base index
-  window._waByClient = {};
-  for(const msg of window._waData) {
-    if(!msg.client) continue;
-    if(!window._waByClient[msg.client]) window._waByClient[msg.client] = [];
-    window._waByClient[msg.client].push(msg);
-  }
 
   if(window._callsData) {
     renderCalls(window._callsData);
@@ -4960,8 +4918,6 @@ async function loadAll(silent=false) {
   }
   if(window._apptsData) renderAppts(window._apptsData);
   renderOverview(window._callsData, window._apptsData);
-  renderWaFeed(window._waData);
-  renderWaTab();
   renderTodos();
 
   const lastGen = localStorage.getItem('qj_tasks_gen_time');
@@ -5327,30 +5283,6 @@ function parseWaTs(ts) {
   return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]), h, min, sec).getTime();
 }
 
-// ════════════════════════════════════════════════
-// FETCH — WHATSAPP LOG
-// ════════════════════════════════════════════════
-async function fetchWhatsAppData() {
-  if(!WHATSAPP_SHEET_ID) return [];
-  try {
-    const res = await fetchWT(`${PROXY_URL}?id=${WHATSAPP_SHEET_ID}&sheet=Log`);
-    if(!res.ok) return [];
-    const rows = await res.json();
-    if(!Array.isArray(rows) || rows.length < 2) return [];
-    const msgs = [];
-    for(let i=1;i<rows.length;i++) {
-      const row = rows[i];
-      const ts     = String(row[0]||'').trim(); // Col A: timestamp
-      const client = String(row[1]||'').trim(); // Col B: client/group name
-      const sender = String(row[2]||'').trim(); // Col C: sender name
-      const text   = String(row[3]||'').trim(); // Col D: message text
-      const type   = String(row[4]||'client').trim(); // Col E: 'client' or 'aj'
-      if(!text || !client) continue;
-      msgs.push({ ts, client, sender, text, type });
-    }
-    return msgs.reverse(); // newest first
-  } catch(e) { console.warn('WhatsApp fetch failed:', e); return []; }
-}
 
 // ════════════════════════════════════════════════
 // FETCH — CLIENT KNOWLEDGE BASE
@@ -5426,26 +5358,6 @@ function renderTodos() {
   if(el('todo-aj-done'))    el('todo-aj-done').innerHTML    = ajDone.length    ? ajDone.map(itemHtml).join('')    : empty('Nothing done yet');
 }
 
-function renderWaFeed(msgs) {
-  const el = document.getElementById('wa-feed');
-  const status = document.getElementById('wa-status');
-  if(!el) return;
-  if(!msgs || msgs.length === 0) {
-    el.innerHTML = '<div class="empty-state">No WhatsApp data yet.<br>Set up Make to start logging messages.</div>';
-    if(status) status.textContent = '';
-    return;
-  }
-  const recent = msgs.slice(0, 30);
-  if(status) status.textContent = `${msgs.length} messages`;
-  el.innerHTML = recent.map(m => `
-    <div class="wa-msg">
-      <div class="wa-msg-meta">
-        <span class="wa-msg-client">${m.client}</span>
-        <span>${m.sender ? m.sender + ' · ' : ''}${m.ts ? m.ts.slice(0,16).replace('T',' ') : ''}</span>
-      </div>
-      <div class="wa-msg-text">${m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-    </div>`).join('');
-}
 
 async function generateTasks() {
   if(!chatApiKey) { alert('Add your Anthropic API key in the Intelligence tab first.'); return; }
@@ -5546,189 +5458,6 @@ Other rules:
   }
   if(btn) { btn.disabled = false; btn.textContent = '✦ Generate with AI'; }
 }
-
-// ════════════════════════════════════════════════
-// WHATSAPP TAB
-// ════════════════════════════════════════════════
-let currentWaClient = null;
-
-function renderWaTab() {
-  const byClient = window._waByClient || {};
-  const clientNames = Object.keys(byClient).filter(k => byClient[k].length > 0);
-  const list = document.getElementById('wa-client-list');
-  if(!list) return;
-
-  if(clientNames.length === 0) {
-    list.innerHTML = '<div class="empty-state">No messages yet.<br>Connect WhatsApp via Green API to start.</div>';
-    return;
-  }
-
-  if(!currentWaClient || !clientNames.includes(currentWaClient)) currentWaClient = clientNames[0];
-
-  list.innerHTML = clientNames.map(name => {
-    const msgs = byClient[name];
-    const last = msgs[0];
-    const isAj = name === 'AJ Media Buyer';
-    const agent = isAj ? null : (JULES_ACCOUNTS.some(a => a.toLowerCase() === name.toLowerCase()) ? 'Jules' : 'Ayessa');
-    const agentColor = agent === 'Jules' ? 'var(--jules)' : agent === 'Ayessa' ? 'var(--ayessa)' : '#60a5fa';
-    const agentLabel = agent || 'Media Buyer';
-    const preview = last ? last.text.slice(0, 50) + (last.text.length > 50 ? '…' : '') : '';
-    return `
-      <div class="wa-client-item ${name === currentWaClient ? 'active' : ''}" data-client="${name.replace(/"/g,'&quot;')}">
-        <div class="wa-client-name">${name}</div>
-        <div class="wa-client-agent" style="color:${agentColor}">${agentLabel}</div>
-        <div class="wa-client-preview">${preview}</div>
-        <div class="wa-client-count">${msgs.length} message${msgs.length !== 1 ? 's' : ''}</div>
-      </div>`;
-  }).join('');
-
-  renderWaMessages();
-}
-
-function switchWaClient(name) {
-  currentWaClient = name;
-  renderWaTab();
-}
-
-function renderWaMessages() {
-  const panel  = document.getElementById('wa-messages-panel');
-  const header = document.getElementById('wa-chat-header');
-  if(!panel || !header) return;
-
-  const msgs = (window._waByClient || {})[currentWaClient] || [];
-  header.textContent = currentWaClient || '—';
-
-  if(msgs.length === 0) {
-    panel.innerHTML = '<div class="empty-state" style="margin:auto;">No messages for this client yet.</div>';
-    return;
-  }
-
-  // Sort all messages oldest → newest
-  const sorted = [...msgs].sort((a, b) => parseWaTs(a.ts) - parseWaTs(b.ts));
-
-  // Group by date
-  const groups = {};
-  sorted.forEach(m => {
-    const date = m.ts ? m.ts.split(',')[0].trim() : 'Unknown date';
-    if(!groups[date]) groups[date] = [];
-    groups[date].push(m);
-  });
-
-  // Sort date groups chronologically
-  const parseDate = s => { const p = s.split('/'); return new Date(p[2], p[1]-1, p[0]).getTime(); };
-  const sortedGroups = Object.entries(groups).sort(([a], [b]) => parseDate(a) - parseDate(b));
-
-  panel.innerHTML = sortedGroups.map(([date, dayMsgs]) => `
-    <div class="wa-date-label">${date}</div>
-    ${dayMsgs.map(m => `
-      <div class="wa-message">
-        <div class="wa-msg-sender">${m.sender || 'Unknown'}</div>
-        <div class="wa-msg-text">${m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
-        <div class="wa-msg-time">${m.ts ? (m.ts.split(',')[1] || '').trim() : ''}</div>
-      </div>`).join('')}
-  `).join('');
-
-  panel.scrollTop = panel.scrollHeight;
-}
-
-window.switchWaClient = switchWaClient;
-
-// ── WhatsApp History Scraper ──────────────────────
-const WA_INSTANCE = '7107621691';
-const WA_TOKEN    = '6197e37376074d6e8632ca2ab39822bab1efeab69a0c47baae';
-const WA_BASE     = 'https://api.green-api.com/waInstance' + WA_INSTANCE;
-
-async function scrapeAllClientHistory() {
-  const btn      = document.getElementById('wa-scrape-btn');
-  const statusEl = document.getElementById('wa-scrape-status');
-  if (btn) { btn.disabled = true; btn.textContent = '↻ Syncing…'; }
-
-  // Build client list from Clients sheet data
-  const clients = window._clientsRaw || [];
-  const toScrape = [];
-  for (const c of clients) {
-    let chatId = String(c.chatId || '').trim();
-    if (!chatId || chatId === '1234567890@g.us') continue; // skip placeholder
-    if (chatId.indexOf('@') === -1) chatId += '@g.us';
-    const name = String(c.name || '').trim();
-    if (!name) continue;
-    const type = name.toLowerCase().includes('aj media') ? 'aj' : 'client';
-    toScrape.push({ chatId, name, type });
-  }
-  // Also include AJ direct chat
-  toScrape.push({ chatId: '918100498633@c.us', name: 'AJ Media Buyer', type: 'aj' });
-
-  if (!toScrape.length) {
-    if (statusEl) statusEl.textContent = 'No clients with chat IDs found';
-    if (btn) { btn.disabled = false; btn.textContent = '↻ Sync All Chat History'; }
-    return;
-  }
-
-  let totalAdded = 0;
-  for (let i = 0; i < toScrape.length; i++) {
-    const { chatId, name, type } = toScrape[i];
-    if (statusEl) statusEl.textContent = `${i+1}/${toScrape.length} ${name}…`;
-    try {
-      const res = await fetch(WA_BASE + '/getChatHistory/' + WA_TOKEN, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId, count: 500 })
-      });
-      if (!res.ok) continue;
-      const messages = await res.json();
-      if (!Array.isArray(messages) || !messages.length) continue;
-
-      // Format messages
-      const formatted = [];
-      for (const msg of messages) {
-        if (!msg || msg.typeMessage !== 'textMessage' || !msg.textMessage) continue;
-        const d = new Date(msg.timestamp * 1000);
-        const ts = d.toLocaleDateString('en-AU') + ', ' + d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
-        const sender = msg.type === 'outgoing' ? 'You' : (msg.senderName || msg.senderId || 'Client');
-        formatted.push({ ts, rawTs: msg.timestamp, client: name, sender, text: msg.textMessage, type });
-      }
-
-      if (!formatted.length) continue;
-
-      // Save to sheet via proxy
-      const saveRes = await fetchWT(PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'saveWhatsAppMessages', messages: formatted })
-      });
-      if (saveRes.ok) {
-        const result = await saveRes.json();
-        totalAdded += (result.added || 0);
-      }
-    } catch(e) {
-      console.warn('Failed for', name, e);
-    }
-    await new Promise(r => setTimeout(r, 500)); // small delay between calls
-  }
-
-  if (statusEl) statusEl.textContent = `✓ Done — ${totalAdded} new messages saved`;
-
-  // Refresh WhatsApp data in memory and re-render
-  const freshData = await fetchWhatsAppData();
-  window._waData = freshData || [];
-  window._waByClient = {};
-  for (const msg of window._waData) {
-    if (!msg.client) continue;
-    if (!window._waByClient[msg.client]) window._waByClient[msg.client] = [];
-    window._waByClient[msg.client].push(msg);
-  }
-  renderWaTab();
-  if (btn) { btn.disabled = false; btn.textContent = '↻ Sync All Chat History'; }
-}
-window.scrapeAllClientHistory = scrapeAllClientHistory;
-
-document.addEventListener('click', function(e) {
-  const item = e.target.closest('.wa-client-item');
-  if (item && item.dataset.client) {
-    currentWaClient = item.dataset.client;
-    renderWaTab();
-  }
-});
 
 window.toggleTodo = toggleTodo;
 window.deleteTodo = deleteTodo;
