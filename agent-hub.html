@@ -1197,7 +1197,8 @@ function renderOverview() {
   }
 
   function buildRows(clientNames, agent) {
-    return clientNames.map(name => {
+    const _churnedOv = new Set((ajSyncedData?.all_clients||[]).filter(c=>c.status==='Churned').map(c=>c.name.toLowerCase()));
+    return clientNames.filter(name => !ajIsPaused(name) && !_churnedOv.has(name.toLowerCase())).map(name => {
       const calls = clientCallsInPeriod(name, overviewPeriod);
       const apptClients = agent === 'Jules' ? apptsData.julesClients : apptsData.ayessaClients;
       const apptMatch = apptClients.find(c => c.name.toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,''))
@@ -1634,10 +1635,21 @@ function switchView(view) {
 // RENDER — APPOINTMENTS
 // ════════════════════════════════════════════════
 function renderAppts(data) {
-  const grandLast7  = data.jTotals.last7  + data.aTotals.last7;
-  const grandLast14 = data.jTotals.last14 + data.aTotals.last14;
-  const grandLast30 = data.jTotals.last30 + data.aTotals.last30;
-  const grandAll    = data.jTotals.allTime + data.aTotals.allTime;
+  const churnedNames = new Set((ajSyncedData?.all_clients||[]).filter(c=>c.status==='Churned').map(c=>c.name.toLowerCase()));
+  function isExcluded(name) { return ajIsPaused(name) || churnedNames.has((name||'').toLowerCase()); }
+  function sumTotals(clients) {
+    return clients.reduce((acc,c)=>({last7:acc.last7+c.last7,last14:acc.last14+c.last14,last30:acc.last30+c.last30,allTime:acc.allTime+c.allTime}),{last7:0,last14:0,last30:0,allTime:0});
+  }
+
+  const jClients = (data.julesClients||[]).filter(c=>!isExcluded(c.name));
+  const aClients = (data.ayessaClients||[]).filter(c=>!isExcluded(c.name));
+  const jTotals  = sumTotals(jClients);
+  const aTotals  = sumTotals(aClients);
+
+  const grandLast7  = jTotals.last7  + aTotals.last7;
+  const grandLast14 = jTotals.last14 + aTotals.last14;
+  const grandLast30 = jTotals.last30 + aTotals.last30;
+  const grandAll    = jTotals.allTime + aTotals.allTime;
 
   function clientRows(clients) {
     return clients.map(c => {
@@ -1661,22 +1673,22 @@ function renderAppts(data) {
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">Last 7 Days · Total</div>
         <div class="appt-hero-value">${fmt(grandLast7)}</div>
-        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last7)} · Ayessa ${fmt(data.aTotals.last7)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(jTotals.last7)} · Ayessa ${fmt(aTotals.last7)}</div>
       </div>
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">Last 14 Days · Total</div>
         <div class="appt-hero-value">${fmt(grandLast14)}</div>
-        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last14)} · Ayessa ${fmt(data.aTotals.last14)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(jTotals.last14)} · Ayessa ${fmt(aTotals.last14)}</div>
       </div>
       <div class="appt-hero-card ${kc}">
         <div class="appt-hero-label">Last 30 Days · Total</div>
         <div class="appt-hero-value" style="color:var(--${kc==='green'?'green':kc==='amber'?'amber':'red'})">${fmt(grandLast30)}</div>
-        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last30)} · Ayessa ${fmt(data.aTotals.last30)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(jTotals.last30)} · Ayessa ${fmt(aTotals.last30)}</div>
       </div>
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">All Time · Total</div>
         <div class="appt-hero-value">${fmt(grandAll)}</div>
-        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.allTime)} · Ayessa ${fmt(data.aTotals.allTime)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(jTotals.allTime)} · Ayessa ${fmt(aTotals.allTime)}</div>
       </div>
     </div>
 
@@ -1688,8 +1700,8 @@ function renderAppts(data) {
       <table class="kpi-table">
         <thead><tr><th>Client</th><th>Last 7 Days</th><th>Last 14 Days</th><th>Last 30 Days</th><th>All Time</th></tr></thead>
         <tbody>
-          ${clientRows(data.julesClients)}
-          <tr class="total-row"><td>Rose Total</td><td>${fmt(data.jTotals.last7)}</td><td>${fmt(data.jTotals.last14)}</td><td>${fmt(data.jTotals.last30)}</td><td>${fmt(data.jTotals.allTime)}</td></tr>
+          ${clientRows(jClients)}
+          <tr class="total-row"><td>Rose Total</td><td>${fmt(jTotals.last7)}</td><td>${fmt(jTotals.last14)}</td><td>${fmt(jTotals.last30)}</td><td>${fmt(jTotals.allTime)}</td></tr>
         </tbody>
       </table>
     </div>
@@ -1702,8 +1714,8 @@ function renderAppts(data) {
       <table class="kpi-table">
         <thead><tr><th>Client</th><th>Last 7 Days</th><th>Last 14 Days</th><th>Last 30 Days</th><th>All Time</th></tr></thead>
         <tbody>
-          ${clientRows(data.ayessaClients)}
-          <tr class="total-row"><td>Ayessa Total</td><td>${fmt(data.aTotals.last7)}</td><td>${fmt(data.aTotals.last14)}</td><td>${fmt(data.aTotals.last30)}</td><td>${fmt(data.aTotals.allTime)}</td></tr>
+          ${clientRows(aClients)}
+          <tr class="total-row"><td>Ayessa Total</td><td>${fmt(aTotals.last7)}</td><td>${fmt(aTotals.last14)}</td><td>${fmt(aTotals.last30)}</td><td>${fmt(aTotals.allTime)}</td></tr>
         </tbody>
       </table>
     </div>
