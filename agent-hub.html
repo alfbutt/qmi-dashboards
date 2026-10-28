@@ -1490,7 +1490,7 @@ function renderCalls(data) {
 
     <div class="today-banner">
       <div class="agent-card jules">
-        <div class="agent-name">Jules ${todayLeader==='jules'?'<span class="leader-tag jules">leading</span>':''}</div>
+        <div class="agent-name">Rose ${todayLeader==='jules'?'<span class="leader-tag jules">leading</span>':''}</div>
         <div class="agent-count">${fmt(data.today.jules.total)}</div>
         <div class="agent-sub">calls today</div>
         ${data.today.jules.clients.length ? `<div class="agent-clients">${data.today.jules.clients.join('<br>')}</div>` : '<div class="agent-clients" style="margin-top:1rem;font-style:italic;opacity:0.5;">no calls yet today</div>'}
@@ -1510,12 +1510,12 @@ function renderCalls(data) {
         </div>
       </div>
     </div>
-    ${todayLeader ? `<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:2rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Jules'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>` : ''}
+    ${todayLeader ? `<div style="text-align:center;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:2rem;">🏆 ${todayLeader==='ayessa'?'Ayessa':'Rose'} leads today by ${leadDiff} call${leadDiff!==1?'s':''}</div>` : ''}
 
     <div class="metrics-strip">
       <div class="metric"><div class="metric-label">Total Calls (All Time)</div><div class="metric-value">${fmt(grandTotal)}</div><div class="metric-sub">across both agents</div></div>
-      <div class="metric"><div class="metric-label">Calls This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Jules ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
-      <div class="metric"><div class="metric-label">Jules Total</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${grandTotal?Math.round(totalJules/grandTotal*100):0}% of all calls</div></div>
+      <div class="metric"><div class="metric-label">Calls This Week</div><div class="metric-value">${fmt(lastWeekJ+lastWeekA)}</div><div class="metric-sub"><span>Rose ${fmt(lastWeekJ)}</span> · Ayessa ${fmt(lastWeekA)}</div></div>
+      <div class="metric"><div class="metric-label">Rose Total</div><div class="metric-value" style="color:var(--jules)">${fmt(totalJules)}</div><div class="metric-sub">${grandTotal?Math.round(totalJules/grandTotal*100):0}% of all calls</div></div>
       <div class="metric"><div class="metric-label">Ayessa Total</div><div class="metric-value" style="color:var(--ayessa)">${fmt(totalAyessa)}</div><div class="metric-sub">${grandTotal?Math.round(totalAyessa/grandTotal*100):0}% of all calls</div></div>
     </div>
 
@@ -1529,7 +1529,7 @@ function renderCalls(data) {
         </div>
       </div>
       <div class="chart-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--jules)"></div>Jules</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--jules)"></div>Rose</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--ayessa)"></div>Ayessa</div>
       </div>
       <div style="position:relative;width:100%;height:280px;"><canvas id="mainChart"></canvas></div>
@@ -1540,7 +1540,7 @@ function renderCalls(data) {
       <div style="overflow-x:auto;">
         <table><thead><tr><th>week starting</th>${data.weekly.weeks.map(w=>`<th>${w.slice(0,5)}</th>`).join('')}</tr></thead>
         <tbody>
-          <tr><td style="color:var(--jules)">Jules</td>${data.weekly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
+          <tr><td style="color:var(--jules)">Rose</td>${data.weekly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
           <tr><td style="color:var(--ayessa)">Ayessa</td>${data.weekly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
           <tr class="row-total"><td>Total</td>${data.weekly.jules.map((j,i)=>`<td class="val-total">${fmt(j+data.weekly.ayessa[i])}</td>`).join('')}</tr>
         </tbody></table>
@@ -1551,7 +1551,7 @@ function renderCalls(data) {
       <div class="table-header"><div class="section-title">monthly summary</div></div>
       <table><thead><tr><th>month</th>${data.monthly.months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
       <tbody>
-        <tr><td style="color:var(--jules)">Jules</td>${data.monthly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
+        <tr><td style="color:var(--jules)">Rose</td>${data.monthly.jules.map(v=>`<td class="val-jules">${fmt(v)}</td>`).join('')}</tr>
         <tr><td style="color:var(--ayessa)">Ayessa</td>${data.monthly.ayessa.map(v=>`<td class="val-ayessa">${fmt(v)}</td>`).join('')}</tr>
         <tr class="row-total"><td>Total</td>${data.monthly.months.map((_,i)=>`<td class="val-total">${fmt(data.monthly.jules[i]+data.monthly.ayessa[i])}</td>`).join('')}</tr>
       </tbody></table>
@@ -1644,35 +1644,35 @@ function renderAppts(data) {
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">Last 7 Days · Total</div>
         <div class="appt-hero-value">${fmt(grandLast7)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last7)} · Ayessa ${fmt(data.aTotals.last7)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last7)} · Ayessa ${fmt(data.aTotals.last7)}</div>
       </div>
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">Last 14 Days · Total</div>
         <div class="appt-hero-value">${fmt(grandLast14)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last14)} · Ayessa ${fmt(data.aTotals.last14)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last14)} · Ayessa ${fmt(data.aTotals.last14)}</div>
       </div>
       <div class="appt-hero-card ${kc}">
         <div class="appt-hero-label">Last 30 Days · Total</div>
         <div class="appt-hero-value" style="color:var(--${kc==='green'?'green':kc==='amber'?'amber':'red'})">${fmt(grandLast30)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.last30)} · Ayessa ${fmt(data.aTotals.last30)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.last30)} · Ayessa ${fmt(data.aTotals.last30)}</div>
       </div>
       <div class="appt-hero-card neutral">
         <div class="appt-hero-label">All Time · Total</div>
         <div class="appt-hero-value">${fmt(grandAll)}</div>
-        <div class="appt-hero-sub">Jules ${fmt(data.jTotals.allTime)} · Ayessa ${fmt(data.aTotals.allTime)}</div>
+        <div class="appt-hero-sub">Rose ${fmt(data.jTotals.allTime)} · Ayessa ${fmt(data.aTotals.allTime)}</div>
       </div>
     </div>
 
     <div class="kpi-section">
       <div class="kpi-section-header">
-        <div class="section-title">Jules · Appointments by Client</div>
+        <div class="section-title">Rose · Appointments by Client</div>
         <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted)">30-day KPI window</div>
       </div>
       <table class="kpi-table">
         <thead><tr><th>Client</th><th>Last 7 Days</th><th>Last 14 Days</th><th>Last 30 Days</th><th>All Time</th></tr></thead>
         <tbody>
           ${clientRows(data.julesClients)}
-          <tr class="total-row"><td>Jules Total</td><td>${fmt(data.jTotals.last7)}</td><td>${fmt(data.jTotals.last14)}</td><td>${fmt(data.jTotals.last30)}</td><td>${fmt(data.jTotals.allTime)}</td></tr>
+          <tr class="total-row"><td>Rose Total</td><td>${fmt(data.jTotals.last7)}</td><td>${fmt(data.jTotals.last14)}</td><td>${fmt(data.jTotals.last30)}</td><td>${fmt(data.jTotals.allTime)}</td></tr>
         </tbody>
       </table>
     </div>

@@ -116,6 +116,7 @@
   }
   .agent-btn.active.jules { background: rgba(201,150,12,0.15); border-color: var(--jules); color: var(--jules); font-weight: 600; }
   .agent-btn.active.ayessa { background: rgba(230,184,74,0.15); border-color: var(--ayessa); color: var(--ayessa); font-weight: 600; }
+  .agent-btn.active.rachel { background: rgba(26,158,130,0.15); border-color: #1a9e82; color: #1a9e82; font-weight: 600; }
   .agent-btn.active.ads-only { background: rgba(96,165,250,0.15); border-color: var(--blue); color: var(--blue); font-weight: 600; }
 
   .btn {
@@ -222,6 +223,7 @@
         <div class="agent-toggle">
           <button class="agent-btn jules" id="btnJules" onclick="selectAgent('Jules')">Rose</button>
           <button class="agent-btn ayessa" id="btnAyessa" onclick="selectAgent('Ayessa')">Ayessa</button>
+          <button class="agent-btn rachel" id="btnRachel" onclick="selectAgent('Rachel')">Rachel</button>
           <button class="agent-btn ads-only" id="btnAdsOnly" onclick="selectAgent('Ads Only')">📢 Ads Only</button>
         </div>
       </div>
@@ -381,6 +383,7 @@ function selectAgent(agent) {
   selectedAgent = agent;
   document.getElementById('btnJules').classList.toggle('active', agent === 'Jules');
   document.getElementById('btnAyessa').classList.toggle('active', agent === 'Ayessa');
+  document.getElementById('btnRachel').classList.toggle('active', agent === 'Rachel');
   document.getElementById('btnAdsOnly').classList.toggle('active', agent === 'Ads Only');
   const isAdsOnly = agent === 'Ads Only';
   const lbl = document.getElementById('chatIdLabel');
