@@ -3475,7 +3475,7 @@ function _renderClientsGrid(rows, filter='') {
     const r = rows[i];
     const name   = String(r[0]||'').trim();
     const status = String(r[8]||'').trim();
-    if(!name || status==='Churned') continue;
+    if(!name || status==='Churned' || isNonCC(name)) continue;
     // Priority: fetched doc > hardcoded CLIENT_OVERVIEW_DATA > sheet columns
     const doc = window._docDataCache?.[name] || {};
     const ov  = _findClientOverride(name);
@@ -3558,8 +3558,8 @@ function _renderClientsGrid(rows, filter='') {
         <button class="clients-filter" style="color:var(--muted)" onclick="window._clientsPageData=null;renderClientsPage()">↺ Refresh</button>
       </div>
     </div>
-    ${(()=>{
-      function makeClientCard(c,idx){
+    <div class="clients-grid">
+      ${filtered.map((c,idx)=>{
         const _localOvAgent = _getLocalAgentOverrides()[c.name];
         const _displayAgent = _localOvAgent || c.agent || 'Jules';
         const _displayAgentLabel = _displayAgent === 'Jules' ? 'Rose' : _displayAgent;
@@ -3653,29 +3653,9 @@ function _renderClientsGrid(rows, filter='') {
             </div>` : ''}
 
           </div>
-        </div>`;}
-      const jCl  = filtered.filter(c=>(c.agent||'').toLowerCase()==='jules');
-      const aCl  = filtered.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
-      const rCl  = filtered.filter(c=>(c.agent||'').toLowerCase()==='rachel');
-      const adCl = filtered.filter(c=>{const ag=(c.agent||'').toLowerCase();return ag!=='jules'&&ag!=='ayessa'&&ag!=='rachel';});
-      function makeAgentCol(title,colorVar,cards){
-        return `<div>
-          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:2px solid ${colorVar}">
-            <span style="font-size:0.65rem;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${colorVar}">${title}</span>
-            <span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted)">${cards.length} client${cards.length!==1?'s':''}</span>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:0.75rem">
-            ${cards.length?cards.map(c=>makeClientCard(c,filtered.indexOf(c))).join(''):'<div style="color:var(--muted);font-size:0.75rem;font-family:\'DM Mono\',monospace;padding:0.5rem 0">None</div>'}
-          </div>
         </div>`;
-      }
-      return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1.25rem;align-items:start">
-        ${makeAgentCol('Rose','var(--jules)',jCl)}
-        ${makeAgentCol('Ayessa','var(--ayessa)',aCl)}
-        ${makeAgentCol('Rachel','var(--rachel)',rCl)}
-        ${makeAgentCol('Ads Only','var(--muted)',adCl)}
-      </div>`;
-    })()}
+      }).join('')}
+    </div>
   `;
 }
 
