@@ -569,6 +569,37 @@ async function onboardClient() {
           }).catch(() => {});
         } catch(_) {}
       } catch(_) {}
+      // Add to Payment Log sheet
+      try {
+        const plMrr        = parseFloat(document.getElementById('mrrAmount')?.value)      || parseFloat((fa.mrrCollected  || '').replace(/[^0-9.]/g,'')) || 0;
+        const plCash       = parseFloat(document.getElementById('upfrontCash')?.value)    || parseFloat((fa.cashCollected || '').replace(/[^0-9.]/g,'')) || 0;
+        const plContracted = parseFloat(document.getElementById('contractedValue')?.value) || 0;
+        const plDateRaw    = document.getElementById('billingStartDate')?.value || new Date().toISOString().slice(0,10);
+        const plDate       = new Date(plDateRaw);
+        const plBillMonth  = plDate.getMonth(); // 0=Jan
+        const plStartFmt   = plDate.toLocaleDateString('en-AU', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const plMonths     = (plMrr > 0 && plContracted > 0) ? Math.round(plContracted / plMrr) : 1;
+        const plPayType    = document.getElementById('paymentType')?.value || '';
+        const plSource     = document.getElementById('leadSource')?.value  || '';
+        if (plMrr > 0 || plCash > 0) {
+          fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+              action:         'addToPaymentLog',
+              clientName,
+              startDate:      plStartFmt,
+              billMonth:      plBillMonth,
+              upfront:        plCash,
+              mrr:            plMrr,
+              contractMonths: plMonths,
+              payType:        plPayType,
+              source:         plSource,
+            })
+          }).catch(() => {});
+        }
+      } catch(_) {}
+
       clearForm();
       loadClientsForChurn();
     } else {
