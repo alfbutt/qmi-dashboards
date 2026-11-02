@@ -1782,6 +1782,7 @@ const AGENT_OVERRIDES = {
 // Per-client notes shown on the CEO dashboard card, below the Overview section
 const CLIENT_NOTES = {
   "KBG Renovations": "3-month programme ($7,500) ended. Now on month-by-month rolling plan at $2,420/month from September 2026.",
+  "Integra Renovations": "3-month programme ($7,500) completed. Now on month-by-month rolling plan at $2,200/month from November 2026.",
 };
 
 // Maps clients-sheet names → actual calls-sheet company names (for per-client call count lookups)
@@ -10507,10 +10508,20 @@ const CEO_CLIENT_PACKAGES = {
   'barbalace construction':          { type: 'monthly',   mrr: 0    },
   // ── 3-month programmes ──────────────────────────────────────────────────
   'bisdaq build':                    { type: 'programme', total: 5000,  months: 3, start: '2026-07-12', end: '2026-10-12' },
-  'integra renovations':             { type: 'programme', total: 7500,  months: 3, start: '2026-08-02', end: '2026-11-02' },
+  'integra renovations':             { type: 'monthly',   mrr: 2200 },
   'betterbuilding and construction': { type: 'programme', total: 5000,  months: 3, start: '2026-08-24', end: '2026-11-24' },
   'quality built homes':             { type: 'monthly',   mrr: 2333 },
 };
+
+// ── Programme override helper — checks qj_programme_overrides localStorage first ──
+function getEffectivePkg(name) {
+  const key = (name || '').toLowerCase();
+  try {
+    const overrides = JSON.parse(localStorage.getItem('qj_programme_overrides') || '{}');
+    if (overrides[key]) return overrides[key];
+  } catch(_) {}
+  return CEO_CLIENT_PACKAGES[key];
+}
 
 // ── Correct billing day of month per client (overrides sheet billingStartDate) ──
 const BILLING_DAYS = {
@@ -10880,7 +10891,7 @@ async function renderCEOOverview() {
 
   // ── Package-aware countdown chip ────────────────────────────────────────────
   function packageChip(c) {
-    const pkg = CEO_CLIENT_PACKAGES[c.name.toLowerCase()];
+    const pkg = getEffectivePkg(c.name);
 
     if (pkg && pkg.type === 'programme') {
       const end   = new Date(pkg.end);
@@ -10907,7 +10918,7 @@ async function renderCEOOverview() {
 
   // ── MRR / value badge ────────────────────────────────────────────────────────
   function valueBadge(c) {
-    const pkg = CEO_CLIENT_PACKAGES[c.name.toLowerCase()];
+    const pkg = getEffectivePkg(c.name);
     if (pkg) {
       if (pkg.type === 'programme') {
         const total = '$' + (pkg.total >= 1000 ? (pkg.total/1000).toFixed(pkg.total%1000===0?0:1) + 'k' : pkg.total);
@@ -10952,13 +10963,28 @@ async function renderCEOOverview() {
           ? `<span class="ceo-badge cc">CC</span><button onclick="moveToAds('${c.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:1px solid rgba(251,146,60,0.4);color:#f97316;cursor:pointer;font-size:0.58rem;padding:1px 6px;border-radius:5px;line-height:1.5;font-family:'DM Mono',monospace;white-space:nowrap" title="Move to Ads Only">→ Ads</button>`
           : `<span class="ceo-badge no-cc">Ads</span><button onclick="removeFromAds('${c.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:1px solid rgba(99,102,241,0.4);color:#6366f1;cursor:pointer;font-size:0.58rem;padding:1px 6px;border-radius:5px;line-height:1.5;font-family:'DM Mono',monospace;white-space:nowrap" title="Move back to CC">↩ CC</button>`}
         <button class="ceo-action-btn pause" onclick="_ceoPauseClient('${c.name.replace(/'/g,"\\'")}')">⏸ Pause</button>
+        ${(() => {
+          const _pkg = getEffectivePkg(c.name);
+          return _pkg && _pkg.type === 'programme'
+            ? `<button class="ceo-action-btn" onclick="_ceoConvertToMonthly('${c.name.replace(/'/g,"\\'")}');event.stopPropagation()" style="color:#a78bfa;border-color:rgba(167,139,250,0.4)" title="Convert to monthly subscription">→ Monthly</button>`
+            : '';
+        })()}
       </div>
       <!-- live date + package -->
       <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
         ${c.liveDate ? `<span style="font-size:0.6rem;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px">🚀 Live ${fmtDate(c.liveDate)}</span>` : ''}
         ${packageChip(c)}
       </div>
-      ${CLIENT_NOTES[c.name] ? `<div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);padding:4px 2px 0;opacity:0.85;line-height:1.4">${CLIENT_NOTES[c.name]}</div>` : ''}
+      ${(() => {
+        const staticNote = CLIENT_NOTES[c.name];
+        if (staticNote) return `<div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);padding:4px 2px 0;opacity:0.85;line-height:1.4">${staticNote}</div>`;
+        try {
+          const dynNotes = JSON.parse(localStorage.getItem('qj_conversion_notes') || '{}');
+          const dn = dynNotes[c.name];
+          if (dn) return `<div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:#a78bfa;padding:4px 2px 0;opacity:0.85;line-height:1.4">🔄 ${dn}</div>`;
+        } catch(_) {}
+        return '';
+      })()}
     </div>`;
 
   const julesCC    = visibleClients.filter(c => (c.agent||'').toLowerCase()==='jules'   && !isNonCC(c.name));
@@ -11289,6 +11315,30 @@ function _ceoReactivateClient(name) {
 window._ceoPauseClient      = _ceoPauseClient;
 window._ceoMakeActiveClient = _ceoMakeActiveClient;
 window._ceoReactivateClient = _ceoReactivateClient;
+
+function _ceoConvertToMonthly(name) {
+  const amtStr = prompt(`Convert "${name}" to monthly subscription.\n\nEnter monthly amount (e.g. 2200):`);
+  if (amtStr === null) return; // cancelled
+  const amt = parseFloat((amtStr || '').replace(/[^0-9.]/g, ''));
+  if (!amt || amt <= 0) { alert('Please enter a valid monthly amount.'); return; }
+
+  try {
+    const overrides = JSON.parse(localStorage.getItem('qj_programme_overrides') || '{}');
+    overrides[name.toLowerCase()] = { type: 'monthly', mrr: amt, convertedAt: new Date().toISOString().slice(0, 10) };
+    localStorage.setItem('qj_programme_overrides', JSON.stringify(overrides));
+  } catch(_) {}
+
+  const fmtAmt = '$' + (amt >= 1000 ? (amt / 1000).toFixed(amt % 1000 === 0 ? 0 : 1) + 'k' : amt);
+  const monthName = new Date().toLocaleString('en-AU', { month: 'long', year: 'numeric' });
+  try {
+    const notes = JSON.parse(localStorage.getItem('qj_conversion_notes') || '{}');
+    notes[name] = `Programme completed. Now on month-by-month rolling plan at ${fmtAmt}/month from ${monthName}.`;
+    localStorage.setItem('qj_conversion_notes', JSON.stringify(notes));
+  } catch(_) {}
+
+  renderCEOOverview();
+}
+window._ceoConvertToMonthly = _ceoConvertToMonthly;
 
 // ── CEO To-Do ─────────────────────────────────────
 let _ceoTodos = JSON.parse(localStorage.getItem('qj_ceo_todos') || '[]');
