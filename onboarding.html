@@ -252,6 +252,17 @@
         <label>Google Drive Folder URL</label>
         <input type="text" id="driveUrl" placeholder="Paste Google Drive folder URL for client ads" />
       </div>
+      <div class="form-group full">
+        <label>AI Visualisation Tools URL</label>
+        <input type="text" id="aiToolsUrl" placeholder="e.g. https://your-ai-tool.netlify.app/client/…" />
+      </div>
+      <div class="form-group full">
+        <label>Client Logo <span style="color:var(--muted);font-size:0.6rem">(optional — uploaded to their portal automatically)</span></label>
+        <input type="file" id="clientLogo" accept="image/*" style="padding:0.5rem 0.9rem;cursor:pointer" />
+        <div id="logoPreviewWrap" style="display:none;margin-top:0.5rem">
+          <img id="logoPreview" alt="Logo preview" style="max-height:60px;max-width:180px;border-radius:8px;border:1px solid var(--border2);object-fit:contain;padding:4px;background:var(--surface2)" />
+        </div>
+      </div>
       <div class="form-group">
         <label>Live Date</label>
         <input type="date" id="liveDate" />
@@ -363,14 +374,27 @@
 </div>
 
 <script>
-const PROXY_URL        = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
-const CLIENTS_SHEET_ID = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
+const PROXY_URL          = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const CLIENTS_SHEET_ID   = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
+const AD_PREVIEWS_URL    = 'https://live--qj-ad-previews.netlify.app';
+const AD_PREVIEWS_TOKEN  = 'qjob-onboard-2026-xK9mP';
 
 let selectedAgent = 'Jules';
 
 window.onload = function() {
   selectAgent('Jules');
   loadClientsForChurn();
+  // Logo file preview
+  document.getElementById('clientLogo').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) { document.getElementById('logoPreviewWrap').style.display = 'none'; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('logoPreview').src = e.target.result;
+      document.getElementById('logoPreviewWrap').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
 };
 
 function setStatus(id, msg, type) {
@@ -393,6 +417,52 @@ function selectAgent(agent) {
 }
 
 function getField(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function readLogoAsBase64() {
+  return new Promise(resolve => {
+    const fileInput = document.getElementById('clientLogo');
+    const file = fileInput && fileInput.files[0];
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = e => {
+      // e.target.result is "data:image/png;base64,XXXX"
+      const parts = (e.target.result || '').split(',');
+      const mime  = (parts[0].match(/:(.*?);/) || [])[1] || 'image/png';
+      const b64   = parts[1] || '';
+      resolve(b64 ? { base64: b64, mimeType: mime } : null);
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function pushToAdPreviews(clientName, logoData) {
+  try {
+    const slugify = s => String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'client';
+    const payload = {
+      name:          clientName,
+      website:       getField('driveUrl'),   // website field stores drive URL in GAS; ad previews gets its own
+      statsSheetUrl: getField('statsSheetUrl'),
+      overviewDocUrl:getField('overviewDocUrl'),
+      driveUrl:      getField('driveUrl'),
+      aiToolsUrl:    getField('aiToolsUrl'),
+      rawUrl:        getField('driveUrl'),
+    };
+    if (logoData) {
+      payload.logoBase64  = logoData.base64;
+      payload.logoMimeType= logoData.mimeType;
+    }
+    const res = await fetch(AD_PREVIEWS_URL + '/api/onboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-onboard-token': AD_PREVIEWS_TOKEN },
+      body: JSON.stringify(payload),
+    });
+    // non-fatal — command centre onboard already succeeded
+    if (!res.ok) console.warn('Ad Previews onboard returned', res.status);
+  } catch (e) {
+    console.warn('Ad Previews onboard error:', e);
+  }
+}
 
 async function onboardClient() {
   const clientName    = getField('clientName');
@@ -450,6 +520,9 @@ async function onboardClient() {
     const data = await res.json();
     if (data.success) {
       setStatus('onboardStatus', '✓ ' + clientName + ' onboarded successfully!', 'success');
+
+      // Auto-create client directory in Ad Previews portal (non-blocking)
+      readLogoAsBase64().then(logoData => pushToAdPreviews(clientName, logoData)).catch(() => {});
 
       // Track ads-only clients in localStorage so Command Centre can filter them
       if (selectedAgent === 'Ads Only') {
@@ -719,10 +792,13 @@ async function churnClient() {
 }
 
 function clearForm() {
-  ['clientName','chatId','statsSheetUrl','overviewDocUrl','liveDate','billingStartDate','mrrAmount','contractedValue']
+  ['clientName','chatId','statsSheetUrl','overviewDocUrl','driveUrl','aiToolsUrl','liveDate','billingStartDate','mrrAmount','contractedValue','businessName','city','upfrontCash']
     .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   ['paymentType','leadSource']
     .forEach(id => { document.getElementById(id).value = ''; });
+  const logoInput = document.getElementById('clientLogo');
+  if (logoInput) logoInput.value = '';
+  document.getElementById('logoPreviewWrap').style.display = 'none';
   selectAgent('Jules');
   setStatus('onboardStatus', '', '');
 }
