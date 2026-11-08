@@ -522,7 +522,19 @@ async function onboardClient() {
       setStatus('onboardStatus', '✓ ' + clientName + ' onboarded successfully!', 'success');
 
       // Auto-create client directory in Ad Previews portal (non-blocking)
-      readLogoAsBase64().then(logoData => pushToAdPreviews(clientName, logoData)).catch(() => {});
+      // Also save logo URL to localStorage so CEO dashboard can show it
+      readLogoAsBase64().then(logoData => {
+        pushToAdPreviews(clientName, logoData).catch(() => {});
+        if (logoData) {
+          try {
+            const slugify = s => String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'client';
+            const slug = slugify(clientName);
+            const logos = JSON.parse(localStorage.getItem('qj_client_logos') || '{}');
+            logos[clientName.toLowerCase()] = AD_PREVIEWS_URL + '/api/logo/' + slug;
+            localStorage.setItem('qj_client_logos', JSON.stringify(logos));
+          } catch(_) {}
+        }
+      }).catch(() => {});
 
       // Track ads-only clients in localStorage so Command Centre can filter them
       if (selectedAgent === 'Ads Only') {

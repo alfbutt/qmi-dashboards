@@ -202,6 +202,7 @@
     border-bottom:1px solid var(--border);
   }
   .client-card-name { font-size:0.98rem; font-weight:700; letter-spacing:-0.01em; margin-bottom:4px; }
+  .client-card-logo { width:38px; height:38px; border-radius:9px; object-fit:contain; border:1px solid var(--border); flex-shrink:0; margin-top:1px; background:rgba(255,255,255,0.04); }
   .client-card-meta { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
   .client-badge {
     font-size:0.6rem; font-family:'DM Mono',monospace; letter-spacing:0.08em;
@@ -3623,9 +3624,12 @@ function _renderClientsGrid(rows, filter='') {
         const owedBadge = _owedEntry
           ? `<span class="client-badge" style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.25)">💸 Owes £${_owedEntry.amount}</span>`
           : '';
+        const _logoUrl = (() => { try { return (JSON.parse(localStorage.getItem('qj_client_logos')||'{}')||{})[c.name.toLowerCase()] || ''; } catch(_){return '';} })();
         return `<div class="client-card" onclick="openClientModal(window._renderedClients[${idx}])">
           <div class="client-card-head">
-            <div>
+            <div style="display:flex;align-items:flex-start;gap:0.65rem;min-width:0">
+              ${_logoUrl ? `<img class="client-card-logo" src="${_logoUrl.replace(/"/g,'&quot;')}" alt="" onerror="this.style.display='none'" loading="lazy" />` : ''}
+              <div style="min-width:0;flex:1">
               <div class="client-card-name">${c.name}</div>
               ${c.businessName && c.businessName !== c.name ? `<div style="font-size:0.72rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">${c.businessName}</div>` : ''}
               <div class="client-card-meta">
@@ -3639,6 +3643,7 @@ function _renderClientsGrid(rows, filter='') {
                 ${statsLink}
                 ${docLink}
                 ${briefBtn}
+              </div>
               </div>
             </div>
           </div>
