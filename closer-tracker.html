@@ -235,10 +235,11 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 <div class="save-toast hidden" id="save-toast"></div>
 
 <script>
-const PROXY_READ  = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
-const PROXY_WRITE = 'https://script.google.com/macros/s/AKfycbyGiq2AUfLNVl_coQ9ndmbRovLyIOjlgL9LImltBrYLh1P8IlVsvSYoeNSBZT3qxOmk/exec';
-const SHEET_ID    = '1o2z0EEA6NtEsJjh3p5qCvo39IwfwI0KhDwrlnJ2Z1l8';
-const SHEET_NAME  = 'DNT';
+const PROXY_READ   = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const PROXY_WRITE  = 'https://script.google.com/macros/s/AKfycbyGiq2AUfLNVl_coQ9ndmbRovLyIOjlgL9LImltBrYLh1P8IlVsvSYoeNSBZT3qxOmk/exec';
+const SHEET_ID     = '1o2z0EEA6NtEsJjh3p5qCvo39IwfwI0KhDwrlnJ2Z1l8';
+const SHEET_READ   = 'AUTOMATED APPOINTMENT SHEET'; // read display data from here
+const SHEET_WRITE  = 'DNT';                          // all edits go here, flow through to above
 const FB_API_VER  = 'v19.0';
 
 let allLeads      = [];
@@ -348,34 +349,37 @@ async function refreshAll() {
 
 async function loadLeads(force=false) {
   try {
-    const url = `${PROXY_READ}?id=${SHEET_ID}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    const url = `${PROXY_READ}?id=${SHEET_ID}&sheet=${encodeURIComponent(SHEET_READ)}`;
     const rows = await fetch(url, {cache: force?'no-store':'default'}).then(r=>r.json());
     allLeads = [];
-    // DNT tab: row 1 = header, data from row 2 onward
-    // Columns (0-indexed): A=Name, B=Source, C=DateAdded, D=AppDate, E=Biz,
-    //   F=Website, G=Notes, H=GHL, I=Show(8), J=Qual(9), K=2ndAppt(10),
-    //   L=Appt2Date(11), M=Converted(12), N=MRR(13), O=UF Cash(14), P=ContractedRev(15)
+    // AUTOMATED APPOINTMENT SHEET columns (0-indexed):
+    //   A(0),B(1) = summary cols (empty on data rows)
+    //   C(2)=Name, D(3)=Source, E(4)=DateAdded, F(5)=AppDate,
+    //   G(6)=Biz, H(7)=Website, I(8)=Notes, J(9)=GHL link,
+    //   K(10)=Show, L(11)=Qual, M(12)=2ndAppt, N(13)=Appt2Date,
+    //   O(14)=Converted, P(15)=MRR, Q(16)=UF Cash, R(17)=ContractedRev
+    // rowIndex = array index = DNT row number (AUTOMATED row N+1 → DNT row N)
     for (let i=1; i<rows.length; i++) {
       const r = rows[i];
-      if (!r || !r[0] || !String(r[0]).trim() || String(r[0]).trim()==='Name') continue;
+      if (!r || !r[2] || !String(r[2]).trim() || String(r[2]).trim()==='Name') continue;
       allLeads.push({
-        rowIndex: i, sheetRow: i+1,
-        name:    String(r[0]||'').trim(),
-        source:  String(r[1]||'').trim(),
-        dateAdd: r[2] ? new Date(r[2]) : null,
-        appDate: r[3] ? new Date(r[3]) : null,
-        biz:     String(r[4]||'').trim(),
-        website: String(r[5]||'').trim(),
-        notes:   String(r[6]||'').trim(),
-        ghl:     String(r[7]||'').trim(),
-        show:    String(r[8]||'').trim().toUpperCase(),
-        qual:    String(r[9]||'').trim().toUpperCase(),
-        appt2:   String(r[10]||'').trim().toUpperCase(),
-        appt2d:  r[11] ? new Date(r[11]) : null,
-        closed:  String(r[12]||'').trim(),
-        mrr:     r[13] ? Number(String(r[13]).replace(/[^0-9.]/g,'')) : 0,
-        cash:    r[14] ? Number(String(r[14]).replace(/[^0-9.]/g,'')) : 0,
-        contracted: r[15] ? Number(String(r[15]).replace(/[^0-9.]/g,'')) : 0,
+        rowIndex: i,
+        name:    String(r[2]||'').trim(),
+        source:  String(r[3]||'').trim(),
+        dateAdd: r[4] ? new Date(r[4]) : null,
+        appDate: r[5] ? new Date(r[5]) : null,
+        biz:     String(r[6]||'').trim(),
+        website: String(r[7]||'').trim(),
+        notes:   String(r[8]||'').trim(),
+        ghl:     String(r[9]||'').trim(),
+        show:    String(r[10]||'').trim().toUpperCase(),
+        qual:    String(r[11]||'').trim().toUpperCase(),
+        appt2:   String(r[12]||'').trim().toUpperCase(),
+        appt2d:  r[13] ? new Date(r[13]) : null,
+        closed:  String(r[14]||'').trim(),
+        mrr:     r[15] ? Number(String(r[15]).replace(/[^0-9.]/g,'')) : 0,
+        cash:    r[16] ? Number(String(r[16]).replace(/[^0-9.]/g,'')) : 0,
+        contracted: r[17] ? Number(String(r[17]).replace(/[^0-9.]/g,'')) : 0,
       });
     }
     // Apply local overrides
@@ -940,7 +944,7 @@ async function setVal(event, rowIndex, colIndex, value, field, fieldVal) {
   if(!localOverrides[rowIndex])localOverrides[rowIndex]={};
   localOverrides[rowIndex][field]=fieldVal;
   saveLocalOverrides();
-  const ok=await writeToSheet(rowIndex+1, colIndex+1, value);
+  const ok=await writeToSheet(rowIndex, colIndex+1, value);
   btn.classList.remove('saving');
   renderLeadsStats(); renderFilters();
   renderAnalytics(); // live recalculate
@@ -960,9 +964,9 @@ async function saveRev(event, rowIndex) {
   if(!localOverrides[rowIndex])localOverrides[rowIndex]={};
   Object.assign(localOverrides[rowIndex],{mrr:mrrVal,cash:cashVal,contracted:contrVal});
   saveLocalOverrides();
-  const r1=await writeToSheet(rowIndex+1,14,mrrVal);
-  const r2=await writeToSheet(rowIndex+1,15,cashVal);
-  const r3=await writeToSheet(rowIndex+1,16,contrVal);
+  const r1=await writeToSheet(rowIndex,14,mrrVal);
+  const r2=await writeToSheet(rowIndex,15,cashVal);
+  const r3=await writeToSheet(rowIndex,16,contrVal);
   btn.classList.remove('saving');
   renderAnalytics(); // live recalculate
   updateCardDisplay(rowIndex, lead);
@@ -995,7 +999,7 @@ function updateCardDisplay(rowIndex, lead) {
 
 async function writeToSheet(row,col,value) {
   try {
-    const resp=await fetch(PROXY_WRITE,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:SHEET_ID,sheet:SHEET_NAME,row,col,value})});
+    const resp=await fetch(PROXY_WRITE,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({id:SHEET_ID,sheet:SHEET_WRITE,row,col,value})});
     const data=await resp.json();
     if(data.ok){writeBackEnabled=true;return true;}
     throw new Error(data.e||'Failed');
