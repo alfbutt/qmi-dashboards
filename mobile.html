@@ -1467,6 +1467,8 @@
   <!-- ══ CEO DASHBOARD ══ -->
   <div id="page-ceo-overview" class="page"><div id="app-ceo-overview"></div></div>
   <div id="page-ceo-todos"    class="page"><div id="app-ceo-todos"></div></div>
+  <!-- Mobile-only CEO overview — reads directly from Sheets, no localStorage needed -->
+  <div id="page-mob-ceo" class="page"><div id="app-mob-ceo" style="padding:1rem 0.85rem 1.5rem"></div></div>
   <div id="page-ceo-agents"   class="page"><div id="app-ceo-agents"></div></div>
   <div id="page-ceo-speed"    class="page"><div id="app-ceo-speed"></div></div>
   <div id="page-pm-ob-deck"   class="page"><div id="app-pm-ob-deck"></div></div>
@@ -14241,7 +14243,7 @@ if ('serviceWorker' in navigator) {
 
 <!-- ══ MOBILE BOTTOM NAV ══════════════════════════════════════ -->
 <nav id="mob-bottom-nav">
-  <button class="mob-nav-btn active" data-page="ceo-overview" onclick="mobNav('ceo-overview')">
+  <button class="mob-nav-btn active" data-page="mob-ceo" onclick="mobNav('mob-ceo')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
       <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
@@ -14331,14 +14333,22 @@ if ('serviceWorker' in navigator) {
 <script>
 // ── Mobile bottom nav ──────────────────────────────────────────
 function mobNav(page) {
-  if (typeof switchSub === 'function') {
-    switchSub(page);
-  } else if (typeof switchPage === 'function') {
-    switchPage(page);
-  } else {
+  // mob-ceo is our custom mobile page — handle separately
+  if (page === 'mob-ceo') {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const target = document.getElementById('page-' + page);
-    if (target) target.classList.add('active');
+    const el = document.getElementById('page-mob-ceo');
+    if (el) el.classList.add('active');
+    renderMobCEO();
+  } else {
+    if (typeof switchSub === 'function') {
+      switchSub(page);
+    } else if (typeof switchPage === 'function') {
+      switchPage(page);
+    } else {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('page-' + page);
+      if (target) target.classList.add('active');
+    }
   }
   // Update active state
   document.querySelectorAll('.mob-nav-btn').forEach(b => {
@@ -14353,6 +14363,17 @@ function mobNav(page) {
   document.querySelector('.main')?.scrollTo(0, 0);
   window.scrollTo(0, 0);
 }
+
+// Auto-load mobile CEO overview on page open
+window.addEventListener('load', () => {
+  if (window.innerWidth <= 768) {
+    // Show our custom overview page as default on mobile
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const el = document.getElementById('page-mob-ceo');
+    if (el) el.classList.add('active');
+    renderMobCEO();
+  }
+});
 
 // Keep bottom nav in sync with sidebar navigation
 (function() {
@@ -14382,6 +14403,291 @@ function mobNav(page) {
     }
   });
 })();
+
+// ── Mobile CEO Overview — reads directly from Google Sheets ──────────────────
+const MOB_PROXY   = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const MOB_CLIENTS = '1wA5UlvTW0gQqqEL0rJNjHz3191ggmAAqXno9T-_yErw';
+const MOB_PAYLOG  = '1MpiQ8dlX3uuNrcJ5zW59Y7vW7Tnl29VRk3xCES36yDk';
+const MOB_CALLS   = '1XaiWFoSDvlfAwMBZOUOV37xKks2I4ZdeFeh1CuuEFCo';
+const MOB_APPT    = '1ymNqgTm5XaL9Hxj4P_UgO81AHiEYaktFowYy_1MQsgo';
+
+const MOB_CEO_PACKAGES = {
+  'streamline building projects':    1666, 'silk touch joinery':          1100,
+  'spa space':                       1800, 'barco build':                 1500,
+  'quality custom homes':            2500, 'quality custom homes pty ltd': 2500,
+  'rapid bathroom specialists':      2442, 'rapid bathroom specialist':    2442,
+  'boss carpentry group':            1500, 'woodstock building services':  2442,
+  'woodstock building services (vic)':2442,'mkcb renovations':            1400,
+  'performance building solutions':  1750, 'dws building co':             2000,
+  'citiwide group':                  1800, 'mk1 renovations':             2000,
+  'kbg renovations':                 2420, 'moonlight doors & windows':   2000,
+  'moonlight doors and windows':     2000, 'apex woodworks':              2200,
+  'canterbury steelworks':           2200, 'canterbury steel works':      2200,
+  'integra renovations':             2200, 'quality built homes':         2333,
+  'betterbuilding and construction': 1667, 'bisdaq build':                1667,
+  'inov8 constructions':             1320, 'aust bath group':             1400,
+};
+
+const MOB_NON_CC   = ['UrbanRise Property Group','L2 Homes','Generational Bathrooms','Favourite Home','Silk Touch Joinery'];
+const MOB_MERGED   = { 'canterbury steelworks':'apex woodworks','canterbury steel works':'apex woodworks' };
+const MOB_AGENT_OV = {
+  'Woodstock Building Services (VIC)':'Ayessa','Canterbury Steelworks':'Ayessa',
+  'Canterbury Steel Works':'Ayessa','Apex Woodworks':'Ayessa','Citiwide Group Aust':'Ayessa',
+  'CitiWide Group Aust':'Ayessa','Better Building':'Ayessa','CK | Home Renovations':'Jules',
+  'Auspro Windows':'Ayessa','UrbanRise Property':'Ayessa',
+};
+const MOB_BILLING = {
+  'spa space':29,'citiwide group':29,'apex woodworks':24,'canterbury steelworks':24,
+  'canterbury steel works':24,'silk touch joinery':18,'moonlight doors and windows':18,
+  'moonlight doors & windows':18,'woodstock building services':18,
+  'woodstock building services (vic)':18,'dws building co':7,'barbalace':18,
+  'barbalace construction':18,'mkcb renovations':4,'boss carpentry group':23,
+  'rapid bathroom specialist':18,'rapid bathroom specialists':18,'barco build':10,
+  'streamline building projects':6,'auspro windows':28,'ospre windows':28,
+  'kbg renovations':18,'integra renovations':20,'quality built homes':14,
+  'betterbuilding and construction':24,'inov8 constructions':11,'aust bath group':11,
+};
+
+function mobIsNonCC(name) {
+  const n=(name||'').toLowerCase().replace(/\s+/g,'');
+  return MOB_NON_CC.some(x=>x.toLowerCase().replace(/\s+/g,'')=== n||
+    n.includes(x.toLowerCase().replace(/\s+/g,'').slice(0,8))||
+    x.toLowerCase().replace(/\s+/g,'').includes(n.slice(0,8)));
+}
+function mobClientMRR(name) { return MOB_CEO_PACKAGES[(name||'').toLowerCase()] || 0; }
+function mobFmt$(n) { if(!n)return'—'; return '$'+Math.round(n).toLocaleString('en-AU'); }
+function mobFmtMRR(n) { if(!n)return'—'; return n>=1000?'$'+(n/1000).toFixed(1).replace(/\.0$/,'')+'k':'$'+n; }
+function mobInitials(n) { return(n||'').split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'; }
+function mobParseDateStr(s) {
+  if(!s) return null;
+  const d=new Date(String(s).trim());
+  if(!isNaN(d)) return d;
+  const p=String(s).split('/');
+  if(p.length===3){const[a,b,c]=p.map(Number);return c>1000?new Date(c,b-1,a):new Date(a,b-1,c);}
+  return null;
+}
+function mobNextBilling(name) {
+  const day=MOB_BILLING[(name||'').toLowerCase()];
+  if(!day) return null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  let next=new Date(today.getFullYear(),today.getMonth(),day);
+  if(next<=today) next=new Date(today.getFullYear(),today.getMonth()+1,day);
+  return { days:Math.round((next-today)/86400000), date:next.toLocaleDateString('en-AU',{day:'numeric',month:'short'}) };
+}
+
+let _mobCEOLoaded = false;
+let _mobCEOOffset = 0;
+
+async function renderMobCEO(forceRefresh) {
+  const el = document.getElementById('app-mob-ceo');
+  if (!el) return;
+
+  if (!_mobCEOLoaded || forceRefresh) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:12px;color:#8a8070"><div style="width:28px;height:28px;border:2px solid #2a2520;border-top-color:#d6a520;border-radius:50%;animation:spin .8s linear infinite"></div>Loading overview…</div>';
+  }
+
+  try {
+    const [clientRows, payRows] = await Promise.all([
+      fetch(`${MOB_PROXY}?id=${MOB_CLIENTS}&sheet=Clients`,{cache:'no-store'}).then(r=>r.json()),
+      fetch(`${MOB_PROXY}?id=${MOB_PAYLOG}&sheet=02%3A%20Payment%20Log`,{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
+    ]);
+    _mobCEOLoaded = true;
+
+    // Parse clients from Clients sheet (Status col = col 8)
+    const clients = [];
+    for (let i=1; i<clientRows.length; i++) {
+      const row = clientRows[i];
+      const name   = String(row[0]||'').trim();
+      if (!name) continue;
+      let agent    = String(row[1]||'').trim();
+      const status = String(row[8]||'').toLowerCase().trim();
+      const liveDate = mobParseDateStr(String(row[4]||''));
+      agent = MOB_AGENT_OV[name] || agent;
+      const isMerged = !!MOB_MERGED[(name||'').toLowerCase()];
+      if (isMerged) continue;
+      const isActive  = status === 'active';
+      const isPaused  = status === 'paused';
+      const isChurned = status === 'churned' || status === 'cancelled';
+      const mrr = mobClientMRR(name);
+      const hasCC = !mobIsNonCC(name);
+      clients.push({ name, agent, status, liveDate, isActive, isPaused, isChurned, mrr, hasCC });
+    }
+
+    const active  = clients.filter(c=>c.isActive);
+    const paused  = clients.filter(c=>c.isPaused);
+    const churned = clients.filter(c=>c.isChurned);
+    const ccClients  = active.filter(c=>c.hasCC);
+    const adsClients = active.filter(c=>!c.hasCC);
+
+    const julesCC  = ccClients.filter(c=>(c.agent||'').toLowerCase()==='jules');
+    const ayessaCC = ccClients.filter(c=>(c.agent||'').toLowerCase()==='ayessa');
+    const rachelCC = ccClients.filter(c=>(c.agent||'').toLowerCase()==='rachel');
+
+    // MRR — sum from CEO_CLIENT_PACKAGES for active clients only
+    const totalMRR = active.reduce((s,c)=>s+mobClientMRR(c.name),0);
+
+    // Monthly metrics from Payment Log
+    const now = new Date();
+    const ref = new Date(now.getFullYear(), now.getMonth() + _mobCEOOffset, 1);
+    const yr = ref.getFullYear(), mo = ref.getMonth();
+    const isCurrentMonth = yr===now.getFullYear() && mo===now.getMonth();
+    const monthLabel = ref.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+    const inMonth = d => { if(!d) return false; const dt=new Date(d); return dt.getFullYear()===yr && dt.getMonth()===mo; };
+
+    // Parse Payment Log for monthly signed/churned clients
+    let payHeaderIdx = -1;
+    for(let i=0;i<payRows.length;i++){
+      if(payRows[i] && String(payRows[i][0]).trim().toLowerCase()==='status'){ payHeaderIdx=i; break; }
+    }
+    let signedThisMonth=[], churnedThisMonth=[];
+    let totalMRRfromLog = 0;
+    if(payHeaderIdx>=0){
+      for(let i=payHeaderIdx+1;i<payRows.length;i++){
+        const row=payRows[i];
+        const status=String(row[0]||'').trim().toLowerCase();
+        const name=String(row[1]||'').trim();
+        const startDate=mobParseDateStr(String(row[2]||''));
+        const endDate=mobParseDateStr(String(row[3]||''));
+        const mrr=parseFloat(String(row[5]||'').replace(/[^0-9.]/g,''))||0;
+        if(!name) continue;
+        if(status==='active'){
+          totalMRRfromLog+=mrr;
+          if(inMonth(startDate)) signedThisMonth.push({name,mrr});
+        }
+        if((status==='churned'||status==='cancelled') && inMonth(endDate)){
+          churnedThisMonth.push({name,mrr});
+        }
+      }
+    }
+
+    // Clients who went live this month (from Clients sheet)
+    const newClients = active.filter(c=>inMonth(c.liveDate));
+
+    // MRR added this month
+    const mrrAdded = signedThisMonth.reduce((s,c)=>s+c.mrr,0);
+    const mrrLost  = churnedThisMonth.reduce((s,c)=>s+c.mrr,0);
+    const netMRR   = mrrAdded - mrrLost;
+
+    // Upcoming billing countdowns
+    const upcoming = active
+      .map(c=>{ const b=mobNextBilling(c.name); return b?{...c,...b}:null; })
+      .filter(Boolean).sort((a,b)=>a.days-b.days).slice(0,10);
+
+    const agentBar = (name, count, color) => {
+      const pct = ccClients.length>0?Math.round(count/ccClients.length*100):0;
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block"></span>${name}
+          </span>
+          <span style="font-size:13px;font-variant-numeric:tabular-nums">${count} <span style="color:#8a8070;font-size:11px">(${pct}%)</span></span>
+        </div>
+        <div style="height:4px;background:#2a2520;border-radius:2px;overflow:hidden">
+          <div style="height:100%;background:${color};border-radius:2px;width:${pct}%"></div>
+        </div>
+      </div>`;
+    };
+
+    const tile = (label, value, color='#f0ece4', sub='') =>
+      `<div style="background:#161412;border:1px solid #2a2520;border-radius:12px;padding:12px 14px">
+        <div style="font-size:10px;color:#8a8070;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">${label}</div>
+        <div style="font-size:22px;font-weight:700;color:${color};font-variant-numeric:tabular-nums">${value}</div>
+        ${sub?`<div style="font-size:11px;color:#8a8070;margin-top:2px">${sub}</div>`:''}
+      </div>`;
+
+    const sectionHead = (t) =>
+      `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#8a8070;margin:16px 0 8px">${t}</div>`;
+
+    el.innerHTML = `
+      <!-- Month navigation -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <button onclick="_mobCEOOffset--;renderMobCEO(true)" style="background:#1f1c19;border:1px solid #2a2520;color:#f0ece4;border-radius:8px;padding:6px 14px;font-size:16px;cursor:pointer">‹</button>
+        <span style="font-size:15px;font-weight:700;color:#d6a520">${monthLabel}</span>
+        <button onclick="_mobCEOOffset++;renderMobCEO(true)" ${isCurrentMonth?'disabled style="opacity:.35"':''} style="background:#1f1c19;border:1px solid #2a2520;color:#f0ece4;border-radius:8px;padding:6px 14px;font-size:16px;cursor:pointer">›</button>
+      </div>
+
+      <!-- Active snapshot -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        ${tile('Active Clients', active.length, '#d6a520', `${ccClients.length} CC · ${adsClients.length} Ads`)}
+        ${tile('Total MRR', mobFmtMRR(totalMRR), '#d6a520', `${paused.length} paused`)}
+      </div>
+
+      <!-- Agent split -->
+      <div style="background:#161412;border:1px solid #2a2520;border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#8a8070;margin-bottom:12px">CC Agent Split</div>
+        ${agentBar('Jules',  julesCC.length,  '#4a9eff')}
+        ${agentBar('Ayessa', ayessaCC.length, '#a56cfc')}
+        ${agentBar('Rachel', rachelCC.length, '#3dba6e')}
+      </div>
+
+      <!-- Monthly metrics from Payment Log -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        ${tile('Signed', signedThisMonth.length||newClients.length, signedThisMonth.length>0?'#3dba6e':'#f0ece4', 'this month')}
+        ${tile('Churned', churnedThisMonth.length, churnedThisMonth.length>0?'#e05252':'#f0ece4', 'this month')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        ${tile('MRR Added', mrrAdded>0?mobFmtMRR(mrrAdded):'—', '#3dba6e', '')}
+        ${tile('Net MRR', netMRR!==0?(netMRR>0?'+':'')+mobFmtMRR(netMRR):'—', netMRR>0?'#3dba6e':netMRR<0?'#e05252':'#f0ece4', '')}
+      </div>
+
+      <!-- Active clients list with billing -->
+      ${upcoming.length ? `
+      ${sectionHead('Upcoming Billing')}
+      <div style="background:#161412;border:1px solid #2a2520;border-radius:14px;padding:8px 14px;margin-bottom:10px">
+        ${upcoming.map(c=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #2a2520">
+            <div style="width:36px;height:36px;border-radius:8px;background:#1f1c19;border:1px solid #2a2520;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#d6a520;flex-shrink:0">${mobInitials(c.name)}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+              <div style="font-size:11px;color:#8a8070;margin-top:2px">${c.agent||'—'} · ${c.date}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:14px;font-weight:700;color:#d6a520;font-variant-numeric:tabular-nums">${mobFmtMRR(c.mrr)}</div>
+              <div style="font-size:11px;color:${c.days<=3?'#e05252':c.days<=7?'#d6a520':'#8a8070'}">${c.days}d</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      <!-- All active clients -->
+      ${sectionHead(`All Active (${active.length})`)}
+      <div style="background:#161412;border:1px solid #2a2520;border-radius:14px;padding:8px 14px;margin-bottom:10px">
+        ${active.sort((a,b)=>b.mrr-a.mrr).map(c=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #1a1714">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+              <div style="font-size:11px;color:#8a8070;margin-top:1px">
+                ${c.agent||'—'}
+                ${!c.hasCC?'<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;background:rgba(74,158,255,.15);color:#4a9eff;margin-left:4px">Ads</span>':''}
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#d6a520;font-variant-numeric:tabular-nums;white-space:nowrap">${mobFmtMRR(c.mrr)}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${paused.length ? `
+      ${sectionHead(`Paused (${paused.length})`)}
+      <div style="background:#161412;border:1px solid #2a2520;border-radius:14px;padding:8px 14px;margin-bottom:10px">
+        ${paused.map(c=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #1a1714">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+              <div style="font-size:11px;color:#8a8070">${c.agent||'—'}</div>
+            </div>
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(214,165,32,.15);color:#d6a520">Paused</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      <div style="text-align:center;font-size:11px;color:#2a2520;padding:8px">
+        Source: Google Sheets · Last loaded ${new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}
+      </div>
+    `;
+  } catch(e) {
+    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:8px;color:#e05252;font-size:14px">Failed to load<br><small style="color:#8a8070">${e.message}</small></div>`;
+  }
+}
 
 // Register service worker for PWA install
 if ('serviceWorker' in navigator) {
