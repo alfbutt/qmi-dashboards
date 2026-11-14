@@ -222,7 +222,8 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 <div class="save-toast hidden" id="save-toast"></div>
 
 <script>
-const PROXY  = 'https://script.google.com/macros/s/AKfycbyGiq2AUfLNVl_coQ9ndmbRovLyIOjlgL9LImltBrYLh1P8IlVsvSYoeNSBZT3qxOmk/exec';
+const PROXY_READ  = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const PROXY_WRITE = 'https://script.google.com/macros/s/AKfycbyGiq2AUfLNVl_coQ9ndmbRovLyIOjlgL9LImltBrYLh1P8IlVsvSYoeNSBZT3qxOmk/exec';
 const SHEET_ID = '1o2z0EEA6NtEsJjh3p5qCvo39IwfwI0KhDwrlnJ2Z1l8';
 const SHEET_NAME = 'AUTOMATED APPOINTMENT SHEET';
 
@@ -270,7 +271,7 @@ async function loadLeads(force = false) {
   document.querySelector('.sync-btn').classList.add('loading');
 
   try {
-    const url = `${PROXY}?id=${SHEET_ID}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    const url = `${PROXY_READ}?id=${SHEET_ID}&sheet=${encodeURIComponent(SHEET_NAME)}`;
     const resp = await fetch(url, { cache: force ? 'no-store' : 'default' });
     const rows = await resp.json();
 
@@ -654,7 +655,7 @@ async function saveRev(event, rowIndex) {
 
 async function writeToSheet(row, col, value) {
   try {
-    const resp = await fetch(PROXY, {
+    const resp = await fetch(PROXY_WRITE, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ id: SHEET_ID, sheet: SHEET_NAME, row, col, value })
