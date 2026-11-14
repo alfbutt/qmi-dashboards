@@ -9972,6 +9972,7 @@ function renderGrowthView(el, { fb30, fb60, fb90, fbAllTime, fbMonthly, apptData
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <div style="font-size:0.7rem;font-weight:800;color:#f87171;letter-spacing:0.04em;text-transform:uppercase;font-family:'DM Mono',monospace;">⚠ UPDATE CLOSER SHEET EVERY WEEK</div>
           <a href="https://docs.google.com/spreadsheets/d/1o2z0EEA6NtEsJjh3p5qCvo39IwfwI0KhDwrlnJ2Z1l8/edit?gid=1077780481#gid=1077780481" target="_blank" class="growth-settings-btn" style="text-decoration:none">📋 Closer Sheet</a>
+          <a href="closer-tracker.html" class="growth-settings-btn" style="text-decoration:none;background:var(--accent);color:#fff">🔍 Closer Tracker</a>
         </div>
         <button class="growth-settings-btn" onclick="loadGrowthData(document.getElementById('app-growth'),localStorage.getItem('qj_fb_token'),localStorage.getItem('qj_fb_account'),localStorage.getItem('qj_appt_sheet'),localStorage.getItem('qj_appt_tab')||'AUTOMATED APPOINTMENT SHEET')">↺ Refresh Now</button>
       </div>

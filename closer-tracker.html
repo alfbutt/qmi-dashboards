@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Closer Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0908;
+  --bg2: #111210;
+  --bg3: #1a1917;
+  --card: #1c1b19;
+  --card2: #242320;
+  --border: #2a2927;
+  --gold: #d6a520;
+  --gold2: #e8b830;
+  --goldDim: rgba(214,165,32,0.15);
+  --text: #f0ede8;
+  --muted: #8a8680;
+  --muted2: #5a5753;
+  --green: #22c55e;
+  --greenDim: rgba(34,197,94,0.12);
+  --red: #ef4444;
+  --redDim: rgba(239,68,68,0.12);
+  --blue: #60a5fa;
+  --blueDim: rgba(96,165,250,0.12);
+  --purple: #a78bfa;
+  --purpleDim: rgba(167,139,250,0.12);
+  --amber: #f59e0b;
+  --amberDim: rgba(245,158,11,0.12);
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px}
+body{display:flex;flex-direction:column;min-height:100dvh}
+
+/* ── TOP BAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;gap:12px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.back-btn{display:flex;align-items:center;gap:6px;color:var(--gold);text-decoration:none;font-size:13px;font-weight:500;padding:6px 10px;border-radius:8px;background:var(--goldDim);border:1px solid rgba(214,165,32,0.2);transition:background 0.15s}
+.back-btn:hover{background:rgba(214,165,32,0.25)}
+.topbar h1{font-size:18px;font-weight:700;color:var(--text)}
+.topbar .sub{font-size:12px;color:var(--muted);font-weight:400;margin-top:1px}
+.sync-btn{display:flex;align-items:center;gap:6px;background:var(--goldDim);border:1px solid rgba(214,165,32,0.3);color:var(--gold);padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;white-space:nowrap}
+.sync-btn:hover{background:rgba(214,165,32,0.25)}
+.sync-btn.loading{opacity:0.6;pointer-events:none}
+.sync-icon{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.sync-icon.spinning{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:16px 16px 0}
+@media(min-width:600px){.stats-row{grid-template-columns:repeat(6,1fr)}}
+.stat-tile{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;text-align:center}
+.stat-tile .num{font-size:22px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.stat-tile .lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-top:3px}
+.stat-tile.green .num{color:var(--green)}
+.stat-tile.blue .num{color:var(--blue)}
+
+/* ── FILTERS ── */
+.filters-row{display:flex;align-items:center;gap:8px;padding:14px 16px;overflow-x:auto;scrollbar-width:none}
+.filters-row::-webkit-scrollbar{display:none}
+.filter-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.filter-btn:hover{color:var(--text);border-color:var(--muted2)}
+.filter-btn.active{background:var(--goldDim);border-color:rgba(214,165,32,0.4);color:var(--gold)}
+.filter-btn .cnt{font-size:10px;opacity:0.7;margin-left:4px}
+
+/* ── SEARCH ── */
+.search-wrap{padding:0 16px 12px;position:relative}
+.search-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 36px 10px 14px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color 0.15s}
+.search-input::placeholder{color:var(--muted2)}
+.search-input:focus{border-color:rgba(214,165,32,0.4)}
+.search-icon{position:absolute;right:28px;top:50%;transform:translateY(-50%);width:16px;height:16px;fill:none;stroke:var(--muted);stroke-width:2;pointer-events:none}
+
+/* ── LEAD LIST ── */
+.lead-list{display:flex;flex-direction:column;gap:1px;padding:0 0 100px}
+.lead-card{background:var(--card);border-bottom:1px solid var(--border);padding:14px 16px;cursor:pointer;transition:background 0.1s;display:flex;flex-direction:column;gap:10px}
+.lead-card:hover{background:var(--card2)}
+.lead-card.expanded{background:var(--card2)}
+.lead-top{display:flex;align-items:flex-start;gap:12px}
+.lead-avatar{width:40px;height:40px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);flex-shrink:0;text-transform:uppercase}
+.lead-info{flex:1;min-width:0}
+.lead-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead-biz{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.lead-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.lead-date{font-size:11px;color:var(--muted2)}
+.lead-source{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--blueDim);color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+.lead-status-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+/* ── STATUS PILLS (read-only display) ── */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid transparent}
+.pill.show-y{background:var(--greenDim);color:var(--green);border-color:rgba(34,197,94,0.25)}
+.pill.show-n{background:var(--redDim);color:var(--red);border-color:rgba(239,68,68,0.25)}
+.pill.show-pending{background:var(--bg3);color:var(--muted);border-color:var(--border)}
+.pill.qual-y{background:var(--blueDim);color:var(--blue);border-color:rgba(96,165,250,0.25)}
+.pill.qual-n{background:var(--redDim);color:var(--red);border-color:rgba(239,68,68,0.25)}
+.pill.closed-y{background:var(--goldDim);color:var(--gold);border-color:rgba(214,165,32,0.3)}
+.pill.uf{background:var(--purpleDim);color:var(--purple);border-color:rgba(167,139,250,0.25)}
+.pill.appt2{background:var(--amberDim);color:var(--amber);border-color:rgba(245,158,11,0.25)}
+
+/* ── EXPANDED ACTIONS ── */
+.lead-actions{display:none;background:var(--bg3);border-radius:10px;padding:14px;border:1px solid var(--border)}
+.lead-card.expanded .lead-actions{display:flex;flex-direction:column;gap:12px}
+.action-group{display:flex;flex-direction:column;gap:8px}
+.action-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted)}
+.action-btns{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:all 0.15s;font-family:inherit}
+.act-btn:hover{border-color:var(--muted2);color:var(--text)}
+.act-btn.active-y{background:var(--greenDim);border-color:rgba(34,197,94,0.3);color:var(--green)}
+.act-btn.active-n{background:var(--redDim);border-color:rgba(239,68,68,0.3);color:var(--red)}
+.act-btn.active-gold{background:var(--goldDim);border-color:rgba(214,165,32,0.3);color:var(--gold)}
+.act-btn.saving{opacity:0.5;pointer-events:none}
+
+/* ── REVENUE FIELDS ── */
+.rev-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.rev-field{display:flex;flex-direction:column;gap:4px}
+.rev-field label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)}
+.rev-field input{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color 0.15s;width:100%}
+.rev-field input:focus{border-color:rgba(214,165,32,0.4)}
+.rev-field input::placeholder{color:var(--muted2)}
+.save-rev-btn{align-self:flex-end;padding:7px 18px;border-radius:8px;background:var(--goldDim);border:1px solid rgba(214,165,32,0.3);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s}
+.save-rev-btn:hover{background:rgba(214,165,32,0.25)}
+.ghl-link{display:flex;align-items:center;gap:6px;color:var(--blue);font-size:12px;font-weight:500;text-decoration:none;padding:6px 12px;border-radius:8px;background:var(--blueDim);border:1px solid rgba(96,165,250,0.2);width:fit-content;transition:background 0.15s}
+.ghl-link:hover{background:rgba(96,165,250,0.2)}
+.notes-text{font-size:12px;color:var(--muted);line-height:1.5;padding:8px 10px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+
+/* ── SAVE STATUS ── */
+.save-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;transition:opacity 0.3s;pointer-events:none;white-space:nowrap}
+.save-toast.success{border-color:rgba(34,197,94,0.3);color:var(--green)}
+.save-toast.error{border-color:rgba(239,68,68,0.3);color:var(--red)}
+.save-toast.hidden{opacity:0}
+
+/* ── LOADING ── */
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;flex:1;padding:60px 20px;color:var(--muted)}
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:0.5}
+
+/* ── APPS SCRIPT NOTICE ── */
+.apps-script-notice{margin:12px 16px;padding:14px 16px;background:var(--amberDim);border:1px solid rgba(245,158,11,0.3);border-radius:12px;display:none}
+.apps-script-notice.show{display:block}
+.notice-title{font-size:13px;font-weight:600;color:var(--amber);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.notice-body{font-size:12px;color:var(--muted);line-height:1.6}
+.notice-body code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:11px;color:var(--text)}
+.notice-body pre{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:monospace;font-size:11px;color:var(--text);overflow-x:auto;margin-top:8px;line-height:1.5}
+
+/* ── PENDING BADGE ── */
+.pending-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;background:var(--amberDim);color:var(--amber);border:1px solid rgba(245,158,11,0.25)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="command-centre.html#growth" class="back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Dashboard
+    </a>
+    <div>
+      <div style="font-size:17px;font-weight:700">Closer Tracker</div>
+      <div class="sub" id="lead-count-sub">Loading…</div>
+    </div>
+  </div>
+  <button class="sync-btn" onclick="loadLeads(true)">
+    <svg class="sync-icon" id="sync-icon" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    Refresh
+  </button>
+</div>
+
+<div id="stats-container"></div>
+
+<div id="apps-script-notice" class="apps-script-notice">
+  <div class="notice-title">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Write-back not set up yet
+  </div>
+  <div class="notice-body">
+    Changes you make here are saved <strong>locally</strong> for now. To sync them directly to Google Sheets, add this function to your Apps Script and redeploy:
+    <pre>function doPost(e) {
+  try {
+    const p = JSON.parse(e.postData.contents);
+    SpreadsheetApp.openById(p.id)
+      .getSheetByName(p.sheet)
+      .getRange(p.row, p.col)
+      .setValue(p.value);
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:false,e:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+    Then go to <strong>Extensions → Apps Script → Deploy → Manage deployments → Edit → New version → Deploy</strong>.
+  </div>
+</div>
+
+<div class="filters-row" id="filters-row"></div>
+<div class="search-wrap">
+  <input class="search-input" type="text" id="search-input" placeholder="Search by name or business…" oninput="filterLeads()">
+  <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+</div>
+
+<div id="lead-list">
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <span>Loading leads…</span>
+  </div>
+</div>
+
+<div class="save-toast hidden" id="save-toast"></div>
+
+<script>
+const PROXY  = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
+const SHEET_ID = '1o2z0EEA6NtEsJjh3p5qCvo39IwfwI0KhDwrlnJ2Z1l8';
+const SHEET_NAME = 'AUTOMATED APPOINTMENT SHEET';
+
+// Column indices (0-based in JSON response):
+// 2=Name 3=Source 4=DateAdded 5=AppDate 6=Biz 7=Website 8=Notes 9=GHL
+// 10=Show 11=Qualified 12=2ndAppt 13=Appt2Date 14=Closed 15=MRR 16=Cash 17=Contracted
+// 18=Campaign 19=AdSet 20=Ad 21=LeadSource
+
+let allLeads = [];
+let localOverrides = {}; // keyed by rowIndex
+let activeFilter = 'all';
+let writeBackEnabled = false;
+
+// Load local overrides from localStorage
+try {
+  const stored = localStorage.getItem('ct_overrides');
+  if (stored) localOverrides = JSON.parse(stored);
+} catch(e) {}
+
+function saveLocalOverrides() {
+  try { localStorage.setItem('ct_overrides', JSON.stringify(localOverrides)); } catch(e) {}
+}
+
+async function loadLeads(force = false) {
+  document.getElementById('sync-icon').classList.add('spinning');
+  document.querySelector('.sync-btn').classList.add('loading');
+
+  try {
+    const url = `${PROXY}?id=${SHEET_ID}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    const resp = await fetch(url, { cache: force ? 'no-store' : 'default' });
+    const rows = await resp.json();
+
+    // Parse leads — data rows start at index 2, name in col 2
+    allLeads = [];
+    for (let i = 2; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !r[2] || !String(r[2]).trim()) continue;
+
+      const name    = String(r[2] || '').trim();
+      const source  = String(r[3] || '').trim();
+      const dateAdd = r[4] ? new Date(r[4]) : null;
+      const appDate = r[5] ? new Date(r[5]) : null;
+      const biz     = String(r[6] || '').trim();
+      const website = String(r[7] || '').trim();
+      const notes   = String(r[8] || '').trim();
+      const ghl     = String(r[9] || '').trim();
+      const show    = String(r[10] || '').trim().toUpperCase();
+      const qual    = String(r[11] || '').trim().toUpperCase();
+      const appt2   = String(r[12] || '').trim().toUpperCase();
+      const appt2d  = r[13] ? new Date(r[13]) : null;
+      const closed  = String(r[14] || '').trim().toUpperCase();
+      const mrr     = r[15] ? Number(r[15]) : 0;
+      const cash    = r[16] ? Number(r[16]) : 0;
+      const contracted = r[17] ? Number(r[17]) : 0;
+
+      allLeads.push({
+        rowIndex: i,           // JSON 0-based index
+        sheetRow: i + 1,       // 1-based sheet row
+        name, source, dateAdd, appDate, biz, website, notes, ghl,
+        show, qual, appt2, appt2d, closed, mrr, cash, contracted
+      });
+    }
+
+    // Apply local overrides on top of sheet data
+    for (const lead of allLeads) {
+      const ov = localOverrides[lead.rowIndex];
+      if (ov) {
+        if (ov.show  !== undefined) lead.show  = ov.show;
+        if (ov.qual  !== undefined) lead.qual  = ov.qual;
+        if (ov.closed !== undefined) lead.closed = ov.closed;
+        if (ov.mrr   !== undefined) lead.mrr   = ov.mrr;
+        if (ov.cash  !== undefined) lead.cash  = ov.cash;
+        if (ov.contracted !== undefined) lead.contracted = ov.contracted;
+      }
+    }
+
+    renderStats();
+    renderFilters();
+    filterLeads();
+    document.getElementById('lead-count-sub').textContent = `${allLeads.length} booked calls`;
+
+  } catch(err) {
+    document.getElementById('lead-list').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Failed to load leads.<br><small style="color:var(--muted2)">${err.message}</small></p></div>`;
+  } finally {
+    document.getElementById('sync-icon').classList.remove('spinning');
+    document.querySelector('.sync-btn').classList.remove('loading');
+  }
+}
+
+function renderStats() {
+  const total  = allLeads.length;
+  const showed = allLeads.filter(l => l.show === 'Y').length;
+  const noShow = allLeads.filter(l => l.show === 'N').length;
+  const qualif = allLeads.filter(l => l.qual === 'Y').length;
+  const closed = allLeads.filter(l => l.closed.startsWith('Y')).length;
+  const showRate  = total  ? ((showed / total)  * 100).toFixed(0) : 0;
+  const closeRate = showed ? ((closed / showed) * 100).toFixed(0) : 0;
+
+  document.getElementById('stats-container').innerHTML = `
+    <div class="stats-row">
+      <div class="stat-tile"><div class="num">${total}</div><div class="lbl">Booked</div></div>
+      <div class="stat-tile green"><div class="num">${showed}</div><div class="lbl">Showed</div></div>
+      <div class="stat-tile"><div class="num">${noShow}</div><div class="lbl">No Shows</div></div>
+      <div class="stat-tile blue"><div class="num">${qualif}</div><div class="lbl">Qualified</div></div>
+      <div class="stat-tile green"><div class="num">${closed}</div><div class="lbl">Closed</div></div>
+      <div class="stat-tile"><div class="num">${showRate}%</div><div class="lbl">Show Rate</div></div>
+    </div>`;
+}
+
+function renderFilters() {
+  const counts = {
+    all:     allLeads.length,
+    showed:  allLeads.filter(l => l.show === 'Y').length,
+    noshow:  allLeads.filter(l => l.show === 'N').length,
+    pending: allLeads.filter(l => !l.show).length,
+    qual:    allLeads.filter(l => l.qual === 'Y').length,
+    closed:  allLeads.filter(l => l.closed.startsWith('Y')).length,
+  };
+  const filters = [
+    {id:'all',     label:'All'},
+    {id:'pending', label:'Pending'},
+    {id:'showed',  label:'Showed'},
+    {id:'noshow',  label:'No Show'},
+    {id:'qual',    label:'Qualified'},
+    {id:'closed',  label:'Closed'},
+  ];
+  document.getElementById('filters-row').innerHTML = filters.map(f =>
+    `<button class="filter-btn${f.id === activeFilter ? ' active' : ''}" onclick="setFilter('${f.id}')">${f.label}<span class="cnt">${counts[f.id]}</span></button>`
+  ).join('');
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim().toLowerCase().startsWith(f === 'noshow' ? 'no' : f === 'qual' ? 'qual' : f === 'closed' ? 'closed' : f === 'pending' ? 'pend' : f === 'showed' ? 'showed' : f));
+  });
+  renderFilters();
+  filterLeads();
+}
+
+function filterLeads() {
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  let leads = allLeads;
+
+  if (activeFilter === 'showed')  leads = leads.filter(l => l.show === 'Y');
+  if (activeFilter === 'noshow')  leads = leads.filter(l => l.show === 'N');
+  if (activeFilter === 'pending') leads = leads.filter(l => !l.show || l.show === '');
+  if (activeFilter === 'qual')    leads = leads.filter(l => l.qual === 'Y');
+  if (activeFilter === 'closed')  leads = leads.filter(l => l.closed.startsWith('Y'));
+
+  if (q) leads = leads.filter(l =>
+    l.name.toLowerCase().includes(q) ||
+    l.biz.toLowerCase().includes(q) ||
+    l.source.toLowerCase().includes(q)
+  );
+
+  renderLeads(leads);
+}
+
+function fmtDate(d) {
+  if (!d || isNaN(d)) return '';
+  return d.toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'});
+}
+
+function fmtMoney(n) {
+  if (!n || isNaN(n)) return '';
+  return '$' + Number(n).toLocaleString();
+}
+
+function initials(name) {
+  return name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+}
+
+function renderLeads(leads) {
+  if (!leads.length) {
+    document.getElementById('lead-list').innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No leads match your filter.</p></div>`;
+    return;
+  }
+
+  document.getElementById('lead-list').innerHTML = leads.map(l => {
+    const hasOverride = !!localOverrides[l.rowIndex];
+    const pendingBadge = hasOverride && !writeBackEnabled
+      ? `<span class="pending-badge">📤 Pending sync</span>` : '';
+
+    // Show pill
+    let showPill = '';
+    if (l.show === 'Y') showPill = `<span class="pill show-y">✓ Showed</span>`;
+    else if (l.show === 'N') showPill = `<span class="pill show-n">✗ No Show</span>`;
+    else showPill = `<span class="pill show-pending">Pending</span>`;
+
+    // Qual pill
+    let qualPill = '';
+    if (l.qual === 'Y') qualPill = `<span class="pill qual-y">Qualified</span>`;
+    else if (l.qual === 'N') qualPill = `<span class="pill qual-n">Not Qual.</span>`;
+
+    // Closed pill
+    let closedPill = '';
+    if (l.closed.startsWith('Y')) closedPill = `<span class="pill closed-y">🏆 Closed</span>`;
+
+    // Rev pills
+    let revPills = '';
+    if (l.mrr)         revPills += `<span class="pill closed-y">${fmtMoney(l.mrr)}/mo</span>`;
+    if (l.cash)        revPills += `<span class="pill uf">${fmtMoney(l.cash)} UF</span>`;
+    if (l.contracted)  revPills += `<span class="pill appt2">${fmtMoney(l.contracted)} contracted</span>`;
+    if (l.appt2 === 'Y') revPills += `<span class="pill appt2">2nd Appt</span>`;
+
+    // Action buttons
+    const showActY = `<button class="act-btn${l.show==='Y'?' active-y':''}" onclick="setVal(event,${l.rowIndex},10,'Y','show','Y')">✓ Showed</button>`;
+    const showActN = `<button class="act-btn${l.show==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},10,'N','show','N')">✗ No Show</button>`;
+    const qualActY = `<button class="act-btn${l.qual==='Y'?' active-y':''}" onclick="setVal(event,${l.rowIndex},11,'Y','qual','Y')">✓ Qualified</button>`;
+    const qualActN = `<button class="act-btn${l.qual==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},11,'N','qual','N')">✗ Not Qual.</button>`;
+    const closedAct = `<button class="act-btn${l.closed.startsWith('Y')?' active-gold':''}" onclick="setVal(event,${l.rowIndex},14,'Y - New Client','closed','Y - New Client')">🏆 Closed</button>`;
+    const notClosedAct = `<button class="act-btn${!l.closed.startsWith('Y')&&l.show==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},14,'','closed','')">Not Closed</button>`;
+
+    // GHL link
+    const ghlBtn = l.ghl ? `<a href="${l.ghl}" target="_blank" class="ghl-link">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open in GHL
+    </a>` : '';
+
+    const notesSection = l.notes ? `<div class="notes-text">${l.notes}</div>` : '';
+
+    return `<div class="lead-card" id="card-${l.rowIndex}" onclick="toggleCard(${l.rowIndex})">
+      <div class="lead-top">
+        <div class="lead-avatar">${initials(l.name)}</div>
+        <div class="lead-info">
+          <div class="lead-name">${l.name}</div>
+          <div class="lead-biz">${l.biz || l.source || '—'}</div>
+          <div class="lead-meta">
+            ${l.appDate ? `<span class="lead-date">📅 ${fmtDate(l.appDate)}</span>` : ''}
+            ${l.source ? `<span class="lead-source">${l.source}</span>` : ''}
+            ${pendingBadge}
+          </div>
+        </div>
+      </div>
+      <div class="lead-status-row">
+        ${showPill}${qualPill}${closedPill}${revPills}
+      </div>
+      <div class="lead-actions">
+        <div class="action-group">
+          <div class="action-label">Show</div>
+          <div class="action-btns">${showActY}${showActN}</div>
+        </div>
+        <div class="action-group">
+          <div class="action-label">Qualified</div>
+          <div class="action-btns">${qualActY}${qualActN}</div>
+        </div>
+        <div class="action-group">
+          <div class="action-label">Outcome</div>
+          <div class="action-btns">${closedAct}${notClosedAct}</div>
+        </div>
+        <div class="action-group">
+          <div class="action-label">Revenue (if closed)</div>
+          <div class="rev-fields">
+            <div class="rev-field"><label>MRR /mo</label><input type="number" id="mrr-${l.rowIndex}" value="${l.mrr || ''}" placeholder="0"></div>
+            <div class="rev-field"><label>UF Cash</label><input type="number" id="cash-${l.rowIndex}" value="${l.cash || ''}" placeholder="0"></div>
+            <div class="rev-field"><label>Contracted</label><input type="number" id="contr-${l.rowIndex}" value="${l.contracted || ''}" placeholder="0"></div>
+          </div>
+          <button class="save-rev-btn" onclick="saveRev(event,${l.rowIndex})">Save Revenue</button>
+        </div>
+        ${ghlBtn}
+        ${notesSection}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(rowIndex) {
+  const card = document.getElementById('card-' + rowIndex);
+  if (!card) return;
+  card.classList.toggle('expanded');
+}
+
+async function setVal(event, rowIndex, colIndex, value, field, fieldVal) {
+  event.stopPropagation();
+  const btn = event.target;
+  btn.classList.add('saving');
+
+  // Update local state
+  const lead = allLeads.find(l => l.rowIndex === rowIndex);
+  if (!lead) return;
+  lead[field] = fieldVal;
+
+  if (!localOverrides[rowIndex]) localOverrides[rowIndex] = {};
+  localOverrides[rowIndex][field] = fieldVal;
+  saveLocalOverrides();
+
+  // Try to write to sheet
+  const success = await writeToSheet(rowIndex + 1, colIndex + 1, value);
+
+  btn.classList.remove('saving');
+
+  // Re-render stats and filter counts
+  renderStats();
+  renderFilters();
+
+  // Update the specific card's status row (without re-rendering entire list)
+  const card = document.getElementById('card-' + rowIndex);
+  if (card) {
+    // Find the status row and update pills
+    const statusRow = card.querySelector('.lead-status-row');
+    if (statusRow) {
+      let showPill = '';
+      if (lead.show === 'Y') showPill = `<span class="pill show-y">✓ Showed</span>`;
+      else if (lead.show === 'N') showPill = `<span class="pill show-n">✗ No Show</span>`;
+      else showPill = `<span class="pill show-pending">Pending</span>`;
+
+      let qualPill = '';
+      if (lead.qual === 'Y') qualPill = `<span class="pill qual-y">Qualified</span>`;
+      else if (lead.qual === 'N') qualPill = `<span class="pill qual-n">Not Qual.</span>`;
+
+      let closedPill = '';
+      if (lead.closed.startsWith('Y')) closedPill = `<span class="pill closed-y">🏆 Closed</span>`;
+
+      let revPills = '';
+      if (lead.mrr)        revPills += `<span class="pill closed-y">${fmtMoney(lead.mrr)}/mo</span>`;
+      if (lead.cash)       revPills += `<span class="pill uf">${fmtMoney(lead.cash)} UF</span>`;
+      if (lead.contracted) revPills += `<span class="pill appt2">${fmtMoney(lead.contracted)} contracted</span>`;
+      if (lead.appt2 === 'Y') revPills += `<span class="pill appt2">2nd Appt</span>`;
+
+      statusRow.innerHTML = showPill + qualPill + closedPill + revPills;
+    }
+
+    // Update action button states
+    card.querySelectorAll('.act-btn').forEach(b => {
+      b.classList.remove('active-y','active-n','active-gold');
+    });
+    updateBtnStates(card, lead);
+  }
+
+  showToast(success ? '✓ Saved to Sheet' : '📤 Saved locally', success ? 'success' : '');
+}
+
+function updateBtnStates(card, lead) {
+  const btns = card.querySelectorAll('.act-btn');
+  btns.forEach(b => {
+    const onclick = b.getAttribute('onclick') || '';
+    if (onclick.includes(",'show','Y'")) b.classList.toggle('active-y', lead.show === 'Y');
+    if (onclick.includes(",'show','N'")) b.classList.toggle('active-n', lead.show === 'N');
+    if (onclick.includes(",'qual','Y'")) b.classList.toggle('active-y', lead.qual === 'Y');
+    if (onclick.includes(",'qual','N'")) b.classList.toggle('active-n', lead.qual === 'N');
+    if (onclick.includes(",'closed','Y")) b.classList.toggle('active-gold', lead.closed.startsWith('Y'));
+    if (onclick.includes(",'closed',''")) b.classList.toggle('active-n', !lead.closed.startsWith('Y') && lead.show === 'N');
+  });
+}
+
+async function saveRev(event, rowIndex) {
+  event.stopPropagation();
+  const btn = event.target;
+  btn.classList.add('saving');
+
+  const mrrVal  = parseFloat(document.getElementById('mrr-'  + rowIndex)?.value) || 0;
+  const cashVal = parseFloat(document.getElementById('cash-' + rowIndex)?.value) || 0;
+  const contrVal = parseFloat(document.getElementById('contr-' + rowIndex)?.value) || 0;
+
+  const lead = allLeads.find(l => l.rowIndex === rowIndex);
+  if (!lead) { btn.classList.remove('saving'); return; }
+
+  lead.mrr = mrrVal;
+  lead.cash = cashVal;
+  lead.contracted = contrVal;
+
+  if (!localOverrides[rowIndex]) localOverrides[rowIndex] = {};
+  localOverrides[rowIndex].mrr = mrrVal;
+  localOverrides[rowIndex].cash = cashVal;
+  localOverrides[rowIndex].contracted = contrVal;
+  saveLocalOverrides();
+
+  const sheetRow = rowIndex + 1;
+  const r1 = await writeToSheet(sheetRow, 16, mrrVal);  // col 15+1=16
+  const r2 = await writeToSheet(sheetRow, 17, cashVal); // col 16+1=17
+  const r3 = await writeToSheet(sheetRow, 18, contrVal);// col 17+1=18
+
+  btn.classList.remove('saving');
+
+  // Update status row
+  const card = document.getElementById('card-' + rowIndex);
+  if (card) {
+    const statusRow = card.querySelector('.lead-status-row');
+    if (statusRow) {
+      let revPills = '';
+      if (lead.closed.startsWith('Y')) revPills += `<span class="pill closed-y">🏆 Closed</span>`;
+      if (lead.mrr)        revPills += `<span class="pill closed-y">${fmtMoney(lead.mrr)}/mo</span>`;
+      if (lead.cash)       revPills += `<span class="pill uf">${fmtMoney(lead.cash)} UF</span>`;
+      if (lead.contracted) revPills += `<span class="pill appt2">${fmtMoney(lead.contracted)} contracted</span>`;
+      // Keep existing show/qual pills
+      let showPill = lead.show === 'Y' ? `<span class="pill show-y">✓ Showed</span>` : lead.show === 'N' ? `<span class="pill show-n">✗ No Show</span>` : `<span class="pill show-pending">Pending</span>`;
+      let qualPill = lead.qual === 'Y' ? `<span class="pill qual-y">Qualified</span>` : lead.qual === 'N' ? `<span class="pill qual-n">Not Qual.</span>` : '';
+      statusRow.innerHTML = showPill + qualPill + revPills;
+    }
+  }
+
+  const allOk = r1 && r2 && r3;
+  showToast(allOk ? '✓ Revenue saved to Sheet' : '📤 Revenue saved locally', allOk ? 'success' : '');
+}
+
+async function writeToSheet(row, col, value) {
+  try {
+    const resp = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ id: SHEET_ID, sheet: SHEET_NAME, row, col, value })
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      writeBackEnabled = true;
+      document.getElementById('apps-script-notice').classList.remove('show');
+      return true;
+    }
+    throw new Error(data.error || 'Failed');
+  } catch(err) {
+    // Write-back not set up — save locally only
+    document.getElementById('apps-script-notice').classList.add('show');
+    return false;
+  }
+}
+
+let toastTimeout;
+function showToast(msg, type = '') {
+  const toast = document.getElementById('save-toast');
+  toast.textContent = msg;
+  toast.className = 'save-toast' + (type ? ' ' + type : '');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => toast.classList.add('hidden'), 2500);
+}
+
+// Initial load
+loadLeads();
+</script>
+</body>
+</html>
