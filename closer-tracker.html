@@ -238,7 +238,7 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 const PROXY_READ  = 'https://script.google.com/macros/s/AKfycbzc7EaBrdRv3bmdkTIf4ZMl1dWIpTmzL6_RKUAFFf4z9m74TafFxw4LYOmarBeON_KP/exec';
 const PROXY_WRITE = 'https://script.google.com/macros/s/AKfycbyGiq2AUfLNVl_coQ9ndmbRovLyIOjlgL9LImltBrYLh1P8IlVsvSYoeNSBZT3qxOmk/exec';
 const SHEET_ID    = '1o2z0EEA6NtEsJjh3p5qCvo39IwfwI0KhDwrlnJ2Z1l8';
-const SHEET_NAME  = 'AUTOMATED APPOINTMENT SHEET';
+const SHEET_NAME  = 'DNT';
 const FB_API_VER  = 'v19.0';
 
 let allLeads      = [];
@@ -351,27 +351,31 @@ async function loadLeads(force=false) {
     const url = `${PROXY_READ}?id=${SHEET_ID}&sheet=${encodeURIComponent(SHEET_NAME)}`;
     const rows = await fetch(url, {cache: force?'no-store':'default'}).then(r=>r.json());
     allLeads = [];
-    for (let i=2; i<rows.length; i++) {
+    // DNT tab: row 1 = header, data from row 2 onward
+    // Columns (0-indexed): A=Name, B=Source, C=DateAdded, D=AppDate, E=Biz,
+    //   F=Website, G=Notes, H=GHL, I=Show(8), J=Qual(9), K=2ndAppt(10),
+    //   L=Appt2Date(11), M=Converted(12), N=MRR(13), O=UF Cash(14), P=ContractedRev(15)
+    for (let i=1; i<rows.length; i++) {
       const r = rows[i];
-      if (!r || !r[2] || !String(r[2]).trim()) continue;
+      if (!r || !r[0] || !String(r[0]).trim() || String(r[0]).trim()==='Name') continue;
       allLeads.push({
         rowIndex: i, sheetRow: i+1,
-        name:    String(r[2]||'').trim(),
-        source:  String(r[3]||'').trim(),
-        dateAdd: r[4] ? new Date(r[4]) : null,
-        appDate: r[5] ? new Date(r[5]) : null,
-        biz:     String(r[6]||'').trim(),
-        website: String(r[7]||'').trim(),
-        notes:   String(r[8]||'').trim(),
-        ghl:     String(r[9]||'').trim(),
-        show:    String(r[10]||'').trim().toUpperCase(),
-        qual:    String(r[11]||'').trim().toUpperCase(),
-        appt2:   String(r[12]||'').trim().toUpperCase(),
-        appt2d:  r[13] ? new Date(r[13]) : null,
-        closed:  String(r[14]||'').trim().toUpperCase(),
-        mrr:     r[15] ? Number(r[15]) : 0,
-        cash:    r[16] ? Number(r[16]) : 0,
-        contracted: r[17] ? Number(r[17]) : 0,
+        name:    String(r[0]||'').trim(),
+        source:  String(r[1]||'').trim(),
+        dateAdd: r[2] ? new Date(r[2]) : null,
+        appDate: r[3] ? new Date(r[3]) : null,
+        biz:     String(r[4]||'').trim(),
+        website: String(r[5]||'').trim(),
+        notes:   String(r[6]||'').trim(),
+        ghl:     String(r[7]||'').trim(),
+        show:    String(r[8]||'').trim().toUpperCase(),
+        qual:    String(r[9]||'').trim().toUpperCase(),
+        appt2:   String(r[10]||'').trim().toUpperCase(),
+        appt2d:  r[11] ? new Date(r[11]) : null,
+        closed:  String(r[12]||'').trim(),
+        mrr:     r[13] ? Number(String(r[13]).replace(/[^0-9.]/g,'')) : 0,
+        cash:    r[14] ? Number(String(r[14]).replace(/[^0-9.]/g,'')) : 0,
+        contracted: r[15] ? Number(String(r[15]).replace(/[^0-9.]/g,'')) : 0,
       });
     }
     // Apply local overrides
@@ -860,18 +864,18 @@ function renderLeads(leads) {
     const pendBadge = hasOv&&!writeBackEnabled?`<span class="pending-badge">📤 Pending sync</span>`:'';
     let showPill = l.show==='Y'?`<span class="pill show-y">✓ Showed</span>`:l.show==='N'?`<span class="pill show-n">✗ No Show</span>`:`<span class="pill show-pending">Pending</span>`;
     let qualPill = l.qual==='Y'?`<span class="pill qual-y">Qualified</span>`:l.qual==='N'?`<span class="pill qual-n">Not Qual.</span>`:'';
-    let closedPill = l.closed.startsWith('Y')?`<span class="pill closed-y">🏆 Closed</span>`:'';
+    let closedPill = l.closed.startsWith('Y')?`<span class="pill closed-y">🏆 Converted</span>`:'';
     let revPills='';
-    if(l.mrr)        revPills+=`<span class="pill closed-y">${fmtMoney(l.mrr)}/mo</span>`;
-    if(l.cash)       revPills+=`<span class="pill uf">${fmtMoney(l.cash)} UF</span>`;
+    if(l.mrr)        revPills+=`<span class="pill closed-y">${fmtMoney(l.mrr)}/mo MRR</span>`;
+    if(l.cash)       revPills+=`<span class="pill uf">${fmtMoney(l.cash)} UF Cash</span>`;
     if(l.contracted) revPills+=`<span class="pill appt2">${fmtMoney(l.contracted)} contracted</span>`;
     if(l.appt2==='Y')revPills+=`<span class="pill appt2">2nd Appt</span>`;
-    const showActY=`<button class="act-btn${l.show==='Y'?' active-y':''}" onclick="setVal(event,${l.rowIndex},10,'Y','show','Y')">✓ Showed</button>`;
-    const showActN=`<button class="act-btn${l.show==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},10,'N','show','N')">✗ No Show</button>`;
-    const qualActY=`<button class="act-btn${l.qual==='Y'?' active-y':''}" onclick="setVal(event,${l.rowIndex},11,'Y','qual','Y')">✓ Qualified</button>`;
-    const qualActN=`<button class="act-btn${l.qual==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},11,'N','qual','N')">✗ Not Qual.</button>`;
-    const closedAct=`<button class="act-btn${l.closed.startsWith('Y')?' active-gold':''}" onclick="setVal(event,${l.rowIndex},14,'Y - New Client','closed','Y - New Client')">🏆 Closed</button>`;
-    const notClosedAct=`<button class="act-btn" onclick="setVal(event,${l.rowIndex},14,'','closed','')">Not Closed</button>`;
+    const showActY=`<button class="act-btn${l.show==='Y'?' active-y':''}" onclick="setVal(event,${l.rowIndex},8,'Y','show','Y')">✓ Showed</button>`;
+    const showActN=`<button class="act-btn${l.show==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},8,'N','show','N')">✗ No Show</button>`;
+    const qualActY=`<button class="act-btn${l.qual==='Y'?' active-y':''}" onclick="setVal(event,${l.rowIndex},9,'Y','qual','Y')">✓ Qualified</button>`;
+    const qualActN=`<button class="act-btn${l.qual==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},9,'N','qual','N')">✗ Not Qual.</button>`;
+    const closedAct=`<button class="act-btn${l.closed.startsWith('Y')?' active-gold':''}" onclick="setVal(event,${l.rowIndex},12,'Y - New Patient','closed','Y - New Patient')">🏆 Converted to Client</button>`;
+    const notClosedAct=`<button class="act-btn" onclick="setVal(event,${l.rowIndex},12,'','closed','')">Not Converted</button>`;
     const ghlBtn=l.ghl?`<a href="${l.ghl}" target="_blank" class="ghl-link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open in GHL</a>`:'';
     const notesSection=l.notes?`<div class="notes-text">${l.notes}</div>`:'';
     return `<div class="lead-card" id="card-${l.rowIndex}" onclick="toggleCard(${l.rowIndex})">
@@ -891,7 +895,7 @@ function renderLeads(leads) {
       <div class="lead-actions">
         <div class="action-group"><div class="action-label">Show</div><div class="action-btns">${showActY}${showActN}</div></div>
         <div class="action-group"><div class="action-label">Qualified</div><div class="action-btns">${qualActY}${qualActN}</div></div>
-        <div class="action-group"><div class="action-label">Outcome</div><div class="action-btns">${closedAct}${notClosedAct}</div></div>
+        <div class="action-group"><div class="action-label">Converted to Client?</div><div class="action-btns">${closedAct}${notClosedAct}</div></div>
         <div class="action-group">
           <div class="action-label">Revenue (if closed)</div>
           <div class="rev-fields">
@@ -956,9 +960,9 @@ async function saveRev(event, rowIndex) {
   if(!localOverrides[rowIndex])localOverrides[rowIndex]={};
   Object.assign(localOverrides[rowIndex],{mrr:mrrVal,cash:cashVal,contracted:contrVal});
   saveLocalOverrides();
-  const r1=await writeToSheet(rowIndex+1,16,mrrVal);
-  const r2=await writeToSheet(rowIndex+1,17,cashVal);
-  const r3=await writeToSheet(rowIndex+1,18,contrVal);
+  const r1=await writeToSheet(rowIndex+1,14,mrrVal);
+  const r2=await writeToSheet(rowIndex+1,15,cashVal);
+  const r3=await writeToSheet(rowIndex+1,16,contrVal);
   btn.classList.remove('saving');
   renderAnalytics(); // live recalculate
   updateCardDisplay(rowIndex, lead);
@@ -972,10 +976,10 @@ function updateCardDisplay(rowIndex, lead) {
   if(!sr)return;
   let showPill=lead.show==='Y'?`<span class="pill show-y">✓ Showed</span>`:lead.show==='N'?`<span class="pill show-n">✗ No Show</span>`:`<span class="pill show-pending">Pending</span>`;
   let qualPill=lead.qual==='Y'?`<span class="pill qual-y">Qualified</span>`:lead.qual==='N'?`<span class="pill qual-n">Not Qual.</span>`:'';
-  let closedPill=lead.closed.startsWith('Y')?`<span class="pill closed-y">🏆 Closed</span>`:'';
+  let closedPill=lead.closed.startsWith('Y')?`<span class="pill closed-y">🏆 Converted</span>`:'';
   let revPills='';
-  if(lead.mrr)       revPills+=`<span class="pill closed-y">${fmtMoney(lead.mrr)}/mo</span>`;
-  if(lead.cash)      revPills+=`<span class="pill uf">${fmtMoney(lead.cash)} UF</span>`;
+  if(lead.mrr)       revPills+=`<span class="pill closed-y">${fmtMoney(lead.mrr)}/mo MRR</span>`;
+  if(lead.cash)      revPills+=`<span class="pill uf">${fmtMoney(lead.cash)} UF Cash</span>`;
   if(lead.contracted)revPills+=`<span class="pill appt2">${fmtMoney(lead.contracted)} contracted</span>`;
   sr.innerHTML=showPill+qualPill+closedPill+revPills;
   card.querySelectorAll('.act-btn').forEach(b=>{
