@@ -148,6 +148,14 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 
 /* ── PENDING BADGE ── */
 .pending-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;background:var(--amberDim);color:var(--amber);border:1px solid rgba(245,158,11,0.25)}
+
+/* ── DUPLICATE ── */
+.lead-card.is-dupe{opacity:0.45}
+.lead-card.is-dupe .lead-name{text-decoration:line-through}
+.dup-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid rgba(239,68,68,0.3);background:var(--redDim);color:var(--red);cursor:pointer;font-family:inherit;transition:all 0.15s;width:fit-content}
+.dup-btn:hover{background:rgba(239,68,68,0.22)}
+.dup-btn.restore{border-color:var(--border);background:var(--card);color:var(--muted)}
+.dup-btn.restore:hover{color:var(--text);border-color:var(--muted2)}
 </style>
 </head>
 <body>
@@ -225,17 +233,36 @@ const SHEET_NAME = 'AUTOMATED APPOINTMENT SHEET';
 
 let allLeads = [];
 let localOverrides = {}; // keyed by rowIndex
+let duplicates = {};     // keyed by rowIndex → true
 let activeFilter = 'all';
 let writeBackEnabled = false;
 
-// Load local overrides from localStorage
+// Load local overrides and duplicates from localStorage
 try {
   const stored = localStorage.getItem('ct_overrides');
   if (stored) localOverrides = JSON.parse(stored);
 } catch(e) {}
+try {
+  const stored = localStorage.getItem('ct_duplicates');
+  if (stored) duplicates = JSON.parse(stored);
+} catch(e) {}
 
 function saveLocalOverrides() {
   try { localStorage.setItem('ct_overrides', JSON.stringify(localOverrides)); } catch(e) {}
+}
+function saveDuplicates() {
+  try { localStorage.setItem('ct_duplicates', JSON.stringify(duplicates)); } catch(e) {}
+}
+function toggleDuplicate(rowIndex) {
+  if (duplicates[rowIndex]) {
+    delete duplicates[rowIndex];
+  } else {
+    duplicates[rowIndex] = true;
+  }
+  saveDuplicates();
+  renderStats();
+  renderFilters();
+  filterLeads();
 }
 
 async function loadLeads(force = false) {
@@ -325,13 +352,15 @@ function renderStats() {
 }
 
 function renderFilters() {
+  const active = allLeads.filter(l => !duplicates[l.rowIndex]);
   const counts = {
-    all:     allLeads.length,
-    showed:  allLeads.filter(l => l.show === 'Y').length,
-    noshow:  allLeads.filter(l => l.show === 'N').length,
-    pending: allLeads.filter(l => !l.show).length,
-    qual:    allLeads.filter(l => l.qual === 'Y').length,
-    closed:  allLeads.filter(l => l.closed.startsWith('Y')).length,
+    all:     active.length,
+    showed:  active.filter(l => l.show === 'Y').length,
+    noshow:  active.filter(l => l.show === 'N').length,
+    pending: active.filter(l => !l.show || l.show === '').length,
+    qual:    active.filter(l => l.qual === 'Y').length,
+    closed:  active.filter(l => l.closed.startsWith('Y')).length,
+    dupes:   Object.keys(duplicates).length,
   };
   const filters = [
     {id:'all',     label:'All'},
@@ -340,6 +369,7 @@ function renderFilters() {
     {id:'noshow',  label:'No Show'},
     {id:'qual',    label:'Qualified'},
     {id:'closed',  label:'Closed'},
+    {id:'dupes',   label:'Duplicates'},
   ];
   document.getElementById('filters-row').innerHTML = filters.map(f =>
     `<button class="filter-btn${f.id === activeFilter ? ' active' : ''}" onclick="setFilter('${f.id}')">${f.label}<span class="cnt">${counts[f.id]}</span></button>`
@@ -359,11 +389,17 @@ function filterLeads() {
   const q = (document.getElementById('search-input').value || '').toLowerCase();
   let leads = allLeads;
 
-  if (activeFilter === 'showed')  leads = leads.filter(l => l.show === 'Y');
-  if (activeFilter === 'noshow')  leads = leads.filter(l => l.show === 'N');
-  if (activeFilter === 'pending') leads = leads.filter(l => !l.show || l.show === '');
-  if (activeFilter === 'qual')    leads = leads.filter(l => l.qual === 'Y');
-  if (activeFilter === 'closed')  leads = leads.filter(l => l.closed.startsWith('Y'));
+  if (activeFilter === 'dupes') {
+    leads = leads.filter(l => duplicates[l.rowIndex]);
+  } else {
+    // Always exclude duplicates from non-dupe views
+    leads = leads.filter(l => !duplicates[l.rowIndex]);
+    if (activeFilter === 'showed')  leads = leads.filter(l => l.show === 'Y');
+    if (activeFilter === 'noshow')  leads = leads.filter(l => l.show === 'N');
+    if (activeFilter === 'pending') leads = leads.filter(l => !l.show || l.show === '');
+    if (activeFilter === 'qual')    leads = leads.filter(l => l.qual === 'Y');
+    if (activeFilter === 'closed')  leads = leads.filter(l => l.closed.startsWith('Y'));
+  }
 
   if (q) leads = leads.filter(l =>
     l.name.toLowerCase().includes(q) ||
@@ -477,6 +513,11 @@ function renderLeads(leads) {
         </div>
         ${ghlBtn}
         ${notesSection}
+        <div style="padding-top:4px;border-top:1px solid var(--border)">
+          <button class="${duplicates[l.rowIndex] ? 'dup-btn restore' : 'dup-btn'}" onclick="event.stopPropagation();toggleDuplicate(${l.rowIndex})">
+            ${duplicates[l.rowIndex] ? '↩ Restore — not a duplicate' : '🚫 Mark as duplicate'}
+          </button>
+        </div>
       </div>
     </div>`;
   }).join('');
