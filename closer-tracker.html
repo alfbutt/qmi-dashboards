@@ -87,6 +87,23 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 /* ── FB NOTICE ── */
 .fb-notice{padding:14px 16px;background:var(--blueDim);border:1px solid rgba(96,165,250,0.25);border-radius:12px;font-size:13px;color:var(--blue)}
 
+/* ── FB CONNECT PANEL ── */
+.fb-connect-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.fb-connect-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fb-connect-title{font-size:14px;font-weight:700}
+.fb-connected-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--greenDim);border:1px solid rgba(34,197,94,0.25);border-radius:8px;font-size:12px;font-weight:600;color:var(--green)}
+.fb-connect-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.fb-connect-hint{font-size:12px;color:var(--muted);line-height:1.6}
+.fb-token-row{display:flex;gap:8px}
+.fb-token-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none;min-width:0}
+.fb-token-input:focus{border-color:rgba(214,165,32,0.4)}
+.fb-token-input::placeholder{color:var(--muted2)}
+.fb-connect-btn{flex-shrink:0;padding:10px 18px;background:var(--goldDim);border:1px solid rgba(214,165,32,0.3);color:var(--gold);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.fb-connect-btn:disabled{opacity:0.5;pointer-events:none}
+.fb-doc-link{display:inline-flex;align-items:center;gap:6px;color:var(--blue);font-size:12px;font-weight:500;text-decoration:none;padding:7px 12px;background:var(--blueDim);border:1px solid rgba(96,165,250,0.2);border-radius:8px;width:fit-content}
+.fb-disconnect-btn{background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px}
+.fb-disconnect-btn:hover{color:var(--red)}
+
 /* ── STATS STRIP (leads tab) ── */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 16px 0}
 @media(min-width:600px){.stats-row{grid-template-columns:repeat(6,1fr)}}
@@ -200,6 +217,8 @@ body{display:flex;flex-direction:column;min-height:100dvh}
     <div class="loading-state"><div class="spinner"></div><span>Loading…</span></div>
   </div>
 </div>
+
+<!-- FB CONNECT PANEL (always rendered at top of analytics-wrap, managed by renderFBConnectPanel) -->
 
 <!-- LEADS TAB -->
 <div class="tab-panel" id="panel-leads">
@@ -399,37 +418,105 @@ async function loadFBData() {
   }
 }
 
+// ── FB Connect panel ──────────────────────────────────────────────────────────
+const FB_DOC_URL = 'https://docs.google.com/document/d/1Jq2HU-mEz5zPIH6_kK6bYV4IReJZvXG5S5pJJZuIedE/edit?usp=sharing';
+
+function fbConnectPanelHTML() {
+  const token    = localStorage.getItem('qj_fb_token');
+  const account  = localStorage.getItem('qj_fb_account');
+  const acctName = localStorage.getItem('qj_fb_account_name') || account || '';
+  if (token && account) {
+    return `<div class="fb-connect-panel">
+      <div class="fb-connect-head">
+        <div class="fb-connect-title">Facebook Ads</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="fb-connected-badge">✓ ${acctName||'Connected'}</div>
+          <button class="fb-disconnect-btn" onclick="disconnectFB()">Disconnect</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return `<div class="fb-connect-panel">
+    <div class="fb-connect-head">
+      <div class="fb-connect-title">Connect Facebook Ads</div>
+    </div>
+    <div class="fb-connect-body">
+      <p class="fb-connect-hint">
+        Paste your access token below to unlock ad spend, CAC and ROAS data.<br>
+        Your token is stored in a Google Doc — tap the button below to open it, copy the token, then paste it here.
+      </p>
+      <a href="${FB_DOC_URL}" target="_blank" class="fb-doc-link">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Google Doc → copy your token
+      </a>
+      <div class="fb-token-row">
+        <input class="fb-token-input" id="fb-token-input" type="text" placeholder="Paste token here…" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="fb-connect-btn" id="fb-connect-btn" onclick="connectFB()">Connect</button>
+      </div>
+      <div id="fb-connect-status" style="font-size:12px;color:var(--muted);min-height:16px"></div>
+    </div>
+  </div>`;
+}
+
+async function connectFB() {
+  const input  = document.getElementById('fb-token-input');
+  const btn    = document.getElementById('fb-connect-btn');
+  const status = document.getElementById('fb-connect-status');
+  const token  = (input?.value||'').trim();
+  if (!token) { status.textContent = 'Please paste your token first.'; return; }
+  btn.disabled = true;
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Connecting…';
+  try {
+    const resp = await fetch(`https://graph.facebook.com/${FB_API_VER}/me/adaccounts?fields=id,name&access_token=${token}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const acct = data.data?.[0];
+    if (!acct) throw new Error('No ad account found on this token.');
+    localStorage.setItem('qj_fb_token', token);
+    localStorage.setItem('qj_fb_account', acct.id);
+    localStorage.setItem('qj_fb_account_name', acct.name);
+    fbCache = null;
+    renderAnalytics();
+    loadFBData();
+    showToast('✓ Connected — ' + acct.name, 'success');
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = '⚠ ' + e.message;
+    btn.disabled = false;
+  }
+}
+
+function disconnectFB() {
+  localStorage.removeItem('qj_fb_token');
+  localStorage.removeItem('qj_fb_account');
+  localStorage.removeItem('qj_fb_account_name');
+  fbCache = null;
+  renderAnalytics();
+}
+
 // ── Analytics rendering ───────────────────────────────────────────────────────
 function renderAnalytics() {
-  const el = document.getElementById('analytics-content');
-  const token = localStorage.getItem('qj_fb_token');
+  const el      = document.getElementById('analytics-content');
+  const token   = localStorage.getItem('qj_fb_token');
   const account = localStorage.getItem('qj_fb_account');
-  const appts = leadsToAppts();
+  const appts   = leadsToAppts();
+  const panel   = fbConnectPanelHTML();
 
-  // If no FB token, show notice + appointments-only stats
   if (!token || !account) {
-    el.innerHTML = `
-      <div class="fb-notice">
-        ℹ️ <strong>Facebook Ads not connected.</strong> Ad spend, CAC and ROAS columns will show "—".
-        Connect your FB token in the <a href="command-centre.html" style="color:var(--blue)">Growth Dashboard</a> and they'll appear here automatically.
-      </div>
-      ${renderApptSections(appts, null, null, null, null)}`;
+    el.innerHTML = panel + renderApptSections(appts, null, null, null, null);
     return;
   }
-
   if (!fbCache) {
-    el.innerHTML = `<div class="loading-state"><div class="spinner"></div><span>Loading Facebook data…</span></div>`;
+    el.innerHTML = panel + `<div class="loading-state"><div class="spinner"></div><span>Loading Facebook data…</span></div>`;
     return;
   }
   if (fbCache.error) {
-    el.innerHTML = `<div class="fb-notice" style="border-color:rgba(239,68,68,0.3);background:var(--redDim);color:var(--red)">
-      ⚠️ Facebook error: ${fbCache.error}
-    </div>${renderApptSections(appts, null, null, null, null)}`;
+    el.innerHTML = panel + `<div class="fb-notice" style="border-color:rgba(239,68,68,0.3);background:var(--redDim);color:var(--red)">⚠️ Facebook error: ${fbCache.error}</div>` + renderApptSections(appts, null, null, null, null);
     return;
   }
-
   const {fb30, fb60, fb90, fbMonthly} = fbCache;
-  el.innerHTML = renderFullAnalytics(appts, fb30, fb60, fb90, fbMonthly);
+  el.innerHTML = panel + renderFullAnalytics(appts, fb30, fb60, fb90, fbMonthly);
 }
 
 function renderFullAnalytics(appts, fb30, fb60, fb90, fbMonthly) {
