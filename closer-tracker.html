@@ -355,22 +355,37 @@ function cashMetrics(days) {
   return { cash, contracted, mrr, comm, count: filtered.length };
 }
 
+// renders bottom 6 tiles (contracted, comms, all-time) — no spend data needed
 function renderCashTiles() {
   const cm30  = cashMetrics(30);
   const cm90  = cashMetrics(90);
   const cmAll = cashMetrics(0);
+  const saasComm = cmAll.mrr * 0.07; // monthly ongoing setter commission from recurring clients
+  const fmtPlus = v => v>0 ? '+$'+Number(v).toLocaleString('en-AU',{maximumFractionDigits:0}) : '—';
   return `
-  <div class="a-metrics">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="a-metric blue"><div class="a-metric-lbl">Contracted Added — 30d</div><div class="a-metric-val">${fmtPlus(cm30.contracted)}</div><div class="a-metric-sub">value contracted this month</div></div>
+    <div class="a-metric blue"><div class="a-metric-lbl">Contracted — All Time</div><div class="a-metric-val">${fmtPlus(cmAll.contracted)}</div><div class="a-metric-sub">${cmAll.count} clients · ${fmtPlus(cmAll.mrr)}/mo MRR</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">Setter Comms — 30d</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cm30.comm)}</div><div class="a-metric-sub">7% of UF cash collected</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">Setter Comms — 90d</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cm90.comm)}</div><div class="a-metric-sub">7% of UF cash collected</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">SaaS Comms — All Time</div><div class="a-metric-val" style="color:var(--purple)">${saasComm>0?'$'+Number(saasComm).toLocaleString('en-AU',{maximumFractionDigits:0})+'/mo':'—'}</div><div class="a-metric-sub">7% of recurring MRR added</div></div>
+    <div class="a-metric green"><div class="a-metric-lbl">UF Cash — All Time</div><div class="a-metric-val">${fmt$(cmAll.cash)}</div><div class="a-metric-sub">${cmAll.count} clients closed</div></div>
+  </div>`;
+}
+
+// renders paired spend + cash rows (requires FB spend data)
+function renderSpendCashPairs(sp30, sp60, sp90, leads30, leads60, leads90, cpl30, cpl60, cpl90) {
+  const cm30 = cashMetrics(30);
+  const cm60 = cashMetrics(60);
+  const cm90 = cashMetrics(90);
+  return `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="a-metric"><div class="a-metric-lbl">Ad Spend — 30d</div><div class="a-metric-val">${fmt$(sp30)}</div><div class="a-metric-sub">${fmtN(leads30)} leads · CPL ${fmtD(cpl30)}</div></div>
     <div class="a-metric green"><div class="a-metric-lbl">UF Cash — 30d</div><div class="a-metric-val">${fmt$(cm30.cash)}</div><div class="a-metric-sub">${cm30.count} client${cm30.count!==1?'s':''} closed</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">Ad Spend — 60d</div><div class="a-metric-val">${fmt$(sp60)}</div><div class="a-metric-sub">${fmtN(leads60)} leads total</div></div>
+    <div class="a-metric green"><div class="a-metric-lbl">UF Cash — 60d</div><div class="a-metric-val">${fmt$(cm60.cash)}</div><div class="a-metric-sub">${cm60.count} client${cm60.count!==1?'s':''} closed</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">Ad Spend — 90d</div><div class="a-metric-val">${fmt$(sp90)}</div><div class="a-metric-sub">${fmtN(leads90)} leads total</div></div>
     <div class="a-metric green"><div class="a-metric-lbl">UF Cash — 90d</div><div class="a-metric-val">${fmt$(cm90.cash)}</div><div class="a-metric-sub">${cm90.count} client${cm90.count!==1?'s':''} closed</div></div>
-    <div class="a-metric blue"><div class="a-metric-lbl">Contracted — 30d</div><div class="a-metric-val">${fmt$(cm30.contracted)}</div><div class="a-metric-sub">MRR ${fmt$(cm30.mrr)}/mo</div></div>
-    <div class="a-metric blue"><div class="a-metric-lbl">Contracted — All Time</div><div class="a-metric-val">${fmt$(cmAll.contracted)}</div><div class="a-metric-sub">${cmAll.count} total clients · MRR ${fmt$(cmAll.mrr)}/mo</div></div>
-  </div>
-  <div class="a-metrics">
-    <div class="a-metric"><div class="a-metric-lbl">Setter Comm — 30d</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cm30.comm)}</div><div class="a-metric-sub">7% of UF cash</div></div>
-    <div class="a-metric"><div class="a-metric-lbl">Setter Comm — 90d</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cm90.comm)}</div><div class="a-metric-sub">7% of UF cash</div></div>
-    <div class="a-metric"><div class="a-metric-lbl">UF Cash — All Time</div><div class="a-metric-val">${fmt$(cmAll.cash)}</div><div class="a-metric-sub">${cmAll.count} clients</div></div>
-    <div class="a-metric"><div class="a-metric-lbl">Setter Comm — All Time</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cmAll.comm)}</div><div class="a-metric-sub">cumulative commissions</div></div>
   </div>`;
 }
 
@@ -664,15 +679,10 @@ function renderFullAnalytics(appts, fb30, fb60, fb90, fbMonthly) {
   const allSumm = apptSummary(appts);
 
   return `
-  <!-- AD SPEND TILES -->
-  <div class="a-metrics">
-    <div class="a-metric"><div class="a-metric-lbl">Ad Spend — 30d</div><div class="a-metric-val">${fmt$(sp30)}</div><div class="a-metric-sub">${fmtN(leads30)} leads · CPL ${fmtD(cpl30)}</div></div>
-    <div class="a-metric"><div class="a-metric-lbl">Ad Spend — 60d</div><div class="a-metric-val">${fmt$(sp60)}</div><div class="a-metric-sub">${fmtN(leads60)} leads total</div></div>
-    <div class="a-metric"><div class="a-metric-lbl">Ad Spend — 90d</div><div class="a-metric-val">${fmt$(sp90)}</div><div class="a-metric-sub">${fmtN(leads90)} leads total</div></div>
-    <div class="a-metric blue"><div class="a-metric-lbl">Cost Per Lead (30d)</div><div class="a-metric-val">${fmtD(cpl30)}</div><div class="a-metric-sub">${fmtN(leads30)} leads from ads</div></div>
-  </div>
+  <!-- PAIRED AD SPEND + UF CASH TILES -->
+  ${renderSpendCashPairs(sp30, sp60, sp90, leads30, leads60, leads90, cpl30, cpl60, cpl90)}
 
-  <!-- CASH & REVENUE TILES -->
+  <!-- CONTRACTED / COMMS / ALL-TIME TILES -->
   ${renderCashTiles()}
 
   <!-- PERFORMANCE BY PERIOD -->
