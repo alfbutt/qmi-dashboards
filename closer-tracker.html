@@ -685,6 +685,12 @@ function renderFullAnalytics(appts, fb30, fb60, fb90, fbMonthly) {
   <!-- CONTRACTED / COMMS / ALL-TIME TILES -->
   ${renderCashTiles()}
 
+  <!-- CAC TILES -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="a-metric"><div class="a-metric-lbl">CAC — 30d</div><div class="a-metric-val" style="color:${cacColor(cac30)}">${cac30>0?fmt$(cac30):'—'}</div><div class="a-metric-sub">ad spend ÷ clients signed</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">CAC — 90d</div><div class="a-metric-val" style="color:${cacColor(cac90)}">${cac90>0?fmt$(cac90):'—'}</div><div class="a-metric-sub">ad spend ÷ clients signed</div></div>
+  </div>
+
   <!-- PERFORMANCE BY PERIOD -->
   <div class="a-section">
     <div class="a-section-head">
