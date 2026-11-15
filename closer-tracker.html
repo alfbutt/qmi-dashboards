@@ -251,6 +251,9 @@ let fbCache       = null; // { fb30, fb60, fb90, fbMonthly }
 
 try { const s=localStorage.getItem('ct_overrides'); if(s) localOverrides=JSON.parse(s); } catch(e){}
 try { const s=localStorage.getItem('ct_duplicates'); if(s) duplicates=JSON.parse(s); } catch(e){}
+let cashDates = {};
+try { const s=localStorage.getItem('ct_cashdates'); if(s) cashDates=JSON.parse(s); } catch(e){}
+function saveCashDates(){try{localStorage.setItem('ct_cashdates',JSON.stringify(cashDates));}catch(e){}}
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 let activeTab = localStorage.getItem('ct_active_tab') || 'analytics';
@@ -299,20 +302,28 @@ function fbCPL(d) {
 // ── Appointment helpers (from allLeads in memory) ─────────────────────────────
 function leadsToAppts() {
   // Convert allLeads (non-dupe) to same shape as Growth Dashboard appt objects
-  return allLeads.filter(l => !duplicates[l.rowIndex]).map(l => ({
-    apptDate:  l.appDate,
-    apptMonth: l.appDate ? l.appDate.getMonth()    : null,
-    apptYear:  l.appDate ? l.appDate.getFullYear() : null,
-    showed:    l.show === 'Y',
-    qualified: l.qual === 'Y',
-    closed:    l.closed.toUpperCase().startsWith('Y'),
-    mrr:       l.mrr     || 0,
-    upfront:   l.cash    || 0,
-    contracted:l.contracted || 0,
-    isAds:     /ad|fb|facebook|meta|paid/i.test(l.source),
-    source:    l.source,
-    name:      l.name,
-  }));
+  return allLeads.filter(l => !duplicates[l.rowIndex]).map(l => {
+    const cashDate = cashDates[l.rowIndex] ? new Date(cashDates[l.rowIndex]) : l.appDate;
+    return {
+      apptDate:  l.appDate,
+      cashDate,
+      cashMonth: cashDate ? cashDate.getMonth()    : null,
+      cashYear:  cashDate ? cashDate.getFullYear() : null,
+      apptMonth: l.appDate ? l.appDate.getMonth()    : null,
+      apptYear:  l.appDate ? l.appDate.getFullYear() : null,
+      showed:    l.show === 'Y',
+      qualified: l.qual === 'Y',
+      closed:    l.closed.toUpperCase().startsWith('Y'),
+      mrr:       l.mrr     || 0,
+      upfront:   l.cash    || 0,
+      contracted:l.contracted || 0,
+      comm:      l.comm > 0 ? l.comm : (l.cash * 0.07) || 0,
+      isAds:     /ad|fb|facebook|meta|paid/i.test(l.source),
+      source:    l.source,
+      name:      l.name,
+      rowIndex:  l.rowIndex,
+    };
+  });
 }
 function apptSummary(appts) {
   const booked     = appts.length;
@@ -327,6 +338,40 @@ function apptSummary(appts) {
   const mrr        = appts.filter(a=>a.closed).reduce((s,a)=>s+a.mrr,0);
   const contracted = appts.filter(a=>a.closed).reduce((s,a)=>s+a.contracted,0);
   return {booked,showed,closed,qualBooked,qualShowed,showRate,closeRate,qualCloseR,upfront,mrr,contracted};
+}
+
+// ── Cash / commission metrics ─────────────────────────────────────────────────
+function cashMetrics(days) {
+  const cutoff = days > 0 ? new Date(+new Date() - days*86400000) : null;
+  const leads = allLeads.filter(l => !duplicates[l.rowIndex] && l.closed.toUpperCase().startsWith('Y'));
+  const filtered = cutoff ? leads.filter(l => {
+    const d = cashDates[l.rowIndex] ? new Date(cashDates[l.rowIndex]) : l.appDate;
+    return d && d >= cutoff;
+  }) : leads;
+  const cash       = filtered.reduce((s,l)=>s+(l.cash||0),0);
+  const contracted = filtered.reduce((s,l)=>s+(l.contracted||0),0);
+  const mrr        = filtered.reduce((s,l)=>s+(l.mrr||0),0);
+  const comm       = filtered.reduce((s,l)=>s+(l.comm>0?l.comm:(l.cash*0.07)||0),0);
+  return { cash, contracted, mrr, comm, count: filtered.length };
+}
+
+function renderCashTiles() {
+  const cm30  = cashMetrics(30);
+  const cm90  = cashMetrics(90);
+  const cmAll = cashMetrics(0);
+  return `
+  <div class="a-metrics">
+    <div class="a-metric green"><div class="a-metric-lbl">UF Cash — 30d</div><div class="a-metric-val">${fmt$(cm30.cash)}</div><div class="a-metric-sub">${cm30.count} client${cm30.count!==1?'s':''} closed</div></div>
+    <div class="a-metric green"><div class="a-metric-lbl">UF Cash — 90d</div><div class="a-metric-val">${fmt$(cm90.cash)}</div><div class="a-metric-sub">${cm90.count} client${cm90.count!==1?'s':''} closed</div></div>
+    <div class="a-metric blue"><div class="a-metric-lbl">Contracted — 30d</div><div class="a-metric-val">${fmt$(cm30.contracted)}</div><div class="a-metric-sub">MRR ${fmt$(cm30.mrr)}/mo</div></div>
+    <div class="a-metric blue"><div class="a-metric-lbl">Contracted — All Time</div><div class="a-metric-val">${fmt$(cmAll.contracted)}</div><div class="a-metric-sub">${cmAll.count} total clients · MRR ${fmt$(cmAll.mrr)}/mo</div></div>
+  </div>
+  <div class="a-metrics">
+    <div class="a-metric"><div class="a-metric-lbl">Setter Comm — 30d</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cm30.comm)}</div><div class="a-metric-sub">7% of UF cash</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">Setter Comm — 90d</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cm90.comm)}</div><div class="a-metric-sub">7% of UF cash</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">UF Cash — All Time</div><div class="a-metric-val">${fmt$(cmAll.cash)}</div><div class="a-metric-sub">${cmAll.count} clients</div></div>
+    <div class="a-metric"><div class="a-metric-lbl">Setter Comm — All Time</div><div class="a-metric-val" style="color:var(--purple)">${fmt$(cmAll.comm)}</div><div class="a-metric-sub">cumulative commissions</div></div>
+  </div>`;
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
@@ -380,6 +425,7 @@ async function loadLeads(force=false) {
         mrr:     r[15] ? Number(String(r[15]).replace(/[^0-9.]/g,'')) : 0,
         cash:    r[16] ? Number(String(r[16]).replace(/[^0-9.]/g,'')) : 0,
         contracted: r[17] ? Number(String(r[17]).replace(/[^0-9.]/g,'')) : 0,
+        comm: r[18] ? Number(String(r[18]).replace(/[^0-9.]/g,'')) : 0,
       });
     }
     // Apply local overrides
@@ -392,6 +438,7 @@ async function loadLeads(force=false) {
       if (ov.mrr   !==undefined) l.mrr   = ov.mrr;
       if (ov.cash  !==undefined) l.cash  = ov.cash;
       if (ov.contracted!==undefined) l.contracted = ov.contracted;
+      if (ov.comm  !==undefined) l.comm  = ov.comm;
     }
     const cnt = allLeads.length;
     document.getElementById('lead-count-sub').textContent = `${cnt} booked calls`;
@@ -511,15 +558,15 @@ function renderAnalytics() {
   const panel   = fbConnectPanelHTML();
 
   if (!token || !account) {
-    el.innerHTML = panel + renderApptSections(appts, null, null, null, null);
+    el.innerHTML = panel + renderCashTiles() + renderApptSections(appts, null, null, null, null);
     return;
   }
   if (!fbCache) {
-    el.innerHTML = panel + `<div class="loading-state"><div class="spinner"></div><span>Loading Facebook data…</span></div>`;
+    el.innerHTML = panel + renderCashTiles() + `<div class="loading-state"><div class="spinner"></div><span>Loading Facebook data…</span></div>`;
     return;
   }
   if (fbCache.error) {
-    el.innerHTML = panel + `<div class="fb-notice" style="border-color:rgba(239,68,68,0.3);background:var(--redDim);color:var(--red)">⚠️ Facebook error: ${fbCache.error}</div>` + renderApptSections(appts, null, null, null, null);
+    el.innerHTML = panel + renderCashTiles() + `<div class="fb-notice" style="border-color:rgba(239,68,68,0.3);background:var(--redDim);color:var(--red)">⚠️ Facebook error: ${fbCache.error}</div>` + renderApptSections(appts, null, null, null, null);
     return;
   }
   const {fb30, fb60, fb90, fbMonthly} = fbCache;
@@ -624,6 +671,9 @@ function renderFullAnalytics(appts, fb30, fb60, fb90, fbMonthly) {
     <div class="a-metric"><div class="a-metric-lbl">Ad Spend — 90d</div><div class="a-metric-val">${fmt$(sp90)}</div><div class="a-metric-sub">${fmtN(leads90)} leads total</div></div>
     <div class="a-metric blue"><div class="a-metric-lbl">Cost Per Lead (30d)</div><div class="a-metric-val">${fmtD(cpl30)}</div><div class="a-metric-sub">${fmtN(leads30)} leads from ads</div></div>
   </div>
+
+  <!-- CASH & REVENUE TILES -->
+  ${renderCashTiles()}
 
   <!-- PERFORMANCE BY PERIOD -->
   <div class="a-section">
@@ -873,6 +923,8 @@ function renderLeads(leads) {
     if(l.mrr)        revPills+=`<span class="pill closed-y">${fmtMoney(l.mrr)}/mo MRR</span>`;
     if(l.cash)       revPills+=`<span class="pill uf">${fmtMoney(l.cash)} UF Cash</span>`;
     if(l.contracted) revPills+=`<span class="pill appt2">${fmtMoney(l.contracted)} contracted</span>`;
+    const commShow = l.comm>0 ? l.comm : (l.cash>0 ? l.cash*0.07 : 0);
+    if(commShow>0)   revPills+=`<span class="pill" style="background:var(--purpleDim);color:var(--purple);border-color:rgba(167,139,250,0.25)">${fmtMoney(commShow)} comm</span>`;
     if(l.appt2==='Y')revPills+=`<span class="pill appt2">2nd Appt</span>`;
     const showActY=`<button class="act-btn${l.show==='Y'?' active-y':''}" onclick="setVal(event,${l.rowIndex},8,'Y','show','Y')">✓ Showed</button>`;
     const showActN=`<button class="act-btn${l.show==='N'?' active-n':''}" onclick="setVal(event,${l.rowIndex},8,'N','show','N')">✗ No Show</button>`;
@@ -904,8 +956,21 @@ function renderLeads(leads) {
           <div class="action-label">Revenue (if closed)</div>
           <div class="rev-fields">
             <div class="rev-field"><label>MRR /mo</label><input type="number" id="mrr-${l.rowIndex}" value="${l.mrr||''}" placeholder="0" onclick="event.stopPropagation()"></div>
-            <div class="rev-field"><label>UF Cash</label><input type="number" id="cash-${l.rowIndex}" value="${l.cash||''}" placeholder="0" onclick="event.stopPropagation()"></div>
+            <div class="rev-field"><label>UF Cash</label><input type="number" id="cash-${l.rowIndex}" value="${l.cash||''}" placeholder="0" onclick="event.stopPropagation()" oninput="autoComm(${l.rowIndex})"></div>
             <div class="rev-field"><label>Contracted</label><input type="number" id="contr-${l.rowIndex}" value="${l.contracted||''}" placeholder="0" onclick="event.stopPropagation()"></div>
+          </div>
+          <div class="rev-fields" style="margin-top:8px">
+            <div class="rev-field">
+              <label>Cash Collected Date</label>
+              <input type="date" id="cashdate-${l.rowIndex}" value="${cashDates[l.rowIndex]||(l.appDate?l.appDate.toISOString().split('T')[0]:'')}" onclick="event.stopPropagation()">
+            </div>
+            <div class="rev-field">
+              <label>Setter Commission</label>
+              <input type="number" id="comm-${l.rowIndex}" value="${l.comm>0?l.comm:l.cash>0?(l.cash*0.07).toFixed(0):''}" placeholder="auto 7%" onclick="event.stopPropagation()">
+            </div>
+            <div class="rev-field" style="justify-content:flex-end">
+              <label style="color:var(--muted2);font-size:9px;line-height:1.5">Auto-sets to 7%<br>of UF cash. Override<br>if rate differs.</label>
+            </div>
           </div>
           <button class="save-rev-btn" onclick="saveRev(event,${l.rowIndex})">Save Revenue</button>
         </div>
@@ -955,22 +1020,34 @@ async function setVal(event, rowIndex, colIndex, value, field, fieldVal) {
 async function saveRev(event, rowIndex) {
   event.stopPropagation();
   const btn=event.target; btn.classList.add('saving');
-  const mrrVal  = parseFloat(document.getElementById('mrr-'+rowIndex)?.value)||0;
-  const cashVal = parseFloat(document.getElementById('cash-'+rowIndex)?.value)||0;
-  const contrVal= parseFloat(document.getElementById('contr-'+rowIndex)?.value)||0;
+  const mrrVal   = parseFloat(document.getElementById('mrr-'+rowIndex)?.value)||0;
+  const cashVal  = parseFloat(document.getElementById('cash-'+rowIndex)?.value)||0;
+  const contrVal = parseFloat(document.getElementById('contr-'+rowIndex)?.value)||0;
+  const commInput= document.getElementById('comm-'+rowIndex)?.value;
+  const commVal  = commInput!==''&&commInput!==undefined ? (parseFloat(commInput)||0) : (cashVal*0.07);
+  const cashDateEl = document.getElementById('cashdate-'+rowIndex);
+  const cashDateVal = cashDateEl?.value||'';
   const lead=allLeads.find(l=>l.rowIndex===rowIndex);
   if(!lead){btn.classList.remove('saving');return;}
-  lead.mrr=mrrVal; lead.cash=cashVal; lead.contracted=contrVal;
+  lead.mrr=mrrVal; lead.cash=cashVal; lead.contracted=contrVal; lead.comm=commVal;
   if(!localOverrides[rowIndex])localOverrides[rowIndex]={};
-  Object.assign(localOverrides[rowIndex],{mrr:mrrVal,cash:cashVal,contracted:contrVal});
+  Object.assign(localOverrides[rowIndex],{mrr:mrrVal,cash:cashVal,contracted:contrVal,comm:commVal});
   saveLocalOverrides();
+  if(cashDateVal) { cashDates[rowIndex]=cashDateVal; saveCashDates(); }
   const r1=await writeToSheet(rowIndex,14,mrrVal);
   const r2=await writeToSheet(rowIndex,15,cashVal);
   const r3=await writeToSheet(rowIndex,16,contrVal);
+  const r4=await writeToSheet(rowIndex,17,commVal);
   btn.classList.remove('saving');
   renderAnalytics(); // live recalculate
   updateCardDisplay(rowIndex, lead);
-  showToast((r1&&r2&&r3)?'✓ Revenue saved to Sheet':'📤 Revenue saved locally',(r1&&r2&&r3)?'success':'');
+  showToast((r1&&r2&&r3&&r4)?'✓ Revenue saved to Sheet':'📤 Revenue saved locally',(r1&&r2&&r3&&r4)?'success':'');
+}
+
+function autoComm(rowIndex) {
+  const cashVal = parseFloat(document.getElementById('cash-'+rowIndex)?.value)||0;
+  const commEl  = document.getElementById('comm-'+rowIndex);
+  if(commEl && cashVal>0) commEl.value = (cashVal*0.07).toFixed(0);
 }
 
 function updateCardDisplay(rowIndex, lead) {
@@ -985,6 +1062,8 @@ function updateCardDisplay(rowIndex, lead) {
   if(lead.mrr)       revPills+=`<span class="pill closed-y">${fmtMoney(lead.mrr)}/mo MRR</span>`;
   if(lead.cash)      revPills+=`<span class="pill uf">${fmtMoney(lead.cash)} UF Cash</span>`;
   if(lead.contracted)revPills+=`<span class="pill appt2">${fmtMoney(lead.contracted)} contracted</span>`;
+  const commDisp = lead.comm>0?lead.comm:(lead.cash>0?lead.cash*0.07:0);
+  if(commDisp>0) revPills+=`<span class="pill" style="background:var(--purpleDim);color:var(--purple);border-color:rgba(167,139,250,0.25)">${fmtMoney(commDisp)} comm</span>`;
   sr.innerHTML=showPill+qualPill+closedPill+revPills;
   card.querySelectorAll('.act-btn').forEach(b=>{
     const oc=b.getAttribute('onclick')||'';
