@@ -657,6 +657,7 @@ tr:hover td { background:var(--surface2); }
   <button class="nav-tab active" onclick="switchPage('clients')">👥 Our Clients</button>
   <button class="nav-tab" onclick="switchPage('sops')">📚 SOPs</button>
   <button class="nav-tab" onclick="switchPage('intelligence')">✦ Intelligence</button>
+  <button class="nav-tab" onclick="switchPage('tutorials')">🎥 Random Tutorials</button>
 </nav>
 
 <main class="main">
@@ -794,6 +795,28 @@ tr:hover td { background:var(--surface2); }
           <button class="agent-settings-btn" style="background:none;border:1px solid var(--border2);color:var(--muted)" onclick="clearAgentApiKey()">Clear Key</button>
         </div>
         <div class="agent-settings-msg" id="agent_apiKeyMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-tutorials" class="page">
+    <div style="max-width:800px;margin:0 auto;padding-top:0.5rem">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;margin-bottom:0.25rem">🎥 Random Tutorials</div>
+      <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:2rem">Watch these before you ask — answers are probably in here</div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:1.5rem">
+        <div style="padding:1.1rem 1.5rem;border-bottom:1px solid var(--border)">
+          <div style="font-size:0.9rem;font-weight:700;margin-bottom:0.25rem">How to Share Leads to Other Subaccounts</div>
+          <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:var(--muted)">Lead handoff between clients — the correct process</div>
+        </div>
+        <div style="padding:1.25rem">
+          <video
+            src="lead-handoff.mp4"
+            controls
+            style="width:100%;border-radius:10px;background:#000;display:block"
+            preload="metadata"
+          ></video>
+        </div>
       </div>
     </div>
   </div>
