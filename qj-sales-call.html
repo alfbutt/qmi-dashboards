@@ -955,14 +955,72 @@
   .cad-when { font-size: 12px; font-weight: 800; padding: 9px 10px; background: var(--bg2); color: var(--gold-dark); }
   .cad-ch { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; padding: 10px; color: var(--text-muted); }
   .cad-msg { font-size: 13px; padding: 9px 10px; line-height: 1.55; }
+
+  /* ── Brand logo + The Brain ── */
+  .topbar-brand .logo-img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; display: block; }
+  .mode-tab.brain-tab { color: var(--gold-dark); }
+  #mode-brain { --b-ink: #F5F3EE; --b-muted: rgba(245,243,238,.6); --b-line: rgba(255,255,255,.09); --b-card: #1F1F1D; }
+  .brain-hero { display: flex; align-items: center; gap: 16px; padding: 16px 28px; border-bottom: 1px solid var(--b-line); background: linear-gradient(180deg, #121212, var(--dark)); flex-shrink: 0; }
+  .brain-logo { width: 58px; height: 58px; border-radius: 12px; box-shadow: 0 0 0 1px rgba(218,184,118,.35), 0 6px 20px rgba(0,0,0,.4); }
+  .brain-hero-text { flex: 1; min-width: 0; }
+  .brain-title { font-size: 20px; font-weight: 800; letter-spacing: .2px; background: linear-gradient(90deg, #DAB876, #A97C3F); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .brain-sub { font-size: 12.5px; color: var(--b-muted); margin-top: 3px; line-height: 1.5; }
+  .brain-hero-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .brain-offer { font-size: 11.5px; color: var(--b-muted); }
+  .brain-offer span { color: #DAB876; font-weight: 700; }
+  .brain-new { background: transparent !important; color: var(--b-ink) !important; border: 1px solid var(--b-line) !important; font-size: 12px; padding: 6px 12px; }
+  .brain-new:hover { border-color: #DAB876 !important; color: #DAB876 !important; }
+  .brain-body { flex: 1; overflow-y: auto; padding: 24px 20px 8px; }
+  .brain-col { max-width: 820px; margin: 0 auto; width: 100%; }
+  .brain-welcome { text-align: center; padding: 28px 0 8px; }
+  .brain-welcome-h { font-size: 24px; font-weight: 800; color: var(--b-ink); }
+  .brain-welcome-p { font-size: 13.5px; color: var(--b-muted); margin: 8px auto 22px; max-width: 560px; line-height: 1.6; }
+  .brain-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: left; }
+  .brain-chip { background: var(--b-card); border: 1px solid var(--b-line); color: var(--b-ink); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.5; cursor: pointer; text-align: left; transition: border-color .15s, transform .15s; font-family: inherit; }
+  .brain-chip:hover { border-color: rgba(218,184,118,.6); transform: translateY(-1px); }
+  .bmsg { display: flex; gap: 12px; margin: 0 0 18px; }
+  .bmsg.user { justify-content: flex-end; }
+  .bmsg-av { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; margin-top: 2px; }
+  .bmsg-body { min-width: 0; max-width: 100%; }
+  .bmsg.user .bmsg-text { background: linear-gradient(135deg, #DAB876, #A97C3F); color: #121212; font-weight: 500; border-radius: 14px 14px 4px 14px; padding: 10px 14px; font-size: 14px; line-height: 1.55; white-space: pre-wrap; max-width: 620px; }
+  .bmsg.assistant .bmsg-text { color: var(--b-ink); font-size: 14px; line-height: 1.7; }
+  .bmsg.assistant .bmsg-text h1, .bmsg.assistant .bmsg-text h2, .bmsg.assistant .bmsg-text h3 { font-size: 15px; font-weight: 800; color: #DAB876; margin: 16px 0 6px; }
+  .bmsg.assistant .bmsg-text h1:first-child, .bmsg.assistant .bmsg-text h2:first-child { margin-top: 0; }
+  .bmsg.assistant .bmsg-text p { margin: 6px 0; }
+  .bmsg.assistant .bmsg-text ul, .bmsg.assistant .bmsg-text ol { margin: 6px 0 6px 20px; }
+  .bmsg.assistant .bmsg-text li { margin-bottom: 4px; }
+  .bmsg.assistant .bmsg-text strong { color: #fff; }
+  .bmsg.assistant .bmsg-text blockquote { border-left: 3px solid #DAB876; background: rgba(218,184,118,.08); padding: 8px 12px; margin: 8px 0; border-radius: 0 8px 8px 0; font-style: italic; color: #F2E6CC; }
+  .bmsg.assistant .bmsg-text blockquote p { margin: 0; }
+  .bmsg.assistant .bmsg-text code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .bmsg.assistant .bmsg-text table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+  .bmsg.assistant .bmsg-text th, .bmsg.assistant .bmsg-text td { border: 1px solid var(--b-line); padding: 5px 8px; text-align: left; }
+  .bmsg.assistant .bmsg-text a { color: #DAB876; }
+  .bmsg-copy { margin-top: 6px; background: transparent; border: 1px solid var(--b-line); color: var(--b-muted); font-size: 11px; padding: 3px 10px; border-radius: 100px; cursor: pointer; }
+  .bmsg-copy:hover { color: #DAB876; border-color: #DAB876; }
+  .brain-typing { color: var(--b-muted); font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+  .brain-typing i { width: 6px; height: 6px; border-radius: 50%; background: #DAB876; display: inline-block; animation: bdot 1.2s infinite ease-in-out; }
+  .brain-typing i:nth-child(2) { animation-delay: .15s; } .brain-typing i:nth-child(3) { animation-delay: .3s; margin-right: 6px; }
+  @keyframes bdot { 0%, 80%, 100% { opacity: .25; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
+  .brain-inputbar { padding: 12px 20px 14px; border-top: 1px solid var(--b-line); background: #121212; flex-shrink: 0; }
+  .brain-inputwrap { display: flex; align-items: flex-end; gap: 8px; background: var(--b-card); border: 1px solid var(--b-line); border-radius: 14px; padding: 8px 8px 8px 14px; }
+  .brain-inputwrap:focus-within { border-color: rgba(218,184,118,.6); }
+  #brain-input { flex: 1; background: transparent; border: 0; outline: 0; resize: none; color: var(--b-ink); font: inherit; font-size: 14px; line-height: 1.5; padding: 6px 0; max-height: 180px; }
+  #brain-input::placeholder { color: rgba(245,243,238,.4); }
+  .brain-send { width: 38px; height: 38px; border-radius: 10px; border: 0; background: linear-gradient(135deg, #DAB876, #A97C3F); color: #121212; font-size: 15px; cursor: pointer; flex-shrink: 0; }
+  .brain-send:disabled { opacity: .45; cursor: default; }
+  .brain-foot { font-size: 11px; color: rgba(245,243,238,.4); text-align: center; margin-top: 8px; }
+  @media (max-width: 760px) { .brain-chips { grid-template-columns: 1fr; } .brain-hero { flex-wrap: wrap; padding: 14px 16px; } .brain-hero-right { flex-direction: row; align-items: center; } }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 </head>
 <body>
 
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="logo">QJ</div>
+    <img class="logo-img" src="qj-logo.png" alt="Quality Jobs" />
     <div>
       <div style="font-size:15px;color:#fff">Quality Jobs — Closer Software</div>
       <div style="font-size:11px;color:rgba(255,255,255,.5);font-weight:400">45–60 min · Hybrid · Agency · Starter</div>
@@ -987,6 +1045,7 @@
   <button class="mode-tab active" id="tab-callflow" onclick="switchMode('callflow')">📋 Call Flow</button>
   <button class="mode-tab" id="tab-objections" onclick="switchMode('objections')">🛡 Objection Handler</button>
   <button class="mode-tab" id="tab-modules" onclick="switchMode('modules')">🎓 Modules</button>
+  <button class="mode-tab brain-tab" id="tab-brain" onclick="switchMode('brain')">🧠 The Brain</button>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -1692,6 +1751,48 @@
   </div>
 </div>
 
+<!-- BRAIN MODE -->
+<div id="mode-brain" style="display:none;height:calc(100vh - 97px);overflow:hidden;flex-direction:column;background:var(--dark)">
+  <div class="brain-hero">
+    <img src="qj-logo.png" alt="Quality Jobs" class="brain-logo" />
+    <div class="brain-hero-text">
+      <div class="brain-title">The Quality Jobs Brain</div>
+      <div class="brain-sub">Ask anything. Trained on every SOP, all three call scripts, the objection training and 38 of Alfie's recorded sales calls.</div>
+    </div>
+    <div class="brain-hero-right">
+      <div class="brain-offer">Selected offer: <span id="brain-offer">—</span></div>
+      <button class="btn btn-ghost brain-new" onclick="brainNew()">＋ New chat</button>
+    </div>
+  </div>
+
+  <div class="brain-body" id="brain-scroll">
+    <div class="brain-col" id="brain-messages">
+      <div class="brain-welcome" id="brain-welcome">
+        <div class="brain-welcome-h">What do you need help closing?</div>
+        <div class="brain-welcome-p">Tell it what the prospect actually said, plus their trade, area and numbers. The more detail you give, the sharper the answer.</div>
+        <div class="brain-chips">
+          <button class="brain-chip" onclick="brainAsk(this.textContent)">He said "$10K upfront is a lot and I need to talk to my wife." What do I say?</button>
+          <button class="brain-chip" onclick="brainAsk(this.textContent)">One-man band, $28K bathrooms, can't answer the phone on site. Which package do I pitch?</button>
+          <button class="brain-chip" onclick="brainAsk(this.textContent)">How did Alfie handle prospects who'd been burned by agencies on the recorded calls?</button>
+          <button class="brain-chip" onclick="brainAsk(this.textContent)">Prospect ghosted me 4 days after the proposal. What's my next message?</button>
+          <button class="brain-chip" onclick="brainAsk(this.textContent)">Why are we better than Dream Renovations? Give me the exact words.</button>
+          <button class="brain-chip" onclick="brainAsk(this.textContent)">Build the ROI for a $35K bathroom, 20% margin, 25% close rate on the Agency offer.</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="brain-inputbar">
+    <div class="brain-col">
+      <div class="brain-inputwrap">
+        <textarea id="brain-input" rows="1" placeholder="Type the objection or question…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();brainSend()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'"></textarea>
+        <button class="brain-send" id="brain-send" onclick="brainSend()" aria-label="Send">➤</button>
+      </div>
+      <div class="brain-foot">The Brain can make mistakes. Prices and guarantees come from the SOPs, so check anything marked "confirm with Alfie" before you quote it.</div>
+    </div>
+  </div>
+</div>
+
 <!-- MODULES MODE -->
 <div id="mode-modules" style="display:none;height:calc(100vh - 97px);overflow:hidden;grid-template-columns:300px 1fr">
   <div class="sidebar-left">
@@ -2064,6 +2165,8 @@
     document.getElementById('overlay-price').textContent = o.headline;
     document.getElementById('overlay-break').innerHTML = o.overlayBreak;
     document.getElementById('overlay-offer').textContent = o.name;
+    const brainOffer = document.getElementById('brain-offer');
+    if (brainOffer) brainOffer.textContent = o.name;
     const chatOffer = document.getElementById('chat-offer');
     if (chatOffer) chatOffer.textContent = o.name;
     renderROI();
@@ -2139,7 +2242,9 @@
     document.getElementById('mode-callflow').style.display = mode === 'callflow' ? 'grid' : 'none';
     document.getElementById('mode-objections').style.display = mode === 'objections' ? 'flex' : 'none';
     document.getElementById('mode-modules').style.display = mode === 'modules' ? 'grid' : 'none';
-    ['callflow', 'objections', 'modules'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', mode === k));
+    document.getElementById('mode-brain').style.display = mode === 'brain' ? 'flex' : 'none';
+    if (mode === 'brain') setTimeout(() => document.getElementById('brain-input').focus(), 50);
+    ['callflow', 'objections', 'modules', 'brain'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', mode === k));
     if (mode === 'objections' && !objInitialised) { initObjHandler(); objInitialised = true; }
   }
 
@@ -3531,6 +3636,86 @@ ${PACE}
   function openObjTab(i) {
     switchMode('objections');
     switchObjTab(i);
+  }
+
+  // ═══════════════════════════════════════════════
+  // THE BRAIN — chat over every SOP, script and recorded call (backend: qj-closer-brain Netlify function)
+  // ═══════════════════════════════════════════════
+  const BRAIN_URL = 'https://qj-closer-brain.netlify.app/api/brain';
+  let brainHistory = [];
+  let brainBusy = false;
+
+  function brainRender(md) {
+    if (window.marked && window.DOMPurify) return DOMPurify.sanitize(marked.parse(md));
+    const d = document.createElement('div'); d.textContent = md; return d.innerHTML.replace(/\n/g, '<br>');
+  }
+
+  function brainBubble(role, html) {
+    const wrap = document.createElement('div');
+    wrap.className = 'bmsg ' + role;
+    wrap.innerHTML = role === 'assistant'
+      ? `<img src="qj-logo.png" class="bmsg-av" alt=""><div class="bmsg-body"><div class="bmsg-text">${html}</div></div>`
+      : `<div class="bmsg-body"><div class="bmsg-text"></div></div>`;
+    if (role === 'user') wrap.querySelector('.bmsg-text').textContent = html;
+    document.getElementById('brain-messages').appendChild(wrap);
+    brainScroll();
+    return wrap.querySelector('.bmsg-text');
+  }
+
+  function brainScroll() { const s = document.getElementById('brain-scroll'); s.scrollTop = s.scrollHeight; }
+
+  function brainAsk(text) { document.getElementById('brain-input').value = text; brainSend(); }
+
+  function brainNew() {
+    if (brainBusy) return;
+    brainHistory = [];
+    const box = document.getElementById('brain-messages');
+    [...box.querySelectorAll('.bmsg')].forEach(n => n.remove());
+    document.getElementById('brain-welcome').style.display = '';
+    document.getElementById('brain-input').focus();
+  }
+
+  async function brainSend() {
+    const input = document.getElementById('brain-input');
+    const text = input.value.trim();
+    if (!text || brainBusy) return;
+    brainBusy = true;
+    document.getElementById('brain-send').disabled = true;
+    document.getElementById('brain-welcome').style.display = 'none';
+    input.value = ''; input.style.height = 'auto';
+    brainBubble('user', text);
+    brainHistory.push({ role: 'user', content: text });
+    const out = brainBubble('assistant', '<span class="brain-typing"><i></i><i></i><i></i> Searching the SOPs and call recordings…</span>');
+    let answer = '';
+    try {
+      const res = await fetch(BRAIN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: brainHistory, offer: currentOffer })
+      });
+      if (!res.ok || !res.body) throw new Error((await res.text()) || ('HTTP ' + res.status));
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        answer += dec.decode(value, { stream: true });
+        out.innerHTML = brainRender(answer);
+        brainScroll();
+      }
+      if (!answer.trim()) throw new Error('Empty answer');
+      brainHistory.push({ role: 'assistant', content: answer });
+      const copy = document.createElement('button');
+      copy.className = 'bmsg-copy'; copy.textContent = 'Copy';
+      copy.onclick = () => { navigator.clipboard.writeText(answer).then(() => { copy.textContent = 'Copied'; setTimeout(() => copy.textContent = 'Copy', 1500); }); };
+      out.parentElement.appendChild(copy);
+    } catch (e) {
+      brainHistory.pop();
+      out.innerHTML = `<span style="color:#F2B8B0">⚠️ Couldn't reach the Brain (${String(e.message || e).slice(0, 120)}). Check your connection and try again.</span>`;
+    } finally {
+      brainBusy = false;
+      document.getElementById('brain-send').disabled = false;
+      input.focus();
+    }
   }
 
   // ── INIT ──
