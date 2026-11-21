@@ -1011,6 +1011,69 @@
   .brain-send:disabled { opacity: .45; cursor: default; }
   .brain-foot { font-size: 11px; color: rgba(245,243,238,.4); text-align: center; margin-top: 8px; }
   @media (max-width: 760px) { .brain-chips { grid-template-columns: 1fr; } .brain-hero { flex-wrap: wrap; padding: 14px 16px; } .brain-hero-right { flex-direction: row; align-items: center; } }
+
+  /* ── Live Call Copilot ── */
+  #mode-live { --b-ink: #F5F3EE; --b-muted: rgba(245,243,238,.6); --b-line: rgba(255,255,255,.09); --b-card: #1F1F1D; color: var(--b-ink); }
+  .live-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .live-status { font-size: 11.5px; color: var(--b-muted); display: flex; align-items: center; gap: 5px; }
+  .ldot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.2); display: inline-block; margin-left: 8px; }
+  .ldot.on { background: #3DDC84; box-shadow: 0 0 8px rgba(61,220,132,.7); }
+  .ldot.busy { background: #DAB876; animation: bdot 1s infinite; }
+  .ldot.err { background: #E5534B; }
+  .live-timer { font-variant-numeric: tabular-nums; font-weight: 700; color: #DAB876; font-size: 15px; letter-spacing: 1px; }
+  .live-btn { width: auto !important; height: auto !important; padding: 8px 14px; font-weight: 700; font-size: 13px; }
+  .live-setup { margin: 12px 20px 0; padding: 10px 14px; border-radius: 10px; background: rgba(218,184,118,.08); border: 1px solid rgba(218,184,118,.25); font-size: 12.5px; line-height: 1.6; color: #F2E6CC; flex-shrink: 0; }
+  .live-setup.err { background: rgba(229,83,75,.1); border-color: rgba(229,83,75,.4); color: #F6C3BE; }
+  .live-grid { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 14px; padding: 12px 20px 16px; min-height: 0; }
+  .live-transcript, .live-copilot { background: #161615; border: 1px solid var(--b-line); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; }
+  .live-copilot { overflow-y: auto; padding-bottom: 12px; }
+  .live-col-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--b-muted); padding: 12px 14px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .live-lines { flex: 1; overflow-y: auto; padding: 0 14px 10px; }
+  .lline { font-size: 13.5px; line-height: 1.55; margin-bottom: 9px; color: var(--b-ink); }
+  .lline .lwho { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; margin-right: 7px; padding: 1px 6px; border-radius: 4px; }
+  .lline.them .lwho { background: rgba(218,184,118,.18); color: #DAB876; }
+  .lline.me .lwho { background: rgba(255,255,255,.08); color: var(--b-muted); }
+  .lline.me { color: rgba(245,243,238,.75); }
+  .lline.interim { opacity: .55; font-style: italic; }
+  .live-empty { color: rgba(245,243,238,.4); font-size: 13px; padding: 6px 0; }
+  .live-manual { display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--b-line); flex-shrink: 0; }
+  .live-manual select, .live-manual input { background: var(--b-card); border: 1px solid var(--b-line); color: var(--b-ink); border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 12.5px; }
+  .live-manual input { flex: 1; min-width: 0; }
+  .live-refresh { font-size: 11px !important; padding: 4px 10px !important; background: transparent !important; color: #DAB876 !important; border-color: rgba(218,184,118,.4) !important; text-transform: none; letter-spacing: 0; }
+  .live-card { margin: 0 12px 10px; background: var(--b-card); border: 1px solid var(--b-line); border-radius: 12px; padding: 12px 14px; }
+  .live-card-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--b-muted); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .live-sub { text-transform: none; letter-spacing: 0; font-weight: 500; color: rgba(245,243,238,.4); }
+  .live-phase { text-transform: none; letter-spacing: 0; font-size: 11.5px; color: #121212; background: linear-gradient(135deg, #DAB876, #A97C3F); padding: 2px 9px; border-radius: 100px; font-weight: 700; }
+  .live-ask { border-color: rgba(218,184,118,.35); }
+  .lq { padding: 8px 0; border-bottom: 1px solid var(--b-line); }
+  .lq:last-of-type { border-bottom: 0; }
+  .lq-ask { font-size: 14px; line-height: 1.5; color: var(--b-ink); }
+  .lq.top .lq-ask { font-size: 16px; font-weight: 700; color: #fff; }
+  .lq-why { font-size: 11.5px; color: var(--b-muted); margin-top: 2px; }
+  .lq-note { font-size: 12px; color: rgba(245,243,238,.55); margin-top: 8px; font-style: italic; }
+  .live-listen { font-size: 12.5px; color: #F2E6CC; margin-top: 8px; line-height: 1.5; }
+  .live-warning { margin: 0 12px 10px; padding: 10px 12px; border-radius: 10px; background: rgba(245,166,35,.12); border: 1px solid rgba(245,166,35,.4); color: #FBD9A0; font-size: 12.5px; line-height: 1.5; }
+  .live-objection { margin: 0 12px 10px; padding: 12px 14px; border-radius: 12px; background: rgba(229,83,75,.1); border: 1px solid rgba(229,83,75,.45); }
+  .lo-h { font-size: 13px; font-weight: 800; color: #F6C3BE; text-transform: capitalize; margin-bottom: 4px; }
+  .lo-said { font-size: 12px; color: var(--b-muted); margin-bottom: 8px; font-style: italic; }
+  .lo-say { display: flex; gap: 8px; font-size: 14px; line-height: 1.5; color: #fff; margin-bottom: 6px; }
+  .lo-say span { flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; background: #E5534B; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+  .lo-fw { font-size: 11.5px; color: var(--b-muted); margin-top: 4px; }
+  .live-beliefs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lb { font-size: 12px; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--b-line); color: var(--b-muted); }
+  .lb.got { background: rgba(61,220,132,.12); border-color: rgba(61,220,132,.45); color: #9FF0C1; font-weight: 600; }
+  .live-numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ln { background: #161615; border-radius: 8px; padding: 7px 9px; }
+  .ln-k { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: var(--b-muted); font-weight: 700; }
+  .ln-v { font-size: 15px; font-weight: 800; color: #DAB876; margin-top: 1px; }
+  .ln-v.none { color: rgba(245,243,238,.3); }
+  .live-offerfit { font-size: 13px; line-height: 1.6; color: var(--b-ink); }
+  .live-offerfit .cad-tab { margin-left: 6px; font-size: 11px; padding: 3px 9px; }
+  .live-wrap-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .live-wrap-overlay[hidden] { display: none; }
+  .live-wrap-box { background: #161615; border: 1px solid rgba(218,184,118,.3); border-radius: 16px; width: min(860px, 100%); max-height: 88vh; overflow-y: auto; padding: 18px 22px; color: #F5F3EE; --b-ink: #F5F3EE; --b-muted: rgba(245,243,238,.6); --b-line: rgba(255,255,255,.09); }
+  .live-wrap-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; position: sticky; top: -18px; background: #161615; padding: 8px 0; }
+  @media (max-width: 900px) { .live-grid { grid-template-columns: 1fr; overflow-y: auto; } .live-transcript { min-height: 320px; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
@@ -1043,6 +1106,7 @@
 <!-- MODE TABS -->
 <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0">
   <button class="mode-tab active" id="tab-callflow" onclick="switchMode('callflow')">📋 Call Flow</button>
+  <button class="mode-tab brain-tab" id="tab-live" onclick="switchMode('live')">🎙 Live Call</button>
   <button class="mode-tab" id="tab-objections" onclick="switchMode('objections')">🛡 Objection Handler</button>
   <button class="mode-tab" id="tab-modules" onclick="switchMode('modules')">🎓 Modules</button>
   <button class="mode-tab brain-tab" id="tab-brain" onclick="switchMode('brain')">🧠 The Brain</button>
@@ -1751,6 +1815,78 @@
   </div>
 </div>
 
+<!-- LIVE CALL MODE -->
+<div id="mode-live" style="display:none;height:calc(100vh - 97px);overflow:hidden;flex-direction:column;background:var(--dark)">
+  <div class="brain-hero live-hero">
+    <img src="qj-logo.png" alt="Quality Jobs" class="brain-logo" />
+    <div class="brain-hero-text">
+      <div class="brain-title">Live Call Copilot</div>
+      <div class="brain-sub">Listens to your Google Meet call and tells you what to ask next, which beliefs you've collected and how to handle objections.</div>
+    </div>
+    <div class="live-controls">
+      <div class="live-status"><span class="ldot" id="ls-meet"></span>Meet audio <span class="ldot" id="ls-mic"></span>Your mic <span class="ldot" id="ls-ai"></span>Copilot</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="live-timer" id="live-timer">00:00</span>
+        <button class="brain-send live-btn" id="live-start" onclick="liveStart()">● Start listening</button>
+        <button class="btn btn-ghost brain-new" id="live-end" onclick="liveEnd()" disabled>■ End call &amp; wrap up</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="live-setup" id="live-setup">
+    <strong>How to use it:</strong> open your Google Meet call in Chrome in another tab → click <em>Start listening</em> → choose the <strong>Meet tab</strong> and switch on <strong>"Also share tab audio"</strong> → allow your microphone. Wear headphones so your mic doesn't pick up the prospect. Tell the prospect the call is being recorded.
+  </div>
+
+  <div class="live-grid">
+    <div class="live-transcript">
+      <div class="live-col-h">Transcript <span id="live-wordcount"></span></div>
+      <div class="live-lines" id="live-lines"><div class="live-empty">The conversation will appear here as you talk.</div></div>
+      <div class="live-manual">
+        <select id="live-who" aria-label="Speaker"><option value="Prospect">Prospect said</option><option value="You">I said</option></select>
+        <input id="live-type" placeholder="Type a line (phone calls, or if audio drops)…" onkeydown="if(event.key==='Enter'){liveManual()}" />
+        <button class="btn btn-ghost brain-new" onclick="liveManual()">Add</button>
+      </div>
+    </div>
+
+    <div class="live-copilot" id="live-copilot">
+      <div class="live-col-h">Copilot <button class="cad-tab live-refresh" onclick="liveAnalyse(true)">↻ Ask now</button></div>
+      <div id="live-warning" class="live-warning" hidden></div>
+      <div id="live-objection" class="live-objection" hidden></div>
+      <div class="live-card live-ask">
+        <div class="live-card-h">Ask next <span class="live-phase" id="live-phase">—</span></div>
+        <div id="live-questions"><div class="live-empty">Suggestions appear after the prospect speaks.</div></div>
+        <div class="live-listen" id="live-listen"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-h">Beliefs collected <span id="live-bcount">0/7</span></div>
+        <div class="live-beliefs" id="live-beliefs"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-h">Numbers heard <span class="live-sub">(sent to the ROI in Call Flow)</span></div>
+        <div class="live-numbers" id="live-numbers"></div>
+      </div>
+      <div class="live-card">
+        <div class="live-card-h">Best-fit offer</div>
+        <div id="live-offer" class="live-offerfit">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="live-wrap-overlay" id="live-wrap" hidden>
+    <div class="live-wrap-box">
+      <div class="live-wrap-top">
+        <div class="brain-title" style="font-size:18px">Post-call pack</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost brain-new" onclick="liveCopyWrap()" id="live-copywrap">Copy</button>
+          <button class="btn btn-ghost brain-new" onclick="liveDownload()">Download transcript</button>
+          <button class="btn btn-ghost brain-new" onclick="document.getElementById('live-wrap').hidden=true">Close</button>
+        </div>
+      </div>
+      <div class="bmsg assistant" style="margin:0"><div class="bmsg-body"><div class="bmsg-text" id="live-wrap-text"></div></div></div>
+    </div>
+  </div>
+</div>
+
 <!-- BRAIN MODE -->
 <div id="mode-brain" style="display:none;height:calc(100vh - 97px);overflow:hidden;flex-direction:column;background:var(--dark)">
   <div class="brain-hero">
@@ -2243,8 +2379,9 @@
     document.getElementById('mode-objections').style.display = mode === 'objections' ? 'flex' : 'none';
     document.getElementById('mode-modules').style.display = mode === 'modules' ? 'grid' : 'none';
     document.getElementById('mode-brain').style.display = mode === 'brain' ? 'flex' : 'none';
+    document.getElementById('mode-live').style.display = mode === 'live' ? 'flex' : 'none';
     if (mode === 'brain') setTimeout(() => document.getElementById('brain-input').focus(), 50);
-    ['callflow', 'objections', 'modules', 'brain'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', mode === k));
+    ['callflow', 'live', 'objections', 'modules', 'brain'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', mode === k));
     if (mode === 'objections' && !objInitialised) { initObjHandler(); objInitialised = true; }
   }
 
@@ -3718,7 +3855,246 @@ ${PACE}
     }
   }
 
+  // ═══════════════════════════════════════════════
+  // LIVE CALL COPILOT — Google Meet tab audio + mic → Deepgram (live transcript) → /api/copilot
+  // ═══════════════════════════════════════════════
+  const LIVE_API = 'https://qj-closer-brain.netlify.app/api';
+  const DG_PARAMS = new URLSearchParams([
+    ['model', 'nova-3'], ['language', 'en-AU'], ['smart_format', 'true'], ['punctuate', 'true'],
+    ['interim_results', 'true'], ['utterance_end_ms', '1500'], ['endpointing', '300'], ['vad_events', 'true'],
+    ...['Quality Jobs', 'Hipages', 'ServiceSeeking', 'Dream Renovations', 'Meta', 'WhatsApp', 'GST', 'tyre kickers', 'Alfie'].map(k => ['keyterm', k])
+  ]).toString();
+  const PHASE_LABELS = { frame: 'Set the frame', problem: 'Find the problem', numbers: 'Their numbers', past_attempts: 'Past attempts', cost_of_inaction: 'Cost of inaction', desired_state: 'Desired state', transition: 'Transition', pitch: 'The pitch', alignment_investment: 'Alignment & investment', close: 'Close' };
+  const PHASE_TO_CALLFLOW = { frame: 1, problem: 2, numbers: 3, past_attempts: 4, cost_of_inaction: 5, desired_state: 6, transition: 7, pitch: 8, alignment_investment: 9, close: 10 };
+  const BELIEF_LABELS = { pain: 'Pain', doubt: 'Doubt', cost: 'Cost of inaction', desire: 'Desire', support: 'Support', solution: 'Solution', money: 'Money' };
+  const NUM_LABELS = { job_value: ['Job value', '$', 'n-value'], margin_pct: ['Margin', '%', 'n-margin'], close_rate_pct: ['Close rate', '%', 'n-close'], jobs_capacity_per_month: ['Jobs / month', '', 'n-capacity'], monthly_revenue: ['Revenue / month', '$', 'n-revenue'], quiet_months_per_year: ['Quiet months / yr', '', 'c-months'] };
+
+  const live = { lines: [], streams: [], sockets: [], recorders: [], timers: [], running: false, started: 0, busy: false, pending: false, debounce: null, beliefs: {}, numbers: {}, last: null, wrapText: '' };
+
+  function liveSetDot(id, s) { document.getElementById(id).className = 'ldot ' + (s || ''); }
+
+  function liveTranscriptText() { return live.lines.map(l => l.who + ': ' + l.text).join('\n'); }
+
+  function liveRenderLines(interim) {
+    const box = document.getElementById('live-lines');
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    box.innerHTML = live.lines.map(l => `<div class="lline ${l.who === 'You' ? 'me' : 'them'}"><span class="lwho">${l.who === 'You' ? 'You' : 'Prospect'}</span>${escapeHtml(l.text)}</div>`).join('')
+      + Object.entries(interim || {}).filter(([, t]) => t).map(([who, t]) => `<div class="lline interim ${who === 'You' ? 'me' : 'them'}"><span class="lwho">${who === 'You' ? 'You' : 'Prospect'}</span>${escapeHtml(t)}</div>`).join('')
+      || '<div class="live-empty">The conversation will appear here as you talk.</div>';
+    if (atBottom) box.scrollTop = box.scrollHeight;
+    const words = live.lines.reduce((n, l) => n + l.text.split(/\s+/).length, 0);
+    document.getElementById('live-wordcount').textContent = words ? `· ${words} words` : '';
+  }
+  function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  const liveInterim = { You: '', Prospect: '' };
+  const liveBuffer = { You: '', Prospect: '' };
+
+  function liveCommit(who) {
+    const text = liveBuffer[who].trim();
+    liveBuffer[who] = ''; liveInterim[who] = '';
+    if (!text) { liveRenderLines(liveInterim); return; }
+    const last = live.lines[live.lines.length - 1];
+    if (last && last.who === who) last.text += ' ' + text; else live.lines.push({ who, text, t: Date.now() });
+    liveRenderLines(liveInterim);
+    try { localStorage.setItem('qj-live-transcript', liveTranscriptText()); } catch (e) {}
+    if (who === 'Prospect' && text.split(/\s+/).length >= 4) liveSchedule();
+  }
+
+  function liveManual() {
+    const input = document.getElementById('live-type');
+    const text = input.value.trim(); if (!text) return;
+    const who = document.getElementById('live-who').value;
+    liveBuffer[who] = text; liveCommit(who);
+    input.value = '';
+    if (who === 'Prospect') { clearTimeout(live.debounce); liveAnalyse(); }
+  }
+
+  function liveSchedule() {
+    clearTimeout(live.debounce);
+    live.debounce = setTimeout(() => liveAnalyse(), 1200);
+  }
+
+  async function liveAnalyse(force) {
+    if (!live.lines.some(l => l.who === 'Prospect') && !force) return;
+    if (live.busy) { live.pending = true; return; }
+    live.busy = true; liveSetDot('ls-ai', 'busy');
+    try {
+      const state = { beliefs_collected: Object.keys(live.beliefs).filter(k => live.beliefs[k]), numbers: live.numbers, last_suggestions: live.last ? live.last.next_questions.map(q => q.ask) : [] };
+      const res = await fetch(LIVE_API + '/copilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'live', transcript: liveTranscriptText(), offer: currentOffer, state }) });
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || res.status);
+      const data = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+      liveApply(data);
+      liveSetDot('ls-ai', 'on');
+    } catch (e) {
+      console.error('copilot', e);
+      liveSetDot('ls-ai', 'err');
+    } finally {
+      live.busy = false;
+      if (live.pending) { live.pending = false; liveAnalyse(); }
+    }
+  }
+
+  function liveApply(d) {
+    live.last = d;
+    document.getElementById('live-phase').textContent = (PHASE_LABELS[d.phase] || d.phase) + (d.phase_note ? '' : '');
+    document.getElementById('live-questions').innerHTML = (d.next_questions || []).map((q, i) => `<div class="lq${i === 0 ? ' top' : ''}"><div class="lq-ask">"${escapeHtml(q.ask)}"</div><div class="lq-why">${escapeHtml(q.why)}</div></div>`).join('')
+      + (d.phase_note ? `<div class="lq-note">${escapeHtml(d.phase_note)}</div>` : '');
+    document.getElementById('live-listen').innerHTML = d.listen_for ? `<strong>Listen for:</strong> ${escapeHtml(d.listen_for)}` : '';
+
+    const w = document.getElementById('live-warning');
+    w.hidden = !d.warning; w.innerHTML = d.warning ? '⚠️ ' + escapeHtml(d.warning) : '';
+
+    const o = document.getElementById('live-objection');
+    if (d.objection && d.objection.detected) {
+      o.hidden = false;
+      o.innerHTML = `<div class="lo-h">🛡 Objection: ${escapeHtml(d.objection.type.replace(/_/g, ' '))}</div>
+        ${d.objection.prospect_said ? `<div class="lo-said">They said: "${escapeHtml(d.objection.prospect_said)}"</div>` : ''}
+        ${(d.objection.say || []).map((s, i) => `<div class="lo-say"><span>${i + 1}</span>${escapeHtml(s)}</div>`).join('')}
+        <div class="lo-fw">${escapeHtml(d.objection.framework || '')}</div>`;
+    } else o.hidden = true;
+
+    // Beliefs only ever get added, never removed
+    Object.entries(d.beliefs || {}).forEach(([k, v]) => { if (v && !live.beliefs[k]) { live.beliefs[k] = true; collectBelief(k); } });
+    document.getElementById('live-beliefs').innerHTML = Object.entries(BELIEF_LABELS).map(([k, l]) => `<span class="lb${live.beliefs[k] ? ' got' : ''}">${live.beliefs[k] ? '✓ ' : ''}${l}</span>`).join('');
+    document.getElementById('live-bcount').textContent = Object.values(live.beliefs).filter(Boolean).length + '/7';
+
+    // Numbers: keep anything heard, push into Call Flow inputs that are still empty
+    let changed = false;
+    Object.entries(d.numbers || {}).forEach(([k, v]) => {
+      if (v == null) return;
+      live.numbers[k] = v;
+      const el = document.getElementById(NUM_LABELS[k][2]);
+      if (el && !el.value) { el.value = v; changed = true; }
+    });
+    if (changed) recalc();
+    document.getElementById('live-numbers').innerHTML = Object.entries(NUM_LABELS).map(([k, [l, u]]) => {
+      const v = live.numbers[k];
+      const shown = v == null ? '—' : (u === '$' ? '$' + Number(v).toLocaleString('en-AU') : v + (u === '%' ? '%' : ''));
+      return `<div class="ln"><div class="ln-k">${l}</div><div class="ln-v${v == null ? ' none' : ''}">${shown}</div></div>`;
+    }).join('');
+
+    const fit = { hybrid: 'Hybrid', agency: 'Marketing Agency', starter: 'Starter' }[d.offer_fit];
+    document.getElementById('live-offer').innerHTML = fit
+      ? `<strong>${fit}</strong> — ${escapeHtml(d.offer_reason || '')}${d.offer_fit !== currentOffer ? ` <button class="cad-tab" onclick="setOffer('${d.offer_fit}')">Switch to ${fit}</button>` : ' <span class="live-sub">(selected)</span>'}`
+      : 'Not enough info yet.';
+
+    // Keep Call Flow in step with where the call is
+    if (PHASE_TO_CALLFLOW[d.phase] != null && PHASE_TO_CALLFLOW[d.phase] > currentPhase) goToPhase(PHASE_TO_CALLFLOW[d.phase]);
+  }
+
+  // ── Audio capture + Deepgram ──
+  async function liveToken() {
+    const r = await fetch(LIVE_API + '/dg-token');
+    const j = await r.json().catch(() => ({}));
+    if (j.error === 'not_configured') throw new Error('Live transcription isn\'t switched on yet: the Deepgram API key still needs to be added on the server. You can still type lines below.');
+    if (!r.ok || !j.access_token) throw new Error('Couldn\'t get a transcription token (' + r.status + ').');
+    return j.access_token;
+  }
+
+  function liveConnect(stream, who, token, dotId) {
+    const ws = new WebSocket('wss://api.deepgram.com/v1/listen?' + DG_PARAMS, ['bearer', token]);
+    live.sockets.push(ws);
+    ws.onopen = () => {
+      liveSetDot(dotId, 'on');
+      const rec = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      live.recorders.push(rec);
+      rec.ondataavailable = (e) => { if (e.data.size && ws.readyState === 1) ws.send(e.data); };
+      rec.start(250);
+      live.timers.push(setInterval(() => { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'KeepAlive' })); }, 5000));
+    };
+    ws.onmessage = (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.type === 'Results') {
+        const t = (m.channel && m.channel.alternatives && m.channel.alternatives[0] && m.channel.alternatives[0].transcript) || '';
+        if (m.is_final) { if (t) liveBuffer[who] += ' ' + t; liveInterim[who] = ''; if (m.speech_final) liveCommit(who); else liveRenderLines({ ...liveInterim, [who]: liveBuffer[who] }); }
+        else { liveInterim[who] = (liveBuffer[who] + ' ' + t).trim(); liveRenderLines(liveInterim); }
+      } else if (m.type === 'UtteranceEnd') {
+        liveCommit(who);
+      }
+    };
+    ws.onerror = () => liveSetDot(dotId, 'err');
+    ws.onclose = () => { if (live.running) liveSetDot(dotId, 'err'); };
+  }
+
+  async function liveStart() {
+    if (live.running) return;
+    const setup = document.getElementById('live-setup');
+    try {
+      const token1 = await liveToken();
+      const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: { echoCancellation: false, noiseSuppression: false }, selfBrowserSurface: 'exclude', systemAudio: 'include', preferCurrentTab: false });
+      live.streams.push(display);
+      const tabAudio = display.getAudioTracks()[0];
+      if (!tabAudio) { display.getTracks().forEach(t => t.stop()); throw new Error('No tab audio. Pick the Google Meet tab and switch on "Also share tab audio".'); }
+      display.getVideoTracks().forEach(t => { t.onended = () => liveEnd(); });
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      live.streams.push(mic);
+      const token2 = await liveToken();
+      live.running = true; live.started = Date.now();
+      liveConnect(new MediaStream([tabAudio]), 'Prospect', token1, 'ls-meet');
+      liveConnect(mic, 'You', token2, 'ls-mic');
+      live.timers.push(setInterval(() => {
+        const s = Math.floor((Date.now() - live.started) / 1000);
+        document.getElementById('live-timer').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+      }, 1000));
+      document.getElementById('live-start').disabled = true;
+      document.getElementById('live-end').disabled = false;
+      setup.classList.remove('err'); setup.innerHTML = '🎙 Listening. Keep this tab open; suggestions update each time the prospect finishes talking.';
+    } catch (e) {
+      liveStopAll();
+      setup.classList.add('err');
+      setup.innerHTML = '⚠️ ' + escapeHtml(e.message || String(e));
+      document.getElementById('live-end').disabled = !live.lines.length;
+    }
+  }
+
+  function liveStopAll() {
+    live.running = false;
+    live.recorders.forEach(r => { try { r.state !== 'inactive' && r.stop(); } catch (e) {} });
+    live.sockets.forEach(ws => { try { ws.readyState === 1 && ws.send(JSON.stringify({ type: 'CloseStream' })); ws.close(); } catch (e) {} });
+    live.streams.forEach(s => s.getTracks().forEach(t => t.stop()));
+    live.timers.forEach(clearInterval);
+    live.recorders = []; live.sockets = []; live.streams = []; live.timers = [];
+    ['ls-meet', 'ls-mic'].forEach(id => liveSetDot(id, ''));
+    document.getElementById('live-start').disabled = false;
+  }
+
+  async function liveEnd() {
+    const wasRunning = live.running;
+    liveStopAll();
+    ['You', 'Prospect'].forEach(w => liveCommit(w));
+    if (!live.lines.length) return;
+    if (wasRunning) document.getElementById('live-setup').innerHTML = 'Call ended. Your post-call pack is below.';
+    const box = document.getElementById('live-wrap'), out = document.getElementById('live-wrap-text');
+    box.hidden = false;
+    out.innerHTML = '<span class="brain-typing"><i></i><i></i><i></i> Writing your tracker notes, follow-up plan and first message…</span>';
+    live.wrapText = '';
+    try {
+      const res = await fetch(LIVE_API + '/copilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'wrap', transcript: liveTranscriptText(), offer: currentOffer }) });
+      if (!res.ok || !res.body) throw new Error(await res.text());
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      for (;;) { const { done, value } = await reader.read(); if (done) break; live.wrapText += dec.decode(value, { stream: true }); out.innerHTML = brainRender(live.wrapText); }
+      const notes = document.getElementById('close-notes');
+      if (notes && !notes.value) notes.value = live.wrapText;
+    } catch (e) {
+      out.innerHTML = '⚠️ Couldn\'t write the post-call pack (' + escapeHtml(String(e.message || e).slice(0, 120)) + '). Your transcript is saved; use Download transcript.';
+    }
+  }
+
+  function liveCopyWrap() {
+    navigator.clipboard.writeText(live.wrapText).then(() => { const b = document.getElementById('live-copywrap'); b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
+  }
+  function liveDownload() {
+    const name = (document.getElementById('p-name').value || 'prospect').replace(/[^\w-]+/g, '-');
+    const blob = new Blob([liveTranscriptText() + (live.wrapText ? '\n\n---\n\n' + live.wrapText : '')], { type: 'text/plain' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `call-${name}-${new Date().toISOString().slice(0, 10)}.txt`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
   // ── INIT ──
+  document.getElementById('live-beliefs').innerHTML = Object.values(BELIEF_LABELS).map(l => `<span class="lb">${l}</span>`).join('');
+  document.getElementById('live-numbers').innerHTML = Object.values(NUM_LABELS).map(([l]) => `<div class="ln"><div class="ln-k">${l}</div><div class="ln-v none">—</div></div>`).join('');
   openModule('m1');
   renderOffer();
   recalc();
