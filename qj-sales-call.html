@@ -1074,6 +1074,12 @@
   .live-wrap-box { background: #161615; border: 1px solid rgba(218,184,118,.3); border-radius: 16px; width: min(860px, 100%); max-height: 88vh; overflow-y: auto; padding: 18px 22px; color: #F5F3EE; --b-ink: #F5F3EE; --b-muted: rgba(245,243,238,.6); --b-line: rgba(255,255,255,.09); }
   .live-wrap-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; position: sticky; top: -18px; background: #161615; padding: 8px 0; }
   @media (max-width: 900px) { .live-grid { grid-template-columns: 1fr; overflow-y: auto; } .live-transcript { min-height: 320px; } }
+
+  .live-steps { margin: 8px 0 8px 18px; } .live-steps li { margin-bottom: 4px; }
+  .live-setup a { color: #DAB876; } .live-setup code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; }
+  .live-setup summary { cursor: pointer; color: #DAB876; font-weight: 600; }
+  .lline.typing { opacity: .8; }
+  .lo-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: rgba(245,243,238,.5); margin-left: 6px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
@@ -1821,20 +1827,29 @@
     <img src="qj-logo.png" alt="Quality Jobs" class="brain-logo" />
     <div class="brain-hero-text">
       <div class="brain-title">Live Call Copilot</div>
-      <div class="brain-sub">Listens to your Google Meet call and tells you what to ask next, which beliefs you've collected and how to handle objections.</div>
+      <div class="brain-sub">Reads your Google Meet call live and tells you what to ask next, which beliefs you've collected and how to handle objections. Free: it uses Meet's own captions.</div>
     </div>
     <div class="live-controls">
-      <div class="live-status"><span class="ldot" id="ls-meet"></span>Meet audio <span class="ldot" id="ls-mic"></span>Your mic <span class="ldot" id="ls-ai"></span>Copilot</div>
+      <div class="live-status"><span class="ldot" id="ls-meet"></span>Meet captions <span class="ldot" id="ls-ai"></span>Copilot<span id="ls-mic" class="ldot" hidden></span></div>
       <div style="display:flex;gap:8px;align-items:center">
         <span class="live-timer" id="live-timer">00:00</span>
-        <button class="brain-send live-btn" id="live-start" onclick="liveStart()">● Start listening</button>
+        <button class="brain-send live-btn" id="live-start" onclick="liveStart()">● Start call</button>
         <button class="btn btn-ghost brain-new" id="live-end" onclick="liveEnd()" disabled>■ End call &amp; wrap up</button>
       </div>
     </div>
   </div>
 
   <div class="live-setup" id="live-setup">
-    <strong>How to use it:</strong> open your Google Meet call in Chrome in another tab → click <em>Start listening</em> → choose the <strong>Meet tab</strong> and switch on <strong>"Also share tab audio"</strong> → allow your microphone. Wear headphones so your mic doesn't pick up the prospect. Tell the prospect the call is being recorded.
+    <div id="live-extnote" style="font-weight:600;margin-bottom:4px">⚪ Checking for the Meet captions extension…</div>
+    <details id="live-howto"><summary>Setup (one time, 2 minutes) and how to use it</summary>
+      <ol class="live-steps">
+        <li><a href="qj-meet-captions.zip" download>Download the Quality Jobs Meet extension</a> and unzip it.</li>
+        <li>In Chrome go to <code>chrome://extensions</code>, switch on <strong>Developer mode</strong> (top right), click <strong>Load unpacked</strong> and pick the unzipped folder. Refresh this page.</li>
+        <li>On each call: join the Meet in Chrome, turn on captions (<strong>CC</strong> button or press <strong>c</strong>), then click <strong>Start call</strong> here. Put this tab in its own window beside Meet so you can see both.</li>
+      </ol>
+      No headphones needed and no audio is recorded: it only reads Meet's captions, labelled by speaker. Keep telling prospects the call is recorded.
+      <div style="margin-top:6px">No extension, or a phone call? Type lines below, or <a href="#" onclick="liveStartAudio();return false">use microphone + tab audio instead</a> (needs headphones and a Deepgram key).</div>
+    </details>
   </div>
 
   <div class="live-grid">
@@ -3878,7 +3893,7 @@ ${PACE}
   function liveRenderLines(interim) {
     const box = document.getElementById('live-lines');
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
-    box.innerHTML = live.lines.map(l => `<div class="lline ${l.who === 'You' ? 'me' : 'them'}"><span class="lwho">${l.who === 'You' ? 'You' : 'Prospect'}</span>${escapeHtml(l.text)}</div>`).join('')
+    box.innerHTML = live.lines.map(l => `<div class="lline ${l.who === 'You' ? 'me' : 'them'}${l.final === false ? ' typing' : ''}"><span class="lwho">${l.who === 'You' ? 'You' : 'Prospect'}</span>${escapeHtml(l.text)}</div>`).join('')
       + Object.entries(interim || {}).filter(([, t]) => t).map(([who, t]) => `<div class="lline interim ${who === 'You' ? 'me' : 'them'}"><span class="lwho">${who === 'You' ? 'You' : 'Prospect'}</span>${escapeHtml(t)}</div>`).join('')
       || '<div class="live-empty">The conversation will appear here as you talk.</div>';
     if (atBottom) box.scrollTop = box.scrollHeight;
@@ -3910,77 +3925,183 @@ ${PACE}
     if (who === 'Prospect') { clearTimeout(live.debounce); liveAnalyse(); }
   }
 
-  function liveSchedule() {
+  function liveSchedule(delay) {
     clearTimeout(live.debounce);
-    live.debounce = setTimeout(() => liveAnalyse(), 1200);
+    live.debounce = setTimeout(() => liveAnalyse(), delay == null ? 600 : delay);
+  }
+
+  // Parse the fast copilot's line format into the same shape liveApply uses. Only complete lines count until the stream ends.
+  function liveParseFast(text, done) {
+    const lines = text.split('\n');
+    if (!done) lines.pop();
+    const d = { next_questions: [] };
+    let obj = null;
+    for (const raw of lines) {
+      const l = raw.trim(); const m = l.match(/^([A-Z]+):\s*(.*)$/); if (!m) continue;
+      const [, tag, v] = m; const parts = v.split('|').map(x => x.trim());
+      if (tag === 'OBJ') obj = { detected: true, type: parts[0] || 'other', prospect_said: (parts[1] || '').replace(/^"|"$/g, ''), framework: parts[2] || '', say: [] };
+      else if (tag === 'SAY' && obj) obj.say.push(v.replace(/^"|"$/g, ''));
+      else if (tag === 'Q') { const [ask, why] = v.split('||').map(x => (x || '').trim()); d.next_questions.push({ ask: ask.replace(/^"|"$/g, ''), why: (why || '').replace(/^"|"$/g, '') }); }
+      else if (tag === 'LISTEN') d.listen_for = v;
+      else if (tag === 'PHASE') { d.phase = parts[0]; d.phase_note = parts.slice(1).join(' | '); }
+      else if (tag === 'BELIEFS') { d.beliefs = {}; v.split(',').map(x => x.trim().toLowerCase()).forEach(b => { if (BELIEF_LABELS[b]) d.beliefs[b] = true; }); }
+      else if (tag === 'NUMBERS') { d.numbers = {}; v.split(';').forEach(p => { const [k, n] = p.split('=').map(x => (x || '').trim()); if (NUM_LABELS[k]) { const num = parseFloat(String(n).replace(/[$,%k]/gi, '')); d.numbers[k] = isNaN(num) ? null : num; } }); }
+      else if (tag === 'FIT') { d.offer_fit = parts[0]; d.offer_reason = parts[1] || ''; }
+      else if (tag === 'WARN') d.warning = v;
+    }
+    if (obj) d.objection = obj; else if (done) d.objection = { detected: false };
+    if (done && d.warning === undefined) d.warning = '';
+    if (!d.next_questions.length) delete d.next_questions;
+    return d;
   }
 
   async function liveAnalyse(force) {
     if (!live.lines.some(l => l.who === 'Prospect') && !force) return;
-    if (live.busy) { live.pending = true; return; }
-    live.busy = true; liveSetDot('ls-ai', 'busy');
+    if (live.ctrl) live.ctrl.abort();           // newest moment wins
+    const ctrl = live.ctrl = new AbortController();
+    liveSetDot('ls-ai', 'busy');
     try {
-      const state = { beliefs_collected: Object.keys(live.beliefs).filter(k => live.beliefs[k]), numbers: live.numbers, last_suggestions: live.last ? live.last.next_questions.map(q => q.ask) : [] };
-      const res = await fetch(LIVE_API + '/copilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'live', transcript: liveTranscriptText(), offer: currentOffer, state }) });
-      const text = await res.text();
-      if (!res.ok) throw new Error(text || res.status);
-      const data = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
-      liveApply(data);
+      const state = { beliefs_collected: Object.keys(live.beliefs).filter(k => live.beliefs[k]), numbers: live.numbers, last_suggestions: (live.last && live.last.next_questions || []).map(q => q.ask) };
+      const res = await fetch(LIVE_API + '/copilot', { method: 'POST', signal: ctrl.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'fast', transcript: liveTranscriptText(), offer: currentOffer, state }) });
+      if (!res.ok || !res.body) throw new Error(await res.text());
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let text = '', shown = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += dec.decode(value, { stream: true });
+        const complete = text.split('\n').length - 1;
+        if (complete > shown) { shown = complete; liveApply(liveParseFast(text, false)); }
+      }
+      liveApply(liveParseFast(text, true));
       liveSetDot('ls-ai', 'on');
     } catch (e) {
-      console.error('copilot', e);
-      liveSetDot('ls-ai', 'err');
+      if (e.name !== 'AbortError') { console.error('copilot', e); liveSetDot('ls-ai', 'err'); }
     } finally {
-      live.busy = false;
-      if (live.pending) { live.pending = false; liveAnalyse(); }
+      if (live.ctrl === ctrl) live.ctrl = null;
     }
   }
 
-  function liveApply(d) {
-    live.last = d;
-    document.getElementById('live-phase').textContent = (PHASE_LABELS[d.phase] || d.phase) + (d.phase_note ? '' : '');
-    document.getElementById('live-questions').innerHTML = (d.next_questions || []).map((q, i) => `<div class="lq${i === 0 ? ' top' : ''}"><div class="lq-ask">"${escapeHtml(q.ask)}"</div><div class="lq-why">${escapeHtml(q.why)}</div></div>`).join('')
-      + (d.phase_note ? `<div class="lq-note">${escapeHtml(d.phase_note)}</div>` : '');
-    document.getElementById('live-listen').innerHTML = d.listen_for ? `<strong>Listen for:</strong> ${escapeHtml(d.listen_for)}` : '';
+  // ── Instant objection cards: keyword match on what the prospect is saying, no AI wait ──
+  const STRONG_SINGLE = new Set(['wife', 'husband', 'missus', 'spouse', 'partner', 'accountant', 'expensive', 'commission', 'guarantee', 'guaranteed', 'contract', 'exclusive', 'exclusivity', 'competitors', 'competitor', 'franchise', 'hipages', 'scam', 'burned', 'burnt', 'cheaper', 'refund', 'pricey']);
+  function liveInstant(text, key) {
+    const t = norm(text);
+    let best = null, bestScore = 0;
+    for (const e of knowledgeBase) {
+      if (e.type === 'knowledge') continue;
+      let score = 0, strong = false;
+      for (const kw of e._kw) if (t.includes(kw)) { const n = kw.trim().split(' ').length; score += n; if (n > 1 || STRONG_SINGLE.has(kw.trim())) strong = true; }
+      if (strong && score * (e.type === 'guardrail' ? 3 : 1) > bestScore) { bestScore = score; best = e; }
+    }
+    if (!best || live.instantKey === key + best.category) return;
+    live.instantKey = key + best.category;
+    const tmp = document.createElement('div'); tmp.innerHTML = fillTokens(best.response);
+    const lines = [...tmp.querySelectorAll('.script-block')].slice(0, 3).map(n => n.textContent.trim());
+    const o = document.getElementById('live-objection');
+    o.hidden = false;
+    o.innerHTML = `<div class="lo-h">⚡ ${escapeHtml(best.category)} <span class="lo-tag">instant · AI tailoring…</span></div>
+      <div class="lo-said">They said: "${escapeHtml(text.slice(-160))}"</div>
+      <div class="lo-say"><span>1</span>Pace first: "Totally fair. Aside from that, is there anything else keeping you from being 100% certain?"</div>
+      ${lines.map((s, i) => `<div class="lo-say"><span>${i + 2}</span>${escapeHtml(s)}</div>`).join('')}`;
+  }
 
-    const w = document.getElementById('live-warning');
-    w.hidden = !d.warning; w.innerHTML = d.warning ? '⚠️ ' + escapeHtml(d.warning) : '';
+  // ── Google Meet captions (via the Quality Jobs Chrome extension) ──
+  live.caps = new Map(); // caption id -> line object
+  live.ext = false;
+  function liveCaption(m) {
+    if (!live.capturing) return;
+    let line = live.caps.get(m.id);
+    if (!line) {
+      const last = live.lines[live.lines.length - 1];
+      if (last && last.who === m.who && last.final && Date.now() - last.t < 4000) { line = last; line.base = line.text; line.final = false; }
+      else { line = { who: m.who, text: '', base: '', t: Date.now(), final: false }; live.lines.push(line); }
+      live.caps.set(m.id, line);
+    }
+    line.text = (line.base ? line.base + ' ' : '') + m.text;
+    line.t = Date.now();
+    if (m.who === 'Prospect') liveInstant(m.text, m.id);
+    if (m.final) {
+      line.final = true; line.base = line.text; live.caps.delete(m.id);
+      try { localStorage.setItem('qj-live-transcript', liveTranscriptText()); } catch (e) {}
+      if (m.who === 'Prospect' && m.text.split(/\s+/).length >= 3) liveSchedule(300);
+    } else if (m.who === 'Prospect' && m.text.split(/\s+/).length >= 25) {
+      liveSchedule(1500); // long answer: start thinking before they finish
+    }
+    liveRenderLines();
+  }
+  window.addEventListener('message', (e) => {
+    if (e.source !== window || !e.data || e.data.source !== 'qj-meet-captions') return;
+    const m = e.data;
+    if (m.type === 'hello') { live.ext = true; liveExtStatus(); }
+    else if (m.type === 'status') { live.ext = true; live.capStatus = m.status; liveExtStatus(); }
+    else if (m.type === 'caption') liveCaption(m);
+  });
+  window.postMessage({ source: 'qj-closer-page', type: 'ping' }, window.location.origin);
+  function liveExtStatus() {
+    const st = live.capStatus;
+    liveSetDot('ls-meet', !live.ext ? '' : st === 'listening' ? 'on' : st ? 'err' : 'busy');
+    const note = document.getElementById('live-extnote');
+    if (!note) return;
+    note.innerHTML = !live.ext ? '⚪ Extension not detected. Install it (steps below), then refresh this page.'
+      : st === 'listening' ? '🟢 Reading Meet captions.'
+      : st === 'captions_off' ? '🟠 Meet is open but captions are off. In Meet, click <strong>CC</strong> (or press <strong>c</strong>).'
+      : st === 'not_in_call' ? '⚪ Not in a Meet call yet.'
+      : '🟢 Extension connected. Open your Meet call and turn on captions.';
+  }
+
+  function liveApply(d) {
+    live.last = Object.assign(live.last || {}, d);
+    if (d.phase) document.getElementById('live-phase').textContent = PHASE_LABELS[d.phase] || d.phase;
+    if (d.next_questions) {
+      document.getElementById('live-questions').innerHTML = d.next_questions.map((q, i) => `<div class="lq${i === 0 ? ' top' : ''}"><div class="lq-ask">"${escapeHtml(q.ask)}"</div>${q.why ? `<div class="lq-why">${escapeHtml(q.why)}</div>` : ''}</div>`).join('')
+        + (d.phase_note ? `<div class="lq-note">${escapeHtml(d.phase_note)}</div>` : '');
+    }
+    if (d.listen_for !== undefined) document.getElementById('live-listen').innerHTML = d.listen_for ? `<strong>Listen for:</strong> ${escapeHtml(d.listen_for)}` : '';
+    if (d.warning !== undefined || d.objection) {
+      const w = document.getElementById('live-warning');
+      w.hidden = !d.warning; w.innerHTML = d.warning ? '⚠️ ' + escapeHtml(d.warning) : '';
+    }
 
     const o = document.getElementById('live-objection');
     if (d.objection && d.objection.detected) {
       o.hidden = false;
-      o.innerHTML = `<div class="lo-h">🛡 Objection: ${escapeHtml(d.objection.type.replace(/_/g, ' '))}</div>
+      o.innerHTML = `<div class="lo-h">🛡 ${escapeHtml(String(d.objection.type).replace(/_/g, ' '))} <span class="lo-tag">AI · tailored to this call</span></div>
         ${d.objection.prospect_said ? `<div class="lo-said">They said: "${escapeHtml(d.objection.prospect_said)}"</div>` : ''}
         ${(d.objection.say || []).map((s, i) => `<div class="lo-say"><span>${i + 1}</span>${escapeHtml(s)}</div>`).join('')}
         <div class="lo-fw">${escapeHtml(d.objection.framework || '')}</div>`;
-    } else o.hidden = true;
+    } else if (d.objection && !d.objection.detected) {
+      o.hidden = true; live.instantKey = null;
+    }
 
-    // Beliefs only ever get added, never removed
-    Object.entries(d.beliefs || {}).forEach(([k, v]) => { if (v && !live.beliefs[k]) { live.beliefs[k] = true; collectBelief(k); } });
-    document.getElementById('live-beliefs').innerHTML = Object.entries(BELIEF_LABELS).map(([k, l]) => `<span class="lb${live.beliefs[k] ? ' got' : ''}">${live.beliefs[k] ? '✓ ' : ''}${l}</span>`).join('');
-    document.getElementById('live-bcount').textContent = Object.values(live.beliefs).filter(Boolean).length + '/7';
+    if (d.beliefs) {
+      Object.entries(d.beliefs).forEach(([k, v]) => { if (v && !live.beliefs[k]) { live.beliefs[k] = true; collectBelief(k); } });
+      document.getElementById('live-beliefs').innerHTML = Object.entries(BELIEF_LABELS).map(([k, l]) => `<span class="lb${live.beliefs[k] ? ' got' : ''}">${live.beliefs[k] ? '✓ ' : ''}${l}</span>`).join('');
+      document.getElementById('live-bcount').textContent = Object.values(live.beliefs).filter(Boolean).length + '/7';
+    }
 
-    // Numbers: keep anything heard, push into Call Flow inputs that are still empty
-    let changed = false;
-    Object.entries(d.numbers || {}).forEach(([k, v]) => {
-      if (v == null) return;
-      live.numbers[k] = v;
-      const el = document.getElementById(NUM_LABELS[k][2]);
-      if (el && !el.value) { el.value = v; changed = true; }
-    });
-    if (changed) recalc();
-    document.getElementById('live-numbers').innerHTML = Object.entries(NUM_LABELS).map(([k, [l, u]]) => {
-      const v = live.numbers[k];
-      const shown = v == null ? '—' : (u === '$' ? '$' + Number(v).toLocaleString('en-AU') : v + (u === '%' ? '%' : ''));
-      return `<div class="ln"><div class="ln-k">${l}</div><div class="ln-v${v == null ? ' none' : ''}">${shown}</div></div>`;
-    }).join('');
+    if (d.numbers) {
+      let changed = false;
+      Object.entries(d.numbers).forEach(([k, v]) => {
+        if (v == null || !NUM_LABELS[k]) return;
+        live.numbers[k] = v;
+        const el = document.getElementById(NUM_LABELS[k][2]);
+        if (el && !el.value) { el.value = v; changed = true; }
+      });
+      if (changed) recalc();
+      document.getElementById('live-numbers').innerHTML = Object.entries(NUM_LABELS).map(([k, [l, u]]) => {
+        const v = live.numbers[k];
+        const shown = v == null ? '—' : (u === '$' ? '$' + Number(v).toLocaleString('en-AU') : v + (u === '%' ? '%' : ''));
+        return `<div class="ln"><div class="ln-k">${l}</div><div class="ln-v${v == null ? ' none' : ''}">${shown}</div></div>`;
+      }).join('');
+    }
 
-    const fit = { hybrid: 'Hybrid', agency: 'Marketing Agency', starter: 'Starter' }[d.offer_fit];
-    document.getElementById('live-offer').innerHTML = fit
-      ? `<strong>${fit}</strong> — ${escapeHtml(d.offer_reason || '')}${d.offer_fit !== currentOffer ? ` <button class="cad-tab" onclick="setOffer('${d.offer_fit}')">Switch to ${fit}</button>` : ' <span class="live-sub">(selected)</span>'}`
-      : 'Not enough info yet.';
+    if (d.offer_fit) {
+      const fit = { hybrid: 'Hybrid', agency: 'Marketing Agency', starter: 'Starter' }[d.offer_fit];
+      document.getElementById('live-offer').innerHTML = fit
+        ? `<strong>${fit}</strong> — ${escapeHtml(d.offer_reason || '')}${d.offer_fit !== currentOffer ? ` <button class="cad-tab" onclick="setOffer('${d.offer_fit}')">Switch to ${fit}</button>` : ' <span class="live-sub">(selected)</span>'}`
+        : 'Not enough info yet.';
+    }
 
-    // Keep Call Flow in step with where the call is
     if (PHASE_TO_CALLFLOW[d.phase] != null && PHASE_TO_CALLFLOW[d.phase] > currentPhase) goToPhase(PHASE_TO_CALLFLOW[d.phase]);
   }
 
@@ -4018,7 +4139,20 @@ ${PACE}
     ws.onclose = () => { if (live.running) liveSetDot(dotId, 'err'); };
   }
 
-  async function liveStart() {
+  function liveStart() {
+    if (live.capturing) return;
+    live.capturing = true; live.started = Date.now();
+    live.timers.push(setInterval(() => {
+      const t = Math.floor((Date.now() - live.started) / 1000);
+      document.getElementById('live-timer').textContent = String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+    }, 1000));
+    document.getElementById('live-start').disabled = true;
+    document.getElementById('live-end').disabled = false;
+    document.getElementById('live-howto').open = false;
+    if (!timerRunning) toggleTimer();
+  }
+
+  async function liveStartAudio() {
     if (live.running) return;
     const setup = document.getElementById('live-setup');
     try {
@@ -4061,7 +4195,8 @@ ${PACE}
   }
 
   async function liveEnd() {
-    const wasRunning = live.running;
+    const wasRunning = live.running || live.capturing;
+    live.capturing = false;
     liveStopAll();
     ['You', 'Prospect'].forEach(w => liveCommit(w));
     if (!live.lines.length) return;
