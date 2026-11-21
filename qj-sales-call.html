@@ -1840,11 +1840,14 @@
   </div>
 
   <div class="live-setup" id="live-setup">
-    <div id="live-extnote" style="font-weight:600;margin-bottom:4px">⚪ Checking for the Meet captions extension…</div>
-    <details id="live-howto"><summary>Setup (one time, 2 minutes) and how to use it</summary>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div id="live-extnote" style="font-weight:600">⚪ Checking for the Meet captions extension…</div>
+      <a class="brain-send live-btn" id="live-dl" href="qj-meet-captions.zip" download style="text-decoration:none;display:none">⬇ Download the Meet extension</a>
+    </div>
+    <details id="live-howto" style="margin-top:6px"><summary>Setup (one time, 2 minutes) and how to use it</summary>
       <ol class="live-steps">
         <li><a href="qj-meet-captions.zip" download>Download the Quality Jobs Meet extension</a> and unzip it.</li>
-        <li>In Chrome go to <code>chrome://extensions</code>, switch on <strong>Developer mode</strong> (top right), click <strong>Load unpacked</strong> and pick the unzipped folder. Refresh this page.</li>
+        <li>No need to be in a call to install it. In Chrome go to <code>chrome://extensions</code>, switch on <strong>Developer mode</strong> (top right), click <strong>Load unpacked</strong> and pick the unzipped folder. Refresh this page.</li>
         <li>On each call: join the Meet in Chrome, turn on captions (<strong>CC</strong> button or press <strong>c</strong>), then click <strong>Start call</strong> here. Put this tab in its own window beside Meet so you can see both.</li>
       </ol>
       No headphones needed and no audio is recorded: it only reads Meet's captions, labelled by speaker. Keep telling prospects the call is recorded.
@@ -4037,11 +4040,14 @@ ${PACE}
     else if (m.type === 'caption') liveCaption(m);
   });
   window.postMessage({ source: 'qj-closer-page', type: 'ping' }, window.location.origin);
+  setTimeout(liveExtStatus, 1500); // no reply from the extension → show the download button + setup steps
   function liveExtStatus() {
     const st = live.capStatus;
     liveSetDot('ls-meet', !live.ext ? '' : st === 'listening' ? 'on' : st ? 'err' : 'busy');
     const note = document.getElementById('live-extnote');
     if (!note) return;
+    document.getElementById('live-dl').style.display = live.ext ? 'none' : '';
+    if (!live.ext) document.getElementById('live-howto').open = true;
     note.innerHTML = !live.ext ? '⚪ Extension not detected. Install it (steps below), then refresh this page.'
       : st === 'listening' ? '🟢 Reading Meet captions.'
       : st === 'captions_off' ? '🟠 Meet is open but captions are off. In Meet, click <strong>CC</strong> (or press <strong>c</strong>).'
