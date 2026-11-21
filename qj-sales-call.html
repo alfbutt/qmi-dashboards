@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Quality Jobs — Sales Call Navigator</title>
+<title>Quality Jobs — Closer Software</title>
 <style>
   :root {
     --gold: #B8870B;
@@ -924,6 +924,37 @@
   .kb-table.big th, .kb-table.big td { padding: 7px 9px; }
   .chat-offer-pill { display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--gold-dark); background: var(--gold-light); border: 1px solid rgba(184,135,11,.25); padding: 2px 8px; border-radius: 100px; }
   .phase-nav-item.done .phase-num { background: var(--green-bg); color: var(--green); }
+
+  /* ── Modules tab ── */
+  .mod-intro { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; margin-bottom: 10px; }
+  .mod-sub { margin: -2px 0 8px 22px; border-left: 2px solid var(--gold-light); padding-left: 6px; }
+  .mod-sub-item { font-size: 12.5px; padding: 6px 8px; border-radius: 6px; cursor: pointer; color: var(--text-muted); display: flex; gap: 8px; line-height: 1.35; }
+  .mod-sub-item span { font-weight: 700; color: var(--gold); min-width: 12px; }
+  .mod-sub-item:hover { background: var(--border); }
+  .mod-sub-item.active { background: var(--gold-light); color: var(--text); font-weight: 600; }
+  .crit-nav .phase-nav-time { color: var(--red); font-weight: 600; }
+  #mod-main > * { flex-shrink: 0; }
+  .video-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: var(--dark); }
+  .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .video-wrap.empty { display: flex; align-items: center; justify-content: center; text-align: center; color: rgba(255,255,255,.85); background: linear-gradient(135deg, var(--dark2), var(--dark4)); }
+  .mod-links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mod-links .btn { text-decoration: none; font-size: 12.5px; }
+  .mod-ul, .mod-ol { margin-left: 18px; }
+  .mod-ul li, .mod-ol li { font-size: 13.5px; line-height: 1.6; margin-bottom: 6px; }
+  .mod-p { font-size: 13.5px; line-height: 1.65; }
+  .mod-script { background: var(--gold-light); border-left: 3px solid var(--gold); padding: 9px 12px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 13px; font-style: italic; color: var(--gold-dark); line-height: 1.6; }
+  .doc-embed { width: 100%; height: 720px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
+  .card.crit { border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.04); }
+  .cad-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+  .cad-tab { font-size: 12px; padding: 6px 11px; border-radius: 100px; border: 1px solid var(--border); background: var(--bg3); cursor: pointer; font-weight: 600; color: var(--text-muted); }
+  .cad-tab:hover { border-color: var(--gold); color: var(--gold); }
+  .cad-tab.active { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .cad-steps { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 8px; }
+  .cad-step { display: grid; grid-template-columns: 130px 110px 1fr; border-bottom: 1px solid var(--border); }
+  .cad-step:last-child { border-bottom: 0; }
+  .cad-when { font-size: 12px; font-weight: 800; padding: 9px 10px; background: var(--bg2); color: var(--gold-dark); }
+  .cad-ch { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; padding: 10px; color: var(--text-muted); }
+  .cad-msg { font-size: 13px; padding: 9px 10px; line-height: 1.55; }
 </style>
 </head>
 <body>
@@ -933,7 +964,7 @@
   <div class="topbar-brand">
     <div class="logo">QJ</div>
     <div>
-      <div style="font-size:15px;color:#fff">Quality Jobs — Sales Navigator</div>
+      <div style="font-size:15px;color:#fff">Quality Jobs — Closer Software</div>
       <div style="font-size:11px;color:rgba(255,255,255,.5);font-weight:400">45–60 min · Hybrid · Agency · Starter</div>
     </div>
   </div>
@@ -955,6 +986,7 @@
 <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0">
   <button class="mode-tab active" id="tab-callflow" onclick="switchMode('callflow')">📋 Call Flow</button>
   <button class="mode-tab" id="tab-objections" onclick="switchMode('objections')">🛡 Objection Handler</button>
+  <button class="mode-tab" id="tab-modules" onclick="switchMode('modules')">🎓 Modules</button>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -1660,6 +1692,18 @@
   </div>
 </div>
 
+<!-- MODULES MODE -->
+<div id="mode-modules" style="display:none;height:calc(100vh - 97px);overflow:hidden;grid-template-columns:300px 1fr">
+  <div class="sidebar-left">
+    <div class="sidebar-title">Closer Training</div>
+    <div class="mod-intro">Welcome to the team. Work through these in order: each one is a video of Alfie walking through the SOP underneath it.</div>
+    <div class="progress-bar"><div class="progress-fill" id="mod-progress-fill" style="width:0%"></div></div>
+    <div style="font-size:11px;color:var(--text-muted);text-align:center;margin:6px 0 12px" id="mod-progress-label"></div>
+    <div id="mod-nav"></div>
+  </div>
+  <div class="main" id="mod-main"></div>
+</div>
+
 <!-- CLOSE OVERLAY -->
 <div class="close-overlay" id="closeOverlay" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="close-modal">
@@ -2094,8 +2138,8 @@
   function switchMode(mode) {
     document.getElementById('mode-callflow').style.display = mode === 'callflow' ? 'grid' : 'none';
     document.getElementById('mode-objections').style.display = mode === 'objections' ? 'flex' : 'none';
-    document.getElementById('tab-callflow').classList.toggle('active', mode === 'callflow');
-    document.getElementById('tab-objections').classList.toggle('active', mode === 'objections');
+    document.getElementById('mode-modules').style.display = mode === 'modules' ? 'grid' : 'none';
+    ['callflow', 'objections', 'modules'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', mode === k));
     if (mode === 'objections' && !objInitialised) { initObjHandler(); objInitialised = true; }
   }
 
@@ -3080,7 +3124,418 @@ ${PACE}
     messages.scrollTop = messages.scrollHeight;
   }
 
+  // ═══════════════════════════════════════════════
+  // MODULES — closer training (videos + the SOP walked through in each video)
+  // To add a video: paste a Loom / YouTube / Vimeo / Google Drive link into `video`.
+  // ═══════════════════════════════════════════════
+  const GD = id => 'https://docs.google.com/document/d/' + id + '/edit';
+  const MODULES = [
+    {
+      id: 'm1', num: '1', title: 'Welcome to Quality Jobs: What We Stand For',
+      summary: 'Who we are, the problem we solve, the impact we want, our values, the people we hire and what we expect from every salesperson.',
+      video: '', embed: '15tgjfQ3UJ_07VUP8KWVd2N0hKOShECeEj-jlwqvFT20',
+      docs: [{ label: 'Welcome SOP', url: GD('15tgjfQ3UJ_07VUP8KWVd2N0hKOShECeEj-jlwqvFT20') }],
+      takeaways: [
+        'We help quality builders win quality jobs — honestly, quickly and better than anyone else in the industry.',
+        'Founded by a tradie (Alfie, a chippy who ran his own bathroom company). Renovation and building only.',
+        'A hybrid, not just an agency: their own brand + our vetting team + the QJ network behind them.',
+        'Values: partners not vendors · honest and transparent · results in writing · quality over quantity · speak like a tradie · speed and follow-through · always improving.',
+        'Expectations: know the industry, sell the right package, never mislead, take notes and follow up, get better every week.'
+      ]
+    },
+    {
+      id: 'm2', num: '2', title: 'What We Sell & Who Gets Which Package',
+      summary: 'The three packages, their pricing and guarantees, which prospect type gets which, how to step between packages, and how the sales process runs end to end.',
+      video: '', embed: '1Cs73NL279NrUO7kN2kUpd01QaWfIy-QWnq-Bsz6qLtk',
+      docs: [{ label: 'Module 1 SOP: Packages & Process', url: GD('1Cs73NL279NrUO7kN2kUpd01QaWfIy-QWnq-Bsz6qLtk') }],
+      takeaways: [
+        'Hybrid: $10,000 upfront (3 months) + ~$1,500/mo ads. Agency: $2,000 + GST/mo + $50–70/day ads. Starter: $300 + GST/wk + $30/day ads.',
+        'Type A (ready to invest, wants certainty) → Hybrid. Type B (steady, monthly, no time to call leads) → Agency. Type C (small budget) → Starter.',
+        'Present the highest package they qualify for. Show ROI before price. Step down only when budget is the real objection, and say what they lose.',
+        'Never sell the Starter to someone with no time to call leads, or the Hybrid to someone who can\'t afford it.'
+      ],
+      related: [['🛡 Objection Handler → Packages & Pricing tab', "openObjTab(7)"]]
+    },
+    {
+      id: 'm3', num: '3', title: 'Industry Knowledge',
+      summary: 'The prospect\'s world: who we sell to, job values, margins, quoting, seasonality, where their work comes from, pains, goals, our offer, the ROI maths, objections from 100 calls, the glossary and every competitor.',
+      video: '', embed: '1GspvtnnW7vMzHsBa0HEGaPZFnfilC4C5UTOb71TXr_c',
+      docs: [{ label: 'Industry Knowledge SOP', url: GD('1GspvtnnW7vMzHsBa0HEGaPZFnfilC4C5UTOb71TXr_c') }],
+      takeaways: [
+        'Know it before your first demo. Builders trust people who understand their world.',
+        'Typical bathroom $25–35K; builder margins 25–30%; reno jobs close 3–4 weeks after quoting.',
+        'The close runs on one calculation: ~$1,500/mo of ads → ~10 quotes → 3 jobs at 30% → ~$90K revenue.',
+        'Never give licensing or insurance advice. Never suggest splitting a quote under the home warranty threshold.'
+      ],
+      related: [['🛡 Objection Handler → Industry Knowledge tab', "openObjTab(11)"], ['🛡 Competitors tab', "openObjTab(10)"]]
+    },
+    {
+      id: 'm4', num: '4', title: 'The Sales Process: Setter to Closer',
+      summary: 'A walkthrough of the Miro board: how a lead moves from our ads, to the setter\'s intro call, to the demo and close, to onboarding and follow-up.',
+      video: '', embed: null, miro: '',
+      docs: [],
+      takeaways: [
+        'Lead comes in from our own Facebook and Instagram ads.',
+        'Intro call (setter): confirm fit, book the demo, and get every decision-maker onto it.',
+        'Demo + close (45–60 min): frame → discovery → gap + 1–10 → system + package → ROI → price → objections → decision.',
+        'Take payment on the call. If not, book a specific time to collect it.',
+        'Welcome email + WhatsApp group → onboarding call → ads live in ~7 days → first quotes in 24–48 hours.',
+        'No close: tailored proposal the same day, fixed follow-up booked, logged in the Closer Tracker (see Module 11).'
+      ]
+    },
+    {
+      id: 'm5', num: '5', title: 'The Discovery Process',
+      summary: 'Walking through the call script up to the pitch: set the frame, find the problem, their numbers, past attempts, cost of inaction, desired state and the transition. Discovery is identical in all three scripts.',
+      video: '', embed: '14urgA8oLtgZ_PeJzwCE__A-W-4rBEX-gokhEOMAKGpk',
+      docs: [{ label: 'Closing Call Script (Hybrid)', url: GD('14urgA8oLtgZ_PeJzwCE__A-W-4rBEX-gokhEOMAKGpk') }],
+      takeaways: [
+        'Confirm every decision-maker is on the call. On 35 of 100 recorded calls the deal stalled because someone wasn\'t there.',
+        'Spend the most time on past attempts (~10 min). Our solution has to explain why everything else failed.',
+        'Hold your ground and get real numbers: job value, margin, capacity, revenue, close rate.',
+        'Make them say why they need to act now (cost of inaction). It prevents "I need to think about it" later.',
+        'Go 3–5 layers deep on the desired state. The personal reason is what they buy for.'
+      ],
+      related: [['📋 Practise it in the Call Flow tab', "switchMode('callflow');goToPhase(1)"]]
+    },
+    {
+      id: 'm6', num: '6', title: 'Pitching the Hybrid Offer',
+      summary: 'Positioning the Hybrid (agency + Quality Jobs network): two engines, the unique value propositions, the 5-pillar pitch, the 3-month ROI and the investment.',
+      video: '', embed: '1WbBWP0nNkQPl_GZx2798Q_1VQA9VsqkMX7A-gJIhWC0',
+      docs: [{ label: 'Hybrid Positioning SOP', url: GD('1WbBWP0nNkQPl_GZx2798Q_1VQA9VsqkMX7A-gJIhWC0') }, { label: 'Hybrid Closing Script', url: GD('14urgA8oLtgZ_PeJzwCE__A-W-4rBEX-gokhEOMAKGpk') }],
+      takeaways: [
+        'Agencies build your brand but can\'t guarantee. Franchises guarantee but build their brand. We do both.',
+        'Burned by an agency → lead with the guarantee and the network. Weighing a franchise → lead with brand ownership.',
+        'Make the videography tangible: name the videographer for their city and describe the shoot.',
+        'Don\'t promise how many network leads they\'ll get. The commitment is the quote guarantee in the agreement.'
+      ],
+      related: [['📋 Hybrid pitch in the Call Flow', "setOffer('hybrid');switchMode('callflow');goToPhase(8)"]]
+    },
+    {
+      id: 'm7', num: '7', title: 'Pitching the Marketing Agency Offer',
+      summary: 'The done-for-you monthly retainer: pricing, choosing the ad spend, what\'s included, why we\'re different from other agencies, who to present it to, and the 3-month term.',
+      video: '', embed: '1AQPT9uUmP96MVlukTRM82Hl4vJTikZ5VWXVdyT-PkxA',
+      docs: [{ label: 'Marketing Agency SOP', url: GD('1AQPT9uUmP96MVlukTRM82Hl4vJTikZ5VWXVdyT-PkxA') }, { label: 'Agency Closing Script', url: GD('1YAIKhcOVRQQ_Pj-aE9oRcBEkmKoYVdI4sfyeD2JK40o') }],
+      takeaways: [
+        '$2,000 + GST/mo, or $5,800 incl. GST upfront (saves $800). Ad spend $50–70/day; $40 only for Brisbane/Perth budget clients.',
+        'Lead with the vetting team: "You\'re getting a full-blown employee."',
+        'Explain why it\'s 90 days: jobs usually land in week 3–4. Month-to-month only as a last resort, at a higher rate, without the revenue guarantee.',
+        'Match ad spend to their capacity and budget, not the maximum.'
+      ],
+      related: [['📋 Agency pitch in the Call Flow', "setOffer('agency');switchMode('callflow');goToPhase(8)"]]
+    },
+    {
+      id: 'm8', num: '8', title: 'Pitching the Starter Package',
+      summary: 'The lowest-cost way in: we build the brand and run the ads, leads go straight to the client\'s phone and they call them. Who it suits, what isn\'t included, and planting the upgrade.',
+      video: '', embed: '13ZeOdJlkGezzCgtZ8YRPFh6xDwzgrQ3XzxMb6oDvAdc',
+      docs: [{ label: 'Starter Package SOP', url: GD('13ZeOdJlkGezzCgtZ8YRPFh6xDwzgrQ3XzxMb6oDvAdc') }, { label: 'Starter Closing Script', url: GD('1MiVZpBDyckue7c9aITqY98_V_qNrwYToHvmSrxaZOoM') }],
+      takeaways: [
+        '$300 + GST/wk + min $30/day ads ≈ $2,200–2,300/mo. No call centre, no quote guarantee. Say so upfront.',
+        'Only for owners who can call every lead within minutes. Expect ~30 raw leads a month at $30/day.',
+        'Agree a review point after month one or two to upgrade to the Agency offer.'
+      ],
+      related: [['📋 Starter pitch in the Call Flow', "setOffer('starter');switchMode('callflow');goToPhase(8)"]]
+    },
+    {
+      id: 'm9', num: '9', title: 'Proposals & Collecting Payment',
+      summary: 'How to put a proposal together on the Proposal Board, walk the prospect through what it will do for them, and take payment on the call.',
+      video: '', embed: null,
+      docs: [{ label: 'Proposal Board', url: 'https://proposals.qualityjobs.com.au/qj-pitch-canvas.html' }],
+      takeaways: [
+        'Build the proposal around their numbers: their job value, close rate, margin and goal, and the ROI before the price.',
+        'Walk them through what it will do for them: the first 7 days, the shoot or content plan, when the first quotes land.',
+        'Price once, then: "What are your thoughts?" and stop talking. Have the payment link open.',
+        '"Which card do you want to put on file, debit or credit for the points? And what\'s the billing address?" Share your screen with the payment link.',
+        'Bank transfer: send the link while you\'re on the call and stay on until it\'s done.',
+        'Not closed today: send a tailored proposal the same day and book a fixed follow-up (Module 11).'
+      ],
+      related: [['📋 Take Payment step in the Call Flow', "switchMode('callflow');goToPhase(10)"]]
+    },
+    {
+      id: 'm10', num: '10', title: 'Objection Handling',
+      summary: 'A module of its own, with a video for each type of objection. Watch them in order. The first one (pacing) applies to every objection you will ever get.',
+      lessons: [
+        { id: 'm10a', title: 'Pacing the First Objection', video: '', embed: '18zJA5DYB_4MLMsGMrJnJS9p8LkfYYZJ_Ok-mCYMTTiY', docs: [{ label: 'SOP', url: GD('18zJA5DYB_4MLMsGMrJnJS9p8LkfYYZJ_Ok-mCYMTTiY') }, { label: 'Transcript', url: GD('1YfibnY1RvkEFzwRYeX5VlLM6CZxpCMPztqvb_E4Gnf4') }], tab: 0 },
+        { id: 'm10b', title: 'Price & Finance Objections', video: '', embed: '1fLpUhEzDsZ7YBaIsCMDyk5Di7twWIuNneH0mHccf_AU', docs: [{ label: 'SOP', url: GD('1fLpUhEzDsZ7YBaIsCMDyk5Di7twWIuNneH0mHccf_AU') }, { label: 'Transcript', url: GD('1qHSVJg0gHO3RMdwLITP-Ndn77u-Oe1YONDws6Jnq-vQ') }], tab: 1 },
+        { id: 'm10c', title: 'Shell Objections', video: '', embed: null, docs: [], tab: 0, note: 'SOP to come.' },
+        { id: 'm10d', title: 'Uncertainty Objections', video: '', embed: '11Ffb4uoKxGSYTF84FA6wCTX6KuODzzvWNZIq4vedm30', docs: [{ label: 'SOP', url: GD('11Ffb4uoKxGSYTF84FA6wCTX6KuODzzvWNZIq4vedm30') }, { label: 'Transcript', url: GD('1qFRRqsfoAhXuTFQzVyvQKJczbC6I1tqer0s21T-uyUY') }], tab: 2 },
+        { id: 'm10e', title: 'Spouse & Partner Objections', video: '', embed: '14DnjnlTyBwc5gRyp2lYTCXEKFAHx2M3sA3IDRveVJ1o', docs: [{ label: 'SOP', url: GD('14DnjnlTyBwc5gRyp2lYTCXEKFAHx2M3sA3IDRveVJ1o') }, { label: 'Transcript', url: GD('1NiMuHbO9G_UEpfkDmbUU_xENxWRRclm8aGvYQ4U5N8w') }], tab: 3 },
+        { id: 'm10f', title: 'Pay on Results Objections', video: '', embed: '1NrkzHaJRhKFN-xLiBeYjtTz5AdVH_8fWafHs2ot3jMI', docs: [{ label: 'SOP', url: GD('1NrkzHaJRhKFN-xLiBeYjtTz5AdVH_8fWafHs2ot3jMI') }, { label: 'Transcript', url: GD('10YYU3XsDptOaL3BE8gM11EhRHuNfmgHSzOAK2jQnoVM') }], tab: 4 },
+        { id: 'm10g', title: 'Closing Deposits & Follow-Up Calls', video: '', embed: '1avF0ryVdHXTYxIoYGruz4FWmRBSGJ8O_k-3rs3v4qCk', docs: [{ label: 'SOP', url: GD('1avF0ryVdHXTYxIoYGruz4FWmRBSGJ8O_k-3rs3v4qCk') }, { label: 'Transcript', url: GD('1wNAsiracnBiSVGgqaVChSI_XyVA6PoVgOyH89zSFXac') }], tab: 5 },
+        { id: 'm10h', title: 'Sharing Leads Objection', video: '', embed: '1nwCYH9zNRDtN3127Oxc0tfKT5ZTIA0htV25Sx-drgVE', docs: [{ label: 'SOP', url: GD('1nwCYH9zNRDtN3127Oxc0tfKT5ZTIA0htV25Sx-drgVE') }], tab: 6 }
+      ]
+    },
+    {
+      id: 'm11', num: '11', title: 'Following Up: Cadences That Close', critical: true,
+      summary: 'About 50% of our deals close after the first call. This module is how you make sure none of them slip: when to book the follow-up, what to send, and the exact cadence for each type of prospect.',
+      video: '', embed: null,
+      docs: [{ label: 'Deposits & Follow-Ups SOP', url: GD('1avF0ryVdHXTYxIoYGruz4FWmRBSGJ8O_k-3rs3v4qCk') }],
+      html: 'FOLLOWUP_HTML'
+    }
+  ];
+
+  const FOLLOWUP_HTML = `
+<div class="card crit">
+  <div class="card-title" style="color:var(--red)">Why this matters</div>
+  <p class="mod-p"><strong>About 50% of our deals close after the first call.</strong> Only 8 of 38 recorded calls ended in a yes on the call. The rest went to follow-up, mostly for a partner's sign-off or to compare agencies. If your follow-up is weak, you lose half your income.</p>
+</div>
+
+<div class="card">
+  <div class="card-title">The 8 follow-up rules</div>
+  <ol class="mod-ol">
+    <li><strong>Never hang up without a booked time.</strong> A specific date and time in their calendar, with the invite sent and confirmed while you're still on the call. "I'll call you next week" is not a follow-up.</li>
+    <li><strong>Within 48 hours.</strong> Energy drops fast. Book the follow-up within 48 hours and frame it as the onboarding call.</li>
+    <li><strong>Get every decision-maker on it.</strong> If the partner, spouse, accountant or business partner is the reason, they're on the next call. Ask what exactly they'll want to know.</li>
+    <li><strong>Equal exchange.</strong> Give them something of value before the follow-up: a tailored proposal, a case study for their trade and city, or live lead examples in a WhatsApp group.</li>
+    <li><strong>Send the proposal the same day.</strong> Tailored to their numbers and their objection, not a generic PDF.</li>
+    <li><strong>Use WhatsApp or text from your phone.</strong> Response rates are far higher than email.</li>
+    <li><strong>Log everything in the Closer Tracker.</strong> Notes, the real objection, the next step and the date. Never leave a follow-up to memory.</li>
+    <li><strong>Stay a leader, not a chaser.</strong> Short, confident messages. No "just checking in". Every message has a reason or a question.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">Deposit or delay? (decide before you hang up)</div>
+  <ol class="mod-ol">
+    <li><strong>Not 100% sold?</strong> It's an uncertainty objection. Handle it now. A follow-up won't fix it.</li>
+    <li><strong>Logistical</strong> (moving money, waiting on pay day, settlement) → take a refundable deposit ($1,000 → $500 → $250).</li>
+    <li><strong>Relational</strong> (spouse, partner, accountant) → deposit if you can, then book the follow-up with them.</li>
+    <li><strong>Complex</strong> (needs more trust, ran out of time, you've pushed as far as you can) → book a delay.</li>
+    <li><strong>Long timeline</strong> ("after I sell the house", "when my licence lands") → deposit. The longer the wait, the more commitment matters.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">Booking the follow-up (script)</div>
+  <div class="mod-script">"Let me pause you for a second here. I actually don't want you to make a decision on this right now. I want you to make sure it's the right thing for you. So let's set up a call to iron out the small details, and we'll work out what's best from there. Sound good?"</div>
+  <div class="mod-script">"I've got [Tuesday 2pm] or [Wednesday 7am, before you're on site]. Which one works? … 100% sure? Great, I'll send the invite now. Did you get it?"</div>
+  <div class="mod-script">"And short of getting hit by a bus, will you let me know if anything comes up before then? Write down any questions you've got and we'll knock them out on the call."</div>
+  <div class="mod-script">"Last thing: I'll send you a bit of homework, a [case study from a builder in your area / the proposal with your numbers]. It'll take 5 minutes. Can you go through it before we talk?"</div>
+  <p class="mod-p" style="margin-top:8px">Tradies are on site all day. Offer early-morning (6:30–7:30am) or after-knock-off (4–6pm) slots, and give two options, never "I'm free anytime".</p>
+</div>
+
+<div class="card">
+  <div class="card-title">Homework to send (match it to their objection)</div>
+  <table class="kb-table big">
+    <tr><th>Their objection</th><th>Send them</th></tr>
+    <tr><td>Trust / burned by agencies</td><td>Case study closest to their trade and city + a client video testimonial. Offer a reference call.</td></tr>
+    <tr><td>Lead quality / tyre-kickers</td><td>Add them to a WhatsApp group with live lead cards from a similar client, sent as if the lead came to them.</td></tr>
+    <tr><td>Process / "how does it work?"</td><td>Short video walking through the system, ads and the vetting team.</td></tr>
+    <tr><td>Price / value</td><td>The proposal with the ROI on their own numbers, and the franchise or "hire an employee" comparison.</td></tr>
+    <tr><td>Partner / spouse / accountant</td><td>A one-page summary the absent person can read in 5 minutes, plus the proposal. Invite them to the WhatsApp group.</td></tr>
+    <tr><td>Comparing agencies</td><td>A side-by-side: renovation-only, leads called in minutes, guarantee in writing, you own everything.</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">The cadences: pick the one that matches the prospect</div>
+  <p class="mod-p">Each touch has a reason. Adapt the wording to your own voice, but keep the timing. If they reply, drop the cadence and get them on a call.</p>
+  <div id="cadence-tabs" class="cad-tabs"></div>
+  <div id="cadence-body"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Running the follow-up call</div>
+  <ol class="mod-ol">
+    <li><strong>Rapport:</strong> a minute on their week and the job they're on.</li>
+    <li><strong>Recap the last call:</strong> "If it's alright with you, I'd like to recap our last call so we're on the same page." Hit the 2–3 most emotional points: the pain, the cost of inaction, the personal reason.</li>
+    <li><strong>Check in:</strong> "Did I miss anything? … So how are you feeling?"</li>
+    <li><strong>Handle the real objection</strong> with the frameworks in Module 10, then ask for the decision and take payment on the call.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">Cancellations, no-shows and refund requests</div>
+  <ol class="mod-ol">
+    <li><strong>Get them on the phone.</strong> Never handle it over text.</li>
+    <li><strong>Clarify and validate:</strong> "Just so I'm clear, you're feeling now isn't the right time because of [reason], is that right?"</li>
+    <li><strong>Re-establish the pain:</strong> "When we first talked, you said [pain] and you wanted [goal]. Has that changed?"</li>
+    <li><strong>Isolate the real objection</strong> and re-sell the vision. Hold them to the decision they already made.</li>
+    <li><strong>Deposits:</strong> if someone goes quiet for 1–2 weeks after paying a deposit, refund it to avoid a chargeback.</li>
+  </ol>
+</div>
+
+<div class="redbox"><strong>Never:</strong> leave a call without a booked next step · send "just checking in" · chase with discounts nobody approved · follow up only by email · let a deal sit in the tracker with no date.</div>
+`;
+
+  const CADENCES = [
+    {
+      key: 'partner', name: 'Partner / spouse sign-off', when: 'They\'re sold but a wife, husband, business partner or accountant has to see it.',
+      steps: [
+        ['On the call', 'Call', 'Book the joint follow-up within 48 hours. Ask what exactly the partner will want to know. Try for a refundable deposit first if it\'s a permission thing.'],
+        ['+2 hours', 'WhatsApp', '"Great chatting today [Name]. I\'ve put together a one-pager for [Partner] so they can see exactly what we went through. Proposal with your numbers attached. Talk [day] at [time]. 👊"'],
+        ['+1 day', 'WhatsApp', 'Add them (and the partner, if they\'re happy) to a group with live lead examples from a similar builder. "Here\'s what came through for [similar client] this week, so [Partner] can see the type of homeowner we book."'],
+        ['Morning of call', 'Text', '"Still good for [time] today with you and [Partner]?"'],
+        ['Follow-up call', 'Call', 'Recap for the partner in 2 minutes (pain, goal, cost of inaction), then answer their questions and ask for the decision.'],
+        ['No-show', 'Call + text', 'Call twice within 10 minutes. Then: "No stress, I know site days run over. Does tonight at 6 or tomorrow at 7am work better?"']
+      ]
+    },
+    {
+      key: 'think', name: '"Think about it" / comparing agencies', when: 'You used a delay because they\'re still on the fence, or they\'re meeting other agencies.',
+      steps: [
+        ['On the call', 'Call', 'Find out who else they\'re talking to and what they\'re offering. Book a follow-up for after their other meetings, within 2–3 days.'],
+        ['+2 hours', 'WhatsApp', '"How are you feeling about our call earlier?" (If positive: leave it until the day of the call. If nervous: "Totally normal to feel that way before a big shift. Sleep on it, no decisions for now. We\'ll talk it through on [day].")'],
+        ['+1 day', 'WhatsApp', 'Send the case study closest to their trade and city, and the agency comparison: renovation-only, leads called in minutes, guarantee in writing, you own everything.'],
+        ['Morning of call', 'Text', '"Still on for [time]? Bring any questions from the other meetings and we\'ll go through them."'],
+        ['Follow-up call', 'Call', 'Recap, then: "What did the others offer that you liked?" Compare like for like, then ask for the decision.'],
+        ['+3 days if no reply', 'WhatsApp', 'Send a live lead card: "Came through for a [trade] in [nearby suburb] this morning: $[X]K bathroom, booked for Thursday. Want one of these for you next week?"'],
+        ['+7 days', 'Call', 'Call, don\'t text. If no answer: "Have you made a call on the marketing side, [Name]?"'],
+        ['+14 days', 'WhatsApp', 'The leader close: "I\'ll take it you\'ve gone another way, which is completely fine. If anything changes, you know where I am." (This gets more replies than anything else.)']
+      ]
+    },
+    {
+      key: 'deposit', name: 'Deposit taken, waiting on funds', when: 'They\'re 100% in. It\'s logistical: moving money, pay day, credit limit, settlement.',
+      steps: [
+        ['On the call', 'Call', 'Take the refundable deposit. Book the date the balance is paid AND the onboarding call. Start onboarding straight away (equal exchange).'],
+        ['Same day', 'Email + WhatsApp', 'Welcome email with agreement and Drive link for photos. Create the WhatsApp group with them, Alfie and their setter.'],
+        ['+1 day', 'WhatsApp', '"Got your photos? Upload the best jobs here [link] and we\'ll start building your ads so we\'re ready to go the day it\'s paid."'],
+        ['Day before balance', 'Text', '"Tomorrow\'s the day. I\'ll send the link in the morning so we can lock in your go-live date."'],
+        ['Balance day', 'Call', 'Call and take the payment on the phone. Don\'t just send a link and hope.'],
+        ['+7 days quiet', 'Call', 'Get them on the phone. Clarify, validate, re-establish the pain. If they\'ve gone silent for 1–2 weeks, refund the deposit to avoid a chargeback.']
+      ]
+    },
+    {
+      key: 'timing', name: 'Not now: timing, licence, settlement', when: '"After Christmas", "waiting on my licence or warranty insurance", "after this big job finishes".',
+      steps: [
+        ['On the call', 'Call', 'Pin the real date. Push for a deposit to lock a start date (the longer the wait, the more commitment matters). Offer a head start on the page set-up.'],
+        ['+1 day', 'WhatsApp', 'Proposal with their numbers and the start date in it. "Locked in for [month]. Here\'s what the first 30 days look like."'],
+        ['Every 2 weeks', 'WhatsApp', 'One piece of value each time, never "checking in": a live lead card, a client win, a quick tip on quoting or follow-up. Keep it short.'],
+        ['3 weeks before their date', 'Call', 'Book the onboarding call. "If we onboard now, your ads are live the week you\'re ready, not two weeks after."'],
+        ['Their date', 'Call', 'Recap the original pain and goal, then take payment.']
+      ]
+    },
+    {
+      key: 'ghost', name: 'Ghosted after the call', when: 'They were warm on the call, but now they\'re not answering.',
+      steps: [
+        ['+1 day', 'Call + WhatsApp', 'Call. If no answer: "Hey [Name], tried to catch you. Have you had a chance to look at the proposal?"'],
+        ['+2 days', 'WhatsApp', '"?" (Send it the morning of the day you were meant to talk. It works.)'],
+        ['+4 days', 'Call', 'Call at a different time of day: 7am or after 4pm.'],
+        ['+7 days', 'WhatsApp', 'A live lead card from their area, with one line: "This could have been yours."'],
+        ['+10 days', 'Voice note', 'A 20-second WhatsApp voice note. Tradies listen to voice notes on site.'],
+        ['+14 days', 'WhatsApp', 'The leader close: "I\'ll take it the timing\'s not right, no worries at all. I\'ll close your file for now. If anything changes, just message me."'],
+        ['+30 / 60 / 90 days', 'WhatsApp', 'Light-touch nurture: a client win or a seasonal nudge ("January\'s quiet for most builders. Want to fill it?").']
+      ]
+    },
+    {
+      key: 'budget', name: 'Soft no: budget too tight', when: 'Genuinely can\'t afford it right now, even after the step-down.',
+      steps: [
+        ['On the call', 'Call', 'Don\'t force it. Leave the door open, and ask what would need to change (a job landing, a payment coming in).'],
+        ['+1 day', 'WhatsApp', 'Thank them, and send the Starter outline so they know there\'s a lower entry point.'],
+        ['Every 30 days', 'WhatsApp', 'A client win from someone their size. "Started on the Starter at $300 a week, now on [X] jobs a month."'],
+        ['When their trigger hits', 'Call', 'When the job lands or the money comes in, call and re-run the discovery numbers.']
+      ]
+    }
+  ];
+
+  let modProgress = {};
+  try { modProgress = JSON.parse(localStorage.getItem('qj-modules') || '{}'); } catch (e) {}
+  let currentModule = 'm1';
+
+  function allLessons() {
+    const out = [];
+    MODULES.forEach(m => m.lessons ? m.lessons.forEach(l => out.push(l.id)) : out.push(m.id));
+    return out;
+  }
+  function findLesson(id) {
+    for (const m of MODULES) {
+      if (m.id === id) return { m, l: null };
+      if (m.lessons) for (const l of m.lessons) if (l.id === id) return { m, l };
+    }
+    return { m: MODULES[0], l: null };
+  }
+
+  function videoEmbed(url) {
+    if (!url) return '';
+    let m;
+    if ((m = url.match(/loom\.com\/share\/([a-z0-9]+)/i))) return 'https://www.loom.com/embed/' + m[1];
+    if ((m = url.match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/))) return 'https://www.youtube.com/embed/' + m[1];
+    if ((m = url.match(/vimeo\.com\/(\d+)/))) return 'https://player.vimeo.com/video/' + m[1];
+    if ((m = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) return 'https://drive.google.com/file/d/' + m[1] + '/preview';
+    return url;
+  }
+
+  function renderModuleNav() {
+    const done = allLessons().filter(id => modProgress[id]).length, total = allLessons().length;
+    document.getElementById('mod-progress-fill').style.width = Math.round(done / total * 100) + '%';
+    document.getElementById('mod-progress-label').textContent = done + ' of ' + total + ' videos complete';
+    document.getElementById('mod-nav').innerHTML = MODULES.map(m => {
+      const ids = m.lessons ? m.lessons.map(l => l.id) : [m.id];
+      const isDone = ids.every(id => modProgress[id]);
+      const active = m.id === currentModule || (m.lessons && m.lessons.some(l => l.id === currentModule));
+      let html = `<div class="phase-nav-item${active ? ' active' : ''}${isDone ? ' done' : ''}${m.critical ? ' crit-nav' : ''}" onclick="openModule('${m.lessons ? m.lessons[0].id : m.id}')">
+        <div class="phase-num">${isDone ? '✓' : m.num}</div>
+        <div><div class="phase-nav-label">${m.title}</div><div class="phase-nav-time">${m.lessons ? m.lessons.length + ' videos' : (m.critical ? '⚠ Critical' : 'Video + SOP')}</div></div></div>`;
+      if (m.lessons && active) {
+        html += '<div class="mod-sub">' + m.lessons.map((l, i) => `<div class="mod-sub-item${l.id === currentModule ? ' active' : ''}" onclick="openModule('${l.id}')"><span>${modProgress[l.id] ? '✓' : (i + 1)}</span>${l.title}</div>`).join('') + '</div>';
+      }
+      return html;
+    }).join('');
+  }
+
+  function openModule(id) {
+    currentModule = id;
+    const { m, l } = findLesson(id);
+    const item = l || m;
+    const order = allLessons(), idx = order.indexOf(id);
+    const prev = order[idx - 1], next = order[idx + 1];
+    const vurl = videoEmbed(item.video);
+    let h = `<div class="phase-header"><div>
+      <div class="phase-badge">${l ? 'Module ' + m.num + ' · Video ' + (m.lessons.indexOf(l) + 1) + ' of ' + m.lessons.length : 'Module ' + m.num}${m.critical ? ' · ⚠ Critical' : ''}</div>
+      <div class="phase-title">${l ? l.title : m.title}</div>
+      <div class="phase-subtitle">${l ? m.title + (l.note ? ' · ' + l.note : '') : m.summary}</div></div></div>`;
+
+    h += vurl
+      ? `<div class="video-wrap"><iframe src="${vurl}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`
+      : `<div class="video-wrap empty"><div><div style="font-size:34px">🎬</div><div style="font-weight:700;margin-top:6px">Video coming soon</div><div style="font-size:12.5px;margin-top:4px;opacity:.75">${item.miro !== undefined ? 'Alfie walks through the setter-to-closer Miro board.' : item.embed ? 'Alfie walks through the SOP below on this video.' : 'Alfie walks through this on video.'}</div></div></div>`;
+
+    if (item.docs && item.docs.length || item.miro !== undefined) {
+      h += `<div class="mod-links">${(item.docs || []).map(d => `<a class="btn btn-ghost" href="${d.url}" target="_blank" rel="noopener">↗ ${d.label}</a>`).join('')}${item.miro !== undefined ? (item.miro ? `<a class="btn btn-ghost" href="${item.miro}" target="_blank" rel="noopener">↗ Miro board</a>` : `<span class="btn btn-ghost" style="opacity:.6;cursor:default">Miro board link coming soon</span>`) : ''}${l && typeof l.tab === 'number' ? `<button class="btn btn-ghost" onclick="openObjTab(${l.tab})">🛡 Open in Objection Handler</button>` : ''}${(m.related && !l) ? m.related.map(r => `<button class="btn btn-ghost" onclick="${r[1]}">${r[0]}</button>`).join('') : ''}</div>`;
+    }
+
+    if (!l && m.takeaways) {
+      h += `<div class="card"><div class="card-title">Key takeaways</div><ul class="mod-ul">${m.takeaways.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+    }
+    if (!l && m.html) h += FOLLOWUP_HTML;
+
+    if (item.embed) {
+      h += `<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">The SOP for this video <button class="quick-btn" onclick="toggleDocEmbed(this)">Hide</button></div>
+        <iframe class="doc-embed" src="https://docs.google.com/document/d/${item.embed}/preview" loading="lazy"></iframe>
+        <div class="defaults-note">Doc not showing? It needs "Anyone with the link can view" sharing. Use the ↗ link above to open it in Google Docs.</div></div>`;
+    }
+
+    h += `<div class="nav-btns">
+      ${prev ? `<button class="btn btn-ghost" onclick="openModule('${prev}')">← Previous</button>` : '<span></span>'}
+      <button class="btn ${modProgress[id] ? 'btn-ghost' : 'btn-gold'}" onclick="toggleModuleDone('${id}')">${modProgress[id] ? '✓ Completed (undo)' : 'Mark as complete'}</button>
+      ${next ? `<button class="btn btn-gold" onclick="openModule('${next}')">Next →</button>` : '<span></span>'}</div>`;
+
+    document.getElementById('mod-main').innerHTML = h;
+    document.getElementById('mod-main').scrollTo(0, 0);
+    if (!l && m.html) renderCadence(CADENCES[0].key);
+    renderModuleNav();
+  }
+
+  function renderCadence(key) {
+    const c = CADENCES.find(x => x.key === key);
+    document.getElementById('cadence-tabs').innerHTML = CADENCES.map(x => `<button class="cad-tab${x.key === key ? ' active' : ''}" onclick="renderCadence('${x.key}')">${x.name}</button>`).join('');
+    document.getElementById('cadence-body').innerHTML = `<p class="mod-p"><strong>Use when:</strong> ${c.when}</p>
+      <div class="cad-steps">${c.steps.map(s => `<div class="cad-step"><div class="cad-when">${s[0]}</div><div class="cad-ch">${s[1]}</div><div class="cad-msg">${s[2]}</div></div>`).join('')}</div>`;
+  }
+
+  function toggleModuleDone(id) {
+    modProgress[id] = !modProgress[id];
+    try { localStorage.setItem('qj-modules', JSON.stringify(modProgress)); } catch (e) {}
+    openModule(id);
+  }
+  function toggleDocEmbed(btn) {
+    const f = btn.closest('.card').querySelector('.doc-embed');
+    f.hidden = !f.hidden; btn.textContent = f.hidden ? 'Show' : 'Hide';
+  }
+  function openObjTab(i) {
+    switchMode('objections');
+    switchObjTab(i);
+  }
+
   // ── INIT ──
+  openModule('m1');
   renderOffer();
   recalc();
   syncDynamicText();
